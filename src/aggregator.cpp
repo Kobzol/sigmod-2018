@@ -8,7 +8,7 @@ std::string Aggregator::aggregate(const Selection& selection, View& view)
 
     while (view.getNext())
     {
-        sum += view.getValue(selection);
+        sum += view.getValue(selection, view.rowIndex);
     }
 
     return sum == -1 ? "NULL" : std::to_string(sum + 1);

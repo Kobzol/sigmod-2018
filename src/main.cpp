@@ -15,140 +15,17 @@
 
 #include "settings.h"
 #include "database.h"
-#include "query.h"
-#include "relation/view.h"
-#include "relation/filter-view.h"
-#include "join/hash-joiner.h"
-#include "aggregator.h"
 #include "executor.h"
-
-#ifdef STATISTICS
-    static size_t tupleCount = 0;
-    static size_t columnCount = 0;
-    static size_t minColumns = std::numeric_limits<size_t>::max();
-    static size_t maxColumns = 0;
-    static size_t minTuples = std::numeric_limits<size_t>::max();
-    static size_t maxTuples = 0;
-    static size_t queryCount = 0;
-    static size_t joinCount = 0;
-    static size_t filterCount = 0;
-    static size_t batchCount = 0;
-    static size_t multipleColumnsPerRelJoins = 0;
-    static size_t relationsMissingInJoins = 0;
-#endif
-
-static void loadDatabase(Database& database)
-{
-    std::string line;
-    struct stat stats{};
-
-    while (std::getline(std::cin, line))
-    {
-        if (line == "Done") break;
-
-        int fd = open(line.c_str(), O_RDONLY);
-        fstat(fd, &stats);
-
-        auto length = (size_t) stats.st_size;
-        auto* addr = static_cast<char*>(mmap(nullptr, length, PROT_READ, MAP_PRIVATE, fd, 0));
-#ifdef CHECK_ERRORS
-        if (addr < 0) perror("mmap");
-#endif
-
-        database.relations.emplace_back();
-        ColumnRelation& rel = database.relations.back();
-
-        rel.tupleCount = *reinterpret_cast<uint64_t*>(addr);
-        addr += sizeof(uint64_t);
-        rel.columnCount = *reinterpret_cast<uint64_t*>(addr);
-        addr += sizeof(uint64_t);
-        rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
-        rel.id = database.relations.size() - 1;
-        std::memcpy(rel.data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
-        munmap(addr, length);
-        close(fd);
-
-#ifdef STATISTICS
-        tupleCount += rel.tupleCount;
-        columnCount += rel.columnCount;
-        minTuples = std::min(minTuples, rel.tupleCount);
-        maxTuples = std::max(maxTuples, rel.tupleCount);
-        minColumns = std::min(minColumns, rel.columnCount);
-        maxColumns = std::max(maxColumns, rel.columnCount);
-#endif
-    }
-}
-static uint64_t readInt(std::string& str, int& index)
-{
-    uint64_t value = 0;
-    while (isdigit(str[index]))
-    {
-        value *= 10;
-        value += str[index++] - '0';
-    }
-
-    return value;
-}
-static void loadQuery(Query& query, std::string& line)
-{
-    line += '|';
-
-    int index = 0;
-
-    // load relations
-    while (true)
-    {
-        query.relations.push_back(readInt(line, index));
-        if (line[index++] == '|') break;
-    }
-
-    // load predicates
-    while (true)
-    {
-        uint32_t relation = query.relations[readInt(line, index)];
-        index++;
-        Selection selection(relation, (uint32_t) readInt(line, index));
-        char oper = line[index++];
-
-        uint64_t value = readInt(line, index);
-        if (EXPECT(line[index] == '.')) // parse join
-        {
-            query.joins.emplace_back();
-            Join& join = query.joins.back();
-            join.selections[0] = selection;
-
-            join.selections[1].relation = query.relations[value];
-            index++;
-            join.selections[1].column = (uint32_t) readInt(line, index);
-
-            assert(join.selections[0].relation != join.selections[1].relation);
-            if (join.selections[0].relation > join.selections[1].relation)
-            {
-                std::swap(join.selections[0], join.selections[1]);
-            }
-        }
-        else // parse filter
-        {
-            query.filters.emplace_back(selection, oper, value);
-        }
-
-        if (line[index++] == '|') break;
-    }
-
-    // load selections
-    while (true)
-    {
-        auto relation = query.relations[readInt(line, index)];
-        index++;
-        query.selections.emplace_back(relation, readInt(line, index));
-
-        if (line[index++] == '|') break;
-    }
-}
+#include "io.h"
+#include "stats.h"
 
 int main(int argc, char** argv)
 {
     std::ios::sync_with_stdio(false);
+
+#ifdef LOAD_FROM_FILE
+    freopen(LOAD_FROM_FILE, "r", stdin);
+#endif
 
     Database database;
     loadDatabase(database);
@@ -181,6 +58,8 @@ int main(int argc, char** argv)
 
             std::unordered_set<std::string> pairs;
             std::unordered_set<int> joinedRelations;
+            size_t multipleColumns = 1;
+
             for (auto& join : query.joins)
             {
                 auto smaller = std::min(join.selections[0].relation, join.selections[1].relation);
@@ -188,13 +67,31 @@ int main(int argc, char** argv)
                 auto key = std::to_string(smaller) + "." + std::to_string(larger);
                 if (pairs.find(key) != pairs.end())
                 {
-                    multipleColumnsPerRelJoins++;
-                    break;
+                    multipleColumns++;
                 }
                 pairs.insert(key);
 
                 joinedRelations.insert(smaller);
                 joinedRelations.insert(larger);
+
+                if (join.selections[0].column == 0 && join.selections[1].column == 0)
+                {
+                    joinsOnFirstColumn++;
+                }
+            }
+
+            for (auto& filter: query.filters)
+            {
+                if (filter.selection.column == 0)
+                {
+                    filtersOnFirstColumn++;
+                }
+            }
+
+            columnsPerJoin += multipleColumns;
+            if (multipleColumns > 1)
+            {
+                multipleColumnsPerRelJoins++;
             }
 
             if (joinedRelations.size() < query.relations.size())
@@ -218,8 +115,12 @@ int main(int argc, char** argv)
     std::cerr << "Join count: " << joinCount << std::endl;
     std::cerr << "Filter count: " << filterCount << std::endl;
     std::cerr << "Batch count: " << batchCount << std::endl;
-    std::cerr << "Multiple-columns per relation joins: " << multipleColumnsPerRelJoins << std::endl;
+    std::cerr << "Multiple-columns for joins: " << multipleColumnsPerRelJoins << std::endl;
+    std::cerr << "Avg columns for join: " << columnsPerJoin / (double) queryCount << std::endl;
     std::cerr << "Relations missing on joins: " << relationsMissingInJoins << std::endl;
+    std::cerr << "Sorted on first column: " << sortedOnFirstColumn << std::endl;
+    std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
+    std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
 #endif
 
     std::quick_exit(0);

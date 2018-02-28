@@ -2,11 +2,20 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <iostream>
 #include "view.h"
+#include "../util.h"
 
 class ColumnRelation: public View
 {
 public:
+    ColumnRelation()
+    {
+
+    }
+    DISABLE_COPY(ColumnRelation);
+    ENABLE_MOVE(ColumnRelation);
+
     uint64_t tupleCount;
     uint64_t columnCount;
     uint64_t* data;
@@ -16,18 +25,17 @@ public:
     {
         return this->data[column * this->tupleCount + row];
     }
-
-    virtual bool getNext() override
+    uint64_t& getValueMutable(size_t row, size_t column)
     {
-        return false;
+        return this->data[column * this->tupleCount + row];
     }
 
-    virtual uint64_t getColumnCount() override
+    virtual int64_t getColumnCount() override
     {
         return this->columnCount;
     }
 
-    virtual uint64_t getRowCount() override
+    virtual int64_t getRowCount() override
     {
         return this->tupleCount;
     }
@@ -35,5 +43,19 @@ public:
     virtual uint64_t getValue(const Selection& selection, int row) override
     {
         return this->getValue(row, selection.column);
+    }
+
+    void dump()
+    {
+        for (int i = 0; i < this->getRowCount(); i++)
+        {
+            for (int j = 0; j < this->getColumnCount(); j++)
+            {
+                std::cout << this->getValue(i, j) << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << std::endl;
     }
 };

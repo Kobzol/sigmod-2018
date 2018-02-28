@@ -17,12 +17,12 @@ public:
     bool getNext() override;
     bool passesFilters();
 
-    uint64_t getColumnCount() override
+    int64_t getColumnCount() override
     {
         return this->view->getColumnCount();
     }
 
-    uint64_t getRowCount() override
+    int64_t getRowCount() override
     {
         return this->view->getRowCount();
     }

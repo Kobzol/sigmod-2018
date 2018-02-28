@@ -14,6 +14,11 @@ public:
 
     uint32_t relation;
     uint32_t column;
+
+    uint32_t getId() const
+    {
+        return this->relation * 1000 + this->column;
+    }
 };
 
 class Join

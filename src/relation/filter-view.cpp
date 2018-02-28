@@ -19,7 +19,7 @@ bool FilterView::getNext()
     while (this->rowIndex < this->view->getRowCount())
     {
         this->rowIndex++;
-        if (this->passesFilters())
+        if (this->rowIndex < this->view->getRowCount() && this->passesFilters())
         {
             return true;
         }

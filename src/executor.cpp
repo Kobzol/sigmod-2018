@@ -14,14 +14,14 @@ std::string Executor::executeQuery(Database& database, Query& query)
     std::vector<std::unique_ptr<View>> container;
 
     this->createFilterViews(database, query, views, container);
-    this->join(query, views, container);
+    this->join(database, query, views, container);
 
     return this->aggregate(database, query, views);
 
 }
 
-void Executor::join(Query& query, std::unordered_map<uint32_t, View*>& views,
-               std::vector<std::unique_ptr<View>>& container)
+void Executor::join(Database& database, Query& query, std::unordered_map<uint32_t, View*>& views,
+                    std::vector<std::unique_ptr<View>>& container)
 {
     HashJoiner joiner;
     sort(query.joins.begin(), query.joins.end(), [](const Join& a, const Join& b) {
@@ -50,6 +50,9 @@ void Executor::join(Query& query, std::unordered_map<uint32_t, View*>& views,
             else break;
         }
 
+        if (views.find(lowerRelation) == views.end()) views.insert({ lowerRelation, &database.relations[lowerRelation] });
+        if (views.find(higherRelation) == views.end()) views.insert({ higherRelation, &database.relations[higherRelation] });
+
         container.push_back(joiner.join(
                 *views[lowerRelation],
                 *views[higherRelation],
@@ -64,6 +67,8 @@ void Executor::join(Query& query, std::unordered_map<uint32_t, View*>& views,
 std::string Executor::aggregate(Database& database, const Query& query,
                                 std::unordered_map<uint32_t, View*>& views)
 {
+    std::unordered_map<std::string, std::string> cache;
+
     std::stringstream ss;
     for (auto& select : query.selections)
     {
@@ -73,8 +78,19 @@ std::string Executor::aggregate(Database& database, const Query& query,
             it = views.insert({ select.relation, &database.relations[select.relation] }).first;
         }
 
-        Aggregator aggregator;
-        ss << aggregator.aggregate(select, *it->second) << ' ';
+        auto key = std::to_string(select.relation) + '/' + std::to_string(select.column);
+        auto cacheIter = cache.find(key);
+        std::string result;
+
+        if (cacheIter == cache.end())
+        {
+            Aggregator aggregator;
+            result = aggregator.aggregate(select, *it->second);
+            cache.insert({ key, result }).first;
+        }
+        else result = cacheIter->second;
+
+        ss << result << ' ';
     }
 
     return ss.str();
@@ -91,7 +107,7 @@ void Executor::createFilterViews(Database& database,
         auto it = views.find(relation);
         if (it == views.end())
         {
-            container.push_back(std::make_unique<FilterView>(&database.relations[relation]));
+            container.push_back(std::move(std::make_unique<FilterView>(&database.relations[relation])));
             it = views.insert({ relation, container.back().get() }).first;
         }
         dynamic_cast<FilterView*>(it->second)->filters.push_back(filter);
