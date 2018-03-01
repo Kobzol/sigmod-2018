@@ -1,2 +1,6 @@
+- handle cartesian products
+- handle self joins
+
 - leverage presorted first column
 - dynamic programming
+- nlj, hj, smj

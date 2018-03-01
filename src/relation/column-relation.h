@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <iostream>
 #include "view.h"
 #include "../util.h"
 
@@ -43,19 +42,5 @@ public:
     virtual uint64_t getValue(const Selection& selection, int row) override
     {
         return this->getValue(row, selection.column);
-    }
-
-    void dump()
-    {
-        for (int i = 0; i < this->getRowCount(); i++)
-        {
-            for (int j = 0; j < this->getColumnCount(); j++)
-            {
-                std::cout << this->getValue(i, j) << " ";
-            }
-            std::cout << std::endl;
-        }
-
-        std::cout << std::endl;
     }
 };

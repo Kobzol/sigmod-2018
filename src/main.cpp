@@ -45,11 +45,15 @@ int main(int argc, char** argv)
         }
         else
         {
+            //std::cerr << "SOLVING QUERY " << queryCount << std::endl;
+
+
             Query query;
             loadQuery(query, line);
             auto result = executor.executeQuery(database, query);
             result[result.size() - 1] = '\n';
             std::cout << result;
+            //std::cout << "NULL" << std::endl;
 
 #ifdef STATISTICS
             queryCount++;
@@ -74,7 +78,7 @@ int main(int argc, char** argv)
                 joinedRelations.insert(smaller);
                 joinedRelations.insert(larger);
 
-                if (join.selections[0].column == 0 && join.selections[1].column == 0)
+                if (join.selections[0].column == 0 || join.selections[1].column == 0)
                 {
                     joinsOnFirstColumn++;
                 }

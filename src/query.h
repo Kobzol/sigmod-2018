@@ -6,6 +6,11 @@
 class Selection
 {
 public:
+    static uint32_t getId(uint32_t relation, uint32_t column)
+    {
+        return relation * 1000 + column;
+    }
+
     Selection() = default;
     Selection(uint32_t relation, uint32_t column) : relation(relation), column(column)
     {
@@ -17,7 +22,7 @@ public:
 
     uint32_t getId() const
     {
-        return this->relation * 1000 + this->column;
+        return Selection::getId(this->relation, this->column);
     }
 };
 

@@ -51,17 +51,19 @@ std::unique_ptr<View> HashJoiner::join(View& r1, View& r2, const std::vector<Joi
 void HashJoiner::setColumnMappings(View& r1, View& r2, const std::vector<Join>& joins, RowRelation& result)
 {
     uint32_t columnIndex = 0;
+    uint32_t r1id = joins[0].selections[0].relation;
+    uint32_t r2id = joins[0].selections[1].relation;
 
     auto r1ColumnCount = static_cast<int>(r1.getColumnCount());
     for (int i = 0; i < r1ColumnCount; i++)
     {
-        result.setColumn(Selection(joins[0].selections[0].relation, static_cast<uint32_t>(i)), columnIndex++);
+        result.setColumn(r1.getColumnId(r1id, static_cast<uint32_t>(i)), columnIndex++);
     }
 
     auto r2ColumnCount = static_cast<int>(r2.getColumnCount());
     for (int i = 0; i < r2ColumnCount; i++)
     {
-        result.setColumn(Selection(joins[0].selections[1].relation, static_cast<uint32_t>(i)), columnIndex++);
+        result.setColumn(r2.getColumnId(r2id, static_cast<uint32_t>(i)), columnIndex++);
     }
 }
 
@@ -70,6 +72,8 @@ void HashJoiner::createRows(View& r1, View& r2, const std::vector<Join>& joins, 
 {
     auto joinSize = (int) joins.size();
     std::vector<uint32_t> activeRows;
+    uint32_t r1id = joins[0].selections[0].relation;
+    uint32_t r2id = joins[0].selections[1].relation;
 
     r2.reset();
     while (r2.getNext())
@@ -95,15 +99,11 @@ void HashJoiner::createRows(View& r1, View& r2, const std::vector<Join>& joins, 
                 auto* rowData = result.addRow();
                 for (int i = 0; i < r1.getColumnCount(); i++)
                 {
-                    auto selection = Selection(joins[0].selections[0].relation, i);
-                    *rowData = r1.getValue(selection, row);
-                    rowData++;
+                    *rowData++ = r1.getValueAt(static_cast<uint32_t>(i), row);
                 }
                 for (int i = 0; i < r2.getColumnCount(); i++)
                 {
-                    auto selection = Selection(joins[0].selections[1].relation, i);
-                    *rowData = r2.getValue(selection, r2.rowIndex);
-                    rowData++;
+                    *rowData++ = r2.getValueAt(static_cast<uint32_t>(i), r2.rowIndex);
                 }
             }
         }

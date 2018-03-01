@@ -3,13 +3,15 @@
 // TODO: group by relations
 std::string Aggregator::aggregate(const Selection& selection, View& view)
 {
-    int64_t sum = -1;
+    int64_t sum = 0;
     view.reset();
+    if (!view.getNext()) return "NULL";
 
-    while (view.getNext())
+    do
     {
         sum += view.getValue(selection, view.rowIndex);
     }
+    while (view.getNext());
 
-    return sum == -1 ? "NULL" : std::to_string(sum + 1);
+    return std::to_string(sum);
 }

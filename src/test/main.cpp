@@ -35,9 +35,9 @@ int main()
     database.relations[1].getValueMutable(0, 0) = 5;
     database.relations[2].getValueMutable(0, 2) = 5;
 
-    database.relations[0].dump();
-    database.relations[1].dump();
-    database.relations[2].dump();
+    database.relations[0].dump(0);
+    database.relations[1].dump(0);
+    database.relations[2].dump(0);
 
     Executor executor;
     std::cout << executor.executeQuery(database, query) << std::endl;
