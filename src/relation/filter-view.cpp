@@ -11,29 +11,43 @@ static bool passesFilter(const Filter& filter, uint64_t value)
         case '>': return value > filter.value;
         default: assert(false);
     }
-}
-
-bool FilterView::getNext()
-{
-    // TODO: vectorize
-    while (this->rowIndex < this->view->getRowCount())
-    {
-        this->rowIndex++;
-        if (this->rowIndex < this->view->getRowCount() && this->passesFilters())
-        {
-            return true;
-        }
-    }
 
     return false;
 }
 
-bool FilterView::passesFilters()
+FilterView::FilterViewIterator::FilterViewIterator(FilterView* filter) : filter(filter)
 {
-    for (auto& filter: this->filters)
+
+}
+
+bool FilterView::FilterViewIterator::getNext()
+{
+    this->rowIndex++;
+
+    auto rowCount = this->filter->view->getRowCount();
+    while (this->rowIndex < rowCount && !this->passesFilters())
     {
-        if (!passesFilter(filter, this->getValue(filter.selection, this->rowIndex))) return false;
+        this->rowIndex++;
+    }
+
+    return this->rowIndex < rowCount;
+}
+
+uint64_t FilterView::FilterViewIterator::getValue(const Selection& selection)
+{
+    return this->filter->view->getValue(selection, this->rowIndex);
+}
+bool FilterView::FilterViewIterator::passesFilters()
+{
+    for (auto& filter: this->filter->filters)
+    {
+        if (!passesFilter(filter, this->filter->view->getValue(filter.selection, this->rowIndex))) return false;
     }
 
     return true;
+}
+
+uint64_t FilterView::FilterViewIterator::getColumn(uint32_t column)
+{
+    return this->filter->view->getValue(this->rowIndex, column);
 }

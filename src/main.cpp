@@ -45,15 +45,13 @@ int main(int argc, char** argv)
         }
         else
         {
-            //std::cerr << "SOLVING QUERY " << queryCount << std::endl;
-
-
             Query query;
             loadQuery(query, line);
+            assert(!query.joins.empty());
+
             auto result = executor.executeQuery(database, query);
             result[result.size() - 1] = '\n';
             std::cout << result;
-            //std::cout << "NULL" << std::endl;
 
 #ifdef STATISTICS
             queryCount++;

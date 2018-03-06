@@ -2,33 +2,58 @@
 #include "relation/filter-view.h"
 #include "join/hash-joiner.h"
 #include "aggregator.h"
-
-#include <unordered_map>
-#include <memory>
-#include <algorithm>
-#include <sstream>
+#include "join/nested-joiner.h"
 
 std::string Executor::executeQuery(Database& database, Query& query)
 {
     std::unordered_map<uint32_t, View*> views;
     std::vector<std::unique_ptr<View>> container;
 
-    this->createFilterViews(database, query, views, container);
-    this->join(database, query, views, container);
+    this->createViews(database, query, views, container);
+    this->createRootViews(database, query, views, container);
 
-    return this->aggregate(database, query, views);
-
+    Aggregator aggregator;
+    return aggregator.aggregate(database, query, views);
 }
 
-void Executor::join(Database& database, Query& query, std::unordered_map<uint32_t, View*>& views,
-                    std::vector<std::unique_ptr<View>>& container)
+void Executor::createViews(Database& database,
+                           const Query& query,
+                           std::unordered_map<uint32_t, View*>& views,
+                           std::vector<std::unique_ptr<View>>& container)
 {
-    HashJoiner joiner;
-    sort(query.joins.begin(), query.joins.end(), [](const Join& a, const Join& b) {
-        if (a.selections[0].relation < b.selections[0].relation) return true;
-        if (a.selections[0].relation > b.selections[0].relation) return false;
-        return a.selections[1].relation <= b.selections[1].relation;
-    });
+    for (auto& filter: query.filters)
+    {
+        auto relation = filter.selection.relation;
+        auto it = views.find(relation);
+        if (it == views.end())
+        {
+            container.push_back(std::move(std::make_unique<FilterView>(&database.relations[relation])));
+            it = views.insert({ relation, container.back().get() }).first;
+        }
+        dynamic_cast<FilterView*>(it->second)->filters.push_back(filter);
+    }
+    for (auto& relation: query.relations)
+    {
+        auto it = views.find(relation);
+        if (it == views.end())
+        {
+            views.insert({ relation, &database.relations[relation] });
+        }
+    }
+}
+
+void Executor::createRootViews(Database& database, Query& query,
+                               std::unordered_map<uint32_t, View*>& views,
+                               std::vector<std::unique_ptr<View>>& container)
+{
+    if (query.joins.size() > 1)
+    {
+        sort(query.joins.begin(), query.joins.end(), [](const Join& a, const Join& b) {
+            if (a.selections[0].relation < b.selections[0].relation) return true;
+            if (a.selections[0].relation > b.selections[0].relation) return false;
+            return a.selections[1].relation <= b.selections[1].relation;
+        });
+    }
 
     std::vector<Join> joins;
     size_t index = 0;
@@ -50,66 +75,19 @@ void Executor::join(Database& database, Query& query, std::unordered_map<uint32_
             else break;
         }
 
-        if (views.find(lowerRelation) == views.end()) views.insert({ lowerRelation, &database.relations[lowerRelation] });
-        if (views.find(higherRelation) == views.end()) views.insert({ higherRelation, &database.relations[higherRelation] });
-
-        container.push_back(joiner.join(
-                *views[lowerRelation],
-                *views[higherRelation],
+        auto joiner = std::make_unique<HashJoiner>(
+                views[lowerRelation],
+                views[higherRelation],
                 joins
-        ));
-        views[lowerRelation] = container.back().get();
-        views[higherRelation] = container.back().get();
+        );
+        std::vector<uint32_t> ids;
+        joiner->fillRelationIds(ids);
+        for (auto id: ids)
+        {
+            views[id] = joiner.get();
+        }
+
+        container.push_back(std::move(joiner));
         joins.clear();
-    }
-}
-
-std::string Executor::aggregate(Database& database, const Query& query,
-                                std::unordered_map<uint32_t, View*>& views)
-{
-    std::unordered_map<std::string, std::string> cache;
-
-    std::stringstream ss;
-    for (auto& select : query.selections)
-    {
-        auto it = views.find(select.relation);
-        if (it == views.end())
-        {
-            it = views.insert({ select.relation, &database.relations[select.relation] }).first;
-        }
-
-        auto key = std::to_string(select.relation) + '/' + std::to_string(select.column);
-        auto cacheIter = cache.find(key);
-        std::string result;
-
-        if (cacheIter == cache.end())
-        {
-            Aggregator aggregator;
-            result = aggregator.aggregate(select, *it->second);
-            cache.insert({ key, result }).first;
-        }
-        else result = cacheIter->second;
-
-        ss << result << ' ';
-    }
-
-    return ss.str();
-}
-
-void Executor::createFilterViews(Database& database,
-                                 const Query& query,
-                                 std::unordered_map<uint32_t, View*>& views,
-                                 std::vector<std::unique_ptr<View>>& container)
-{
-    for (auto& filter: query.filters)
-    {
-        auto relation = filter.selection.relation;
-        auto it = views.find(relation);
-        if (it == views.end())
-        {
-            container.push_back(std::move(std::make_unique<FilterView>(&database.relations[relation])));
-            it = views.insert({ relation, container.back().get() }).first;
-        }
-        dynamic_cast<FilterView*>(it->second)->filters.push_back(filter);
     }
 }

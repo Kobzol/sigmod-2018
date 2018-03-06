@@ -3,4 +3,6 @@
 #define STATISTICS
 #define CHECK_ERRORS
 
-#define LOAD_FROM_FILE "small.complete"
+#ifndef NDEBUG
+    #define LOAD_FROM_FILE "small.complete"
+#endif

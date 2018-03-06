@@ -3,10 +3,12 @@
 #include <cstdint>
 #include <vector>
 
+using SelectionId = uint32_t;
+
 class Selection
 {
 public:
-    static uint32_t getId(uint32_t relation, uint32_t column)
+    static SelectionId getId(uint32_t relation, uint32_t column)
     {
         return relation * 1000 + column;
     }
@@ -20,7 +22,7 @@ public:
     uint32_t relation;
     uint32_t column;
 
-    uint32_t getId() const
+    SelectionId getId() const
     {
         return Selection::getId(this->relation, this->column);
     }

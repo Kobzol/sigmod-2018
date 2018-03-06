@@ -24,9 +24,6 @@ void loadDatabase(Database& database)
 
         auto length = (size_t) stats.st_size;
         auto* addr = static_cast<char*>(mmap(nullptr, length, PROT_READ, MAP_PRIVATE, fd, 0));
-#ifdef CHECK_ERRORS
-        if (addr < 0) perror("mmap");
-#endif
 
         database.relations.emplace_back();
         ColumnRelation& rel = database.relations.back();
@@ -36,7 +33,7 @@ void loadDatabase(Database& database)
         rel.columnCount = *reinterpret_cast<uint64_t*>(addr);
         addr += sizeof(uint64_t);
         rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
-        rel.id = database.relations.size() - 1;
+        rel.id = static_cast<uint32_t>(database.relations.size() - 1);
         std::memcpy(rel.data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
         munmap(addr, length);
         close(fd);

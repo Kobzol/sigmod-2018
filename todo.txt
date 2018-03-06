@@ -1,6 +1,7 @@
-- handle cartesian products
 - handle self joins
+- sort joins (self-joins, size, filtered)
 
 - leverage presorted first column
 - dynamic programming
 - nlj, hj, smj
+- inline sum

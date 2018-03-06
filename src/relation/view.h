@@ -2,27 +2,15 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
+
 #include "../query.h"
+#include "iterator.h"
 
 class View
 {
 public:
     virtual ~View() = default;
-
-    void reset()
-    {
-        this->rowIndex = -1;
-    }
-    virtual bool getNext()
-    {
-        if (this->rowIndex < this->getRowCount())
-        {
-            this->rowIndex++;
-            return this->rowIndex < this->getRowCount();
-        }
-
-        return false;
-    }
 
     virtual int64_t getColumnCount() = 0;
     virtual int64_t getRowCount() = 0;
@@ -31,10 +19,11 @@ public:
     {
         return this->getValue(Selection(0, column), row);
     }
-    virtual uint32_t getColumnId(uint32_t relation, uint32_t index)
-    {
-        return Selection::getId(relation, index);
-    }
+
+    virtual uint32_t getSelectionIdForColumn(uint32_t index) = 0;
+
+    virtual std::unique_ptr<Iterator> createIterator() = 0;
+    virtual void fillRelationIds(std::vector<uint32_t>& ids) = 0;
 
     void dump(uint32_t relation)
     {
@@ -49,6 +38,4 @@ public:
 
         std::cout << std::endl;
     }
-
-    int64_t rowIndex = -1;
 };

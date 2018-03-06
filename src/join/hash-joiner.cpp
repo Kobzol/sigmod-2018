@@ -1,8 +1,4 @@
 #include "hash-joiner.h"
-#include "../relation/row-relation.h"
-
-#include <unordered_map>
-#include <iostream>
 
 static std::vector<uint32_t> intersect(const std::vector<uint32_t> active, const std::vector<uint32_t> added)
 {
@@ -30,102 +26,128 @@ static std::vector<uint32_t> intersect(const std::vector<uint32_t> active, const
     }
 }
 
-std::unique_ptr<View> HashJoiner::join(View& r1, View& r2, const std::vector<Join>& joins)
+HashJoiner::HashJoinerIterator::HashJoinerIterator(HashJoiner& joiner)
+        : joiner(joiner),
+          row(static_cast<size_t>(joiner.left->getColumnCount() + joiner.right->getColumnCount())),
+          r1(joiner.left),
+          r2(joiner.right)
 {
-    r1.reset();
-    r2.reset();
 
-    // TODO: special path for same-relation joins
-    auto columnCount = (int) (r1.getColumnCount() + r2.getColumnCount());
-    auto result = std::make_unique<RowRelation>(columnCount);
-    std::vector<std::unordered_map<uint64_t, std::vector<uint32_t>>> hashes(joins.size());
-
-    this->setColumnMappings(r1, r2, joins, *result);
-
-    this->fillHashTable(r1, joins, hashes);
-    this->createRows(r1, r2, joins, *result, hashes);
-
-    return result;
 }
 
-void HashJoiner::setColumnMappings(View& r1, View& r2, const std::vector<Join>& joins, RowRelation& result)
+void HashJoiner::HashJoinerIterator::reset()
 {
-    uint32_t columnIndex = 0;
-    uint32_t r1id = joins[0].selections[0].relation;
-    uint32_t r2id = joins[0].selections[1].relation;
-
-    auto r1ColumnCount = static_cast<int>(r1.getColumnCount());
-    for (int i = 0; i < r1ColumnCount; i++)
-    {
-        result.setColumn(r1.getColumnId(r1id, static_cast<uint32_t>(i)), columnIndex++);
-    }
-
-    auto r2ColumnCount = static_cast<int>(r2.getColumnCount());
-    for (int i = 0; i < r2ColumnCount; i++)
-    {
-        result.setColumn(r2.getColumnId(r2id, static_cast<uint32_t>(i)), columnIndex++);
-    }
+    Iterator::reset();
+    this->initialized = false;
 }
 
-void HashJoiner::createRows(View& r1, View& r2, const std::vector<Join>& joins, RowRelation& result,
-                            const std::vector<std::unordered_map<uint64_t, std::vector<uint32_t>>>& hashes)
+bool HashJoiner::HashJoinerIterator::getNext()
 {
-    auto joinSize = (int) joins.size();
-    std::vector<uint32_t> activeRows;
-    uint32_t r1id = joins[0].selections[0].relation;
-    uint32_t r2id = joins[0].selections[1].relation;
-
-    r2.reset();
-    while (r2.getNext())
+    if (!this->initialized)
     {
-        activeRows.clear();
-        bool matches = true;
-        for (int i = 0; i < joinSize; i++)
+        this->initialize();
+    }
+
+    auto joins = this->joiner.joins;
+    auto joinSize = static_cast<int>(joins.size());
+    auto iterator = this->iterators[1].get();
+    if (this->activeRowIndex == -1)
+    {
+        if (!iterator->getNext()) return false;
+
+        while (true)
         {
-            uint64_t value = r2.getValue(joins[i].selections[1], r2.rowIndex);
-            auto it = hashes[i].find(value);
-            if (it == hashes[i].end())
+            this->activeRows.clear();
+            bool matches = true;
+            for (int i = 0; i < joinSize; i++)
             {
-                matches = false;
+                uint64_t value = iterator->getValue(joins[i].selections[1]);
+                auto it = hashes[i].find(value);
+                if (it == hashes[i].end())
+                {
+                    matches = false;
+                    break;
+                }
+                else this->activeRows = intersect(this->activeRows, it->second);
+            }
+
+            if (matches && !this->activeRows.empty())
+            {
                 break;
             }
-            else activeRows = intersect(activeRows, it->second);
+            else if (!iterator->getNext()) return false;
         }
 
-        if (matches)
-        {
-            for (auto row: activeRows)
-            {
-                auto* rowData = result.addRow();
-                for (int i = 0; i < r1.getColumnCount(); i++)
-                {
-                    *rowData++ = r1.getValueAt(static_cast<uint32_t>(i), row);
-                }
-                for (int i = 0; i < r2.getColumnCount(); i++)
-                {
-                    *rowData++ = r2.getValueAt(static_cast<uint32_t>(i), r2.rowIndex);
-                }
-            }
-        }
+        this->activeRowIndex = 0;
     }
+
+    auto row = this->activeRows[this->activeRowIndex];
+    auto* rowData = &this->row[0];
+    auto& data = this->rowData[row];
+    for (int i = 0; i < this->r1->getColumnCount(); i++)
+    {
+        *rowData++ = data[i];
+    }
+    for (int i = 0; i < r2->getColumnCount(); i++)
+    {
+        *rowData++ = iterator->getColumn(static_cast<uint32_t>(i));
+    }
+
+    this->activeRowIndex++;
+    if (this->activeRowIndex == (int) this->activeRows.size())
+    {
+        this->activeRowIndex = -1;
+    }
+
+    return true;
 }
 
-void HashJoiner::fillHashTable(View& relation, const std::vector<Join>& joins,
-                               std::vector<std::unordered_map<uint64_t, std::vector<uint32_t>>>& hashes)
+uint64_t HashJoiner::HashJoinerIterator::getValue(const Selection& selection)
+{
+    uint32_t column = this->joiner.columnMap[selection.getId()];
+    return this->row[column];
+}
+
+void HashJoiner::HashJoinerIterator::fillHashTable()
 {
     uint32_t row = 0;
+    auto& joins = this->joiner.joins;
     auto joinSize = (int) joins.size();
 
-    relation.reset();
-    while (relation.getNext())
+    auto iterator = this->iterators[0].get();
+    while (iterator->getNext())
     {
+        auto it = this->rowData.insert({ row, {} }).first;
+        for (int i = 0; i < this->r1->getColumnCount(); i++)
+        {
+            it->second.push_back(iterator->getColumn(i));
+        }
+
         for (int i = 0; i < joinSize; i++)
         {
             auto& join = joins[i];
-            uint64_t value = relation.getValue(join.selections[0], relation.rowIndex);
+            uint64_t value = iterator->getValue(join.selections[0]);
             hashes[i][value].push_back(row);
         }
 
         row++;
     }
+}
+
+void HashJoiner::HashJoinerIterator::initialize()
+{
+    this->iterators[0] = this->r1->createIterator();
+    this->iterators[1] = this->r2->createIterator();
+
+    this->hashes.clear();
+    this->hashes.resize(this->joiner.joins.size());
+
+    this->fillHashTable();
+
+    this->initialized = true;
+}
+
+uint64_t HashJoiner::HashJoinerIterator::getColumn(uint32_t column)
+{
+    return this->row[column];
 }

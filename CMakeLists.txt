@@ -14,10 +14,11 @@ set(SOURCE_FILES
         src/relation/view.cpp
         src/aggregator.cpp
         src/executor.cpp
-        src/relation/row-relation.cpp
         src/stats.cpp
         src/io.cpp
-)
+        src/join/joiner.cpp
+        src/relation/iterator.cpp
+        src/join/nested-joiner.cpp src/join/nested-joiner.h)
 
 add_executable(sigmod-2018 ${SOURCE_FILES} src/main.cpp)
 add_executable(tester ${SOURCE_FILES} src/test/main.cpp)
