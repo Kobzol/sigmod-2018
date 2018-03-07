@@ -151,8 +151,8 @@ void loadQuery(Query& query, std::string& line)
         std::string joinKey;
         for (auto& p: j)
         {
-            uint32_t first = std::min(p.left.binding, p.right.binding);
-            uint32_t second = std::max(p.left.binding, p.right.binding);
+            uint32_t first = std::min(p.selections[0].binding, p.selections[1].binding);
+            uint32_t second = std::max(p.selections[0].binding, p.selections[1].binding);
             auto key = std::to_string(first) + "x" + std::to_string(second);
             if (joinKey.empty())
             {

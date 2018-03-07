@@ -76,6 +76,13 @@ public:
         return selection.column;
     }
 
+    bool getValueMaybe(const Selection& selection, uint64_t& value) override
+    {
+        if (selection.binding != this->binding) return false;
+        value = this->getValue(selection);
+        return true;
+    }
+
     int32_t getColumnCount() override
     {
         return this->relation->getColumnCount();

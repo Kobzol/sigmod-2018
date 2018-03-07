@@ -20,19 +20,16 @@ private:
     void initialize();
     void fillHashTable();
 
+    bool findRowByHash();
+    bool checkRowPredicates();
+
     std::vector<uint32_t> activeRows;
     int activeRowIndex = -1;
 
     uint32_t leftIndex;
     uint32_t rightIndex;
 
-    std::vector<uint64_t> row;
-
-    bool initialized = false;
+    int joinSize;
     std::unordered_map<uint64_t, std::vector<uint32_t>> hashTable;
     std::unordered_map<uint32_t, std::vector<uint64_t>> rowData;
-
-    bool findRowByHash();
-
-    bool checkRowPredicates();
 };

@@ -4,18 +4,18 @@ HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join
         : Joiner(left, right, join),
           leftIndex(leftIndex),
           rightIndex(1 - leftIndex),
-          row(static_cast<size_t>(left->getColumnCount() + right->getColumnCount()))
+          joinSize(static_cast<int>(join.size()))
 {
-
+    this->fillHashTable();
 }
 
 void HashJoiner::reset()
 {
     Iterator::reset();
 
-    this->left->reset();
-    this->right->reset();
-    this->initialized = false; // TODO: switch to true
+    //this->left->reset();
+    //this->right->reset();
+    //this->initialized = false;
 }
 
 bool HashJoiner::findRowByHash()
@@ -52,14 +52,13 @@ bool HashJoiner::findRowByHash()
 bool HashJoiner::checkRowPredicates()
 {
     auto iterator = this->right;
-    auto joinSize = static_cast<int>(this->join.size());
     while (this->activeRowIndex < static_cast<int32_t>(this->activeRows.size()))
     {
         auto row = this->activeRows[this->activeRowIndex];
         auto& data = this->rowData[row];
 
         bool rowOk = true;
-        for (int i = 1; i < joinSize; i++)
+        for (int i = 1; i < this->joinSize; i++)
         {
             auto& leftSel = this->join[i].selections[this->leftIndex];
             auto& rightSel = this->join[i].selections[this->rightIndex];
@@ -82,14 +81,16 @@ bool HashJoiner::checkRowPredicates()
 
 bool HashJoiner::getNext()
 {
-    if (!this->initialized)
+    this->activeRowIndex++;
+    if (this->activeRowIndex == static_cast<int32_t>(this->activeRows.size()))
     {
-        this->initialize();
+        this->activeRowIndex = -1;
     }
 
     while (true)
     {
         if (!this->findRowByHash()) return false;
+        if (this->joinSize == 1) break;
         if (!this->checkRowPredicates())
         {
             this->activeRowIndex = -1;
@@ -98,32 +99,31 @@ bool HashJoiner::getNext()
         else break;
     }
 
-    auto iterator = this->right;
-    auto row = this->activeRows[this->activeRowIndex];
-    auto& data = this->rowData[row];
-    auto* rowData = &this->row[0];
-    for (int i = 0; i < this->leftCols; i++)
-    {
-        *rowData++ = data[i];
-    }
-    for (int i = 0; i < this->rightCols; i++)
-    {
-        *rowData++ = iterator->getColumn(static_cast<uint32_t>(i));
-    }
-
-    this->activeRowIndex++;
-    if (this->activeRowIndex == static_cast<int32_t>(this->activeRows.size()))
-    {
-        this->activeRowIndex = -1;
-    }
-
     return true;
 }
 
 uint64_t HashJoiner::getValue(const Selection& selection)
 {
-    uint32_t column = this->columnMap[selection.getId()];
-    return this->row[column];
+    auto row = this->activeRows[this->activeRowIndex];
+    auto& data = this->rowData[row];
+
+    uint64_t value;
+    if (this->right->getValueMaybe(selection, value))
+    {
+        return value;
+    }
+
+    return data[this->left->getColumnForSelection(selection)];
+}
+uint64_t HashJoiner::getColumn(uint32_t column)
+{
+    auto row = this->activeRows[this->activeRowIndex];
+    auto& data = this->rowData[row];
+    if (column < static_cast<uint32_t>(this->leftCols))
+    {
+        return data[column];
+    }
+    else return this->right->getColumn(column - this->leftCols);
 }
 
 void HashJoiner::fillHashTable()
@@ -134,10 +134,10 @@ void HashJoiner::fillHashTable()
     while (iterator->getNext())
     {
         // materialize rows
-        auto it = this->rowData.insert({ row, {} }).first;
+        auto it = this->rowData.insert({ row, std::vector<uint64_t>(static_cast<size_t>(this->leftCols)) }).first;
         for (int i = 0; i < this->leftCols; i++)
         {
-            it->second.push_back(iterator->getColumn(i));
+            it->second[i] = iterator->getColumn(i);
         }
 
         auto& predicate = this->join[0];
@@ -150,17 +150,5 @@ void HashJoiner::fillHashTable()
 
 void HashJoiner::initialize()
 {
-    this->left->reset();
-    this->right->reset();
 
-    this->hashTable.clear();
-
-    this->fillHashTable();
-
-    this->initialized = true;
-}
-
-uint64_t HashJoiner::getColumn(uint32_t column)
-{
-    return this->row[column];
 }

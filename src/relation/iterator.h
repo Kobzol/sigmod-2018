@@ -19,6 +19,7 @@ public:
 
     virtual int32_t getColumnCount() = 0;
     virtual uint64_t getValue(const Selection& selection) = 0;
+    virtual bool getValueMaybe(const Selection& selection, uint64_t& value) = 0;
     virtual uint64_t getColumn(uint32_t column) = 0;
 
     virtual uint32_t getColumnForSelection(const Selection& selection) = 0;

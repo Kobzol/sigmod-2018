@@ -81,8 +81,8 @@ int main(int argc, char** argv)
 
             for (auto& join : query.joins)
             {
-                auto smaller = std::min(join[0].left.relation, join[0].right.relation);
-                auto larger = std::max(join[0].left.relation, join[0].right.relation);
+                auto smaller = std::min(join[0].selections[0].relation, join[0].selections[1].relation);
+                auto larger = std::max(join[0].selections[0].relation, join[0].selections[1].relation);
                 auto key = std::to_string(smaller) + "." + std::to_string(larger);
                 if (pairs.find(key) != pairs.end())
                 {
@@ -93,7 +93,7 @@ int main(int argc, char** argv)
                 joinedRelations.insert(smaller);
                 joinedRelations.insert(larger);
 
-                if (join[0].left.column == 0 || join[0].right.column == 0)
+                if (join[0].selections[0].column == 0 || join[0].selections[1].column == 0)
                 {
                     joinsOnFirstColumn++;
                 }
