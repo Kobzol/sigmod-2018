@@ -27,6 +27,14 @@ public:
     virtual uint32_t getColumnForSelection(const Selection& selection) = 0;
     virtual SelectionId getSelectionIdForColumn(uint32_t column) = 0;
 
+    /*
+     * Returns a value that states how much this iterator is filtered.
+     */
+    virtual uint32_t getFilterReduction()
+    {
+        return 0;
+    }
+
     virtual void fillBindings(std::vector<uint32_t>& ids) = 0;
 
     int rowIndex = -1;

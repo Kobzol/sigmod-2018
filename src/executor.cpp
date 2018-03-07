@@ -34,10 +34,10 @@ void Executor::createViews(Database& database,
         auto it = views.find(binding);
         if (it == views.end())
         {
-            container.push_back(std::move(std::make_unique<FilterIterator>(
+            container.push_back(std::make_unique<FilterIterator>(
                     &database.relations[filter.selection.relation],
                     binding
-            )));
+            ));
             it = views.insert({ binding, container.back().get() }).first;
         }
         dynamic_cast<FilterIterator*>(it->second)->filters.push_back(filter);
@@ -49,10 +49,10 @@ void Executor::createViews(Database& database,
         auto it = views.find(binding);
         if (it == views.end())
         {
-            container.push_back(std::move(std::make_unique<ColumnRelationIterator>(
+            container.push_back(std::make_unique<ColumnRelationIterator>(
                     &database.relations[relation],
                     binding
-            )));
+            ));
             views.insert({ binding, container.back().get() });
         }
         binding++;
@@ -64,7 +64,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
                                std::vector<std::unique_ptr<Iterator>>& container)
 {
 #ifdef SORT_JOINS_BY_SIZE
-    std::sort(query.joins.begin(), query.joins.end(), [&database](const Join& a, const Join& b) {
+    std::sort(query.joins.begin(), query.joins.end(), [&database, &views](const Join& a, const Join& b) {
         auto& relLeft = database.relations[a[0].selections[0].relation];
         auto& relRight = database.relations[b[0].selections[0].relation];
         return relLeft.getRowCount() <= relRight.getRowCount();
@@ -77,12 +77,12 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto rightBinding = (*join)[0].selections[1].binding;
     assert(leftBinding <= rightBinding);
 
-    container.push_back(std::move(std::make_unique<HashJoiner>(
+    container.push_back(std::make_unique<HashJoiner>(
             views[leftBinding],
             views[rightBinding],
             0,
             *join
-    )));
+    ));
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -115,15 +115,13 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             continue;
         }
 
-        std::unique_ptr<Iterator> newJoin = std::make_unique<HashJoiner>(
+        container.push_back(std::make_unique<HashJoiner>(
                 left,
                 right,
                 leftIndex,
                 *join
-        );
-
-        root = newJoin.get();
-        container.push_back(std::move(newJoin));
+        ));
+        root = container.back().get();
     }
 
     return root;
