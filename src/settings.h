@@ -9,3 +9,5 @@
 #endif
 
 //#define SORT_JOINS_BY_SIZE
+
+#define QUERY_NUM_THREADS 4

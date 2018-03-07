@@ -12,6 +12,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cassert>
+#include <omp.h>
 
 #include "settings.h"
 #include "database.h"
@@ -48,7 +49,7 @@ int main(int argc, char** argv)
         {
             auto queryCount = static_cast<int32_t>(queries.size());
 
-            //#pragma omp parallel for
+            #pragma omp parallel for num_threads(QUERY_NUM_THREADS)
             for (int i = 0; i < queryCount; i++)
             {
                 executor.executeQuery(database, queries[i]);

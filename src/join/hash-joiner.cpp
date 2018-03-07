@@ -38,7 +38,7 @@ bool HashJoiner::findRowByHash()
             else
             {
                 this->activeValue = value;
-                this->activeRowCount = static_cast<int32_t>(this->hashTable[value].size());
+                this->activeRowCount = static_cast<int32_t>(it->second.size());
                 break;
             }
         }
@@ -170,16 +170,11 @@ void HashJoiner::fillHashTable()
     while (iterator->getNext())
     {
         uint64_t value = iterator->getValue(selection);
-
-        auto it = this->hashTable.find(value);
-        if (it == this->hashTable.end())
-        {
-            it = this->hashTable.insert({ value, {} }).first;
-        }
+        auto& vec = this->hashTable[value];
 
         // materialize rows
-        it->second.emplace_back(this->leftCols);
-        auto& rowData = it->second.back();
+        vec.emplace_back(this->leftCols);
+        auto& rowData = vec.back();
         iterator->fillRow(rowData.data());
     }
 }
