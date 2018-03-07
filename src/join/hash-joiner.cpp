@@ -26,31 +26,32 @@ static std::vector<uint32_t> intersect(const std::vector<uint32_t> active, const
     }
 }
 
-HashJoiner::HashJoinerIterator::HashJoinerIterator(HashJoiner& joiner)
-        : joiner(joiner),
-          row(static_cast<size_t>(joiner.left->getColumnCount() + joiner.right->getColumnCount())),
-          r1(joiner.left),
-          r2(joiner.right)
+HashJoiner::HashJoiner(Iterator* left, Iterator* right, const std::vector<Join>& joins)
+        : Joiner(left, right, joins),
+          row(static_cast<size_t>(left->getColumnCount() + right->getColumnCount()))
 {
 
 }
 
-void HashJoiner::HashJoinerIterator::reset()
+void HashJoiner::reset()
 {
     Iterator::reset();
-    this->initialized = false;
+
+    this->left->reset();
+    this->right->reset();
+    this->initialized = false; // TODO: switch to true
 }
 
-bool HashJoiner::HashJoinerIterator::getNext()
+bool HashJoiner::getNext()
 {
     if (!this->initialized)
     {
         this->initialize();
     }
 
-    auto joins = this->joiner.joins;
+    auto joins = this->joins;
     auto joinSize = static_cast<int>(joins.size());
-    auto iterator = this->iterators[1].get();
+    auto iterator = this->right;
     if (this->activeRowIndex == -1)
     {
         if (!iterator->getNext()) return false;
@@ -84,11 +85,11 @@ bool HashJoiner::HashJoinerIterator::getNext()
     auto row = this->activeRows[this->activeRowIndex];
     auto* rowData = &this->row[0];
     auto& data = this->rowData[row];
-    for (int i = 0; i < this->r1->getColumnCount(); i++)
+    for (int i = 0; i < this->left->getColumnCount(); i++)
     {
         *rowData++ = data[i];
     }
-    for (int i = 0; i < r2->getColumnCount(); i++)
+    for (int i = 0; i < this->right->getColumnCount(); i++)
     {
         *rowData++ = iterator->getColumn(static_cast<uint32_t>(i));
     }
@@ -102,23 +103,24 @@ bool HashJoiner::HashJoinerIterator::getNext()
     return true;
 }
 
-uint64_t HashJoiner::HashJoinerIterator::getValue(const Selection& selection)
+uint64_t HashJoiner::getValue(const Selection& selection)
 {
-    uint32_t column = this->joiner.columnMap[selection.getId()];
+    uint32_t column = this->columnMap[selection.getId()];
     return this->row[column];
 }
 
-void HashJoiner::HashJoinerIterator::fillHashTable()
+void HashJoiner::fillHashTable()
 {
     uint32_t row = 0;
-    auto& joins = this->joiner.joins;
+    auto& joins = this->joins;
     auto joinSize = (int) joins.size();
 
-    auto iterator = this->iterators[0].get();
+    auto iterator = this->left;
+    iterator->reset();
     while (iterator->getNext())
     {
         auto it = this->rowData.insert({ row, {} }).first;
-        for (int i = 0; i < this->r1->getColumnCount(); i++)
+        for (int i = 0; i < this->left->getColumnCount(); i++)
         {
             it->second.push_back(iterator->getColumn(i));
         }
@@ -134,20 +136,20 @@ void HashJoiner::HashJoinerIterator::fillHashTable()
     }
 }
 
-void HashJoiner::HashJoinerIterator::initialize()
+void HashJoiner::initialize()
 {
-    this->iterators[0] = this->r1->createIterator();
-    this->iterators[1] = this->r2->createIterator();
+    this->left->reset();
+    this->right->reset();
 
     this->hashes.clear();
-    this->hashes.resize(this->joiner.joins.size());
+    this->hashes.resize(this->joins.size());
 
     this->fillHashTable();
 
     this->initialized = true;
 }
 
-uint64_t HashJoiner::HashJoinerIterator::getColumn(uint32_t column)
+uint64_t HashJoiner::getColumn(uint32_t column)
 {
     return this->row[column];
 }

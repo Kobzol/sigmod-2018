@@ -2,7 +2,7 @@
 
 #include "joiner.h"
 
-class NestedJoiner: public Joiner
+/*class NestedJoiner: public Joiner
 {
     class NestedJoinIterator: public Iterator
     {
@@ -40,3 +40,4 @@ public:
         return std::make_unique<NestedJoinIterator>(*this);
     }
 };
+*/

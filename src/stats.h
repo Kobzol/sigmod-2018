@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 extern size_t tupleCount;
 extern size_t columnCount;
-extern size_t minColumns;
-extern size_t maxColumns;
+extern uint32_t minColumns;
+extern uint32_t maxColumns;
 extern size_t minTuples;
 extern size_t maxTuples;
 extern size_t queryCount;

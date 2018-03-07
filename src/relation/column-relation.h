@@ -2,44 +2,19 @@
 
 #include <cstdint>
 #include <cstddef>
-#include "view.h"
 #include "../util.h"
+#include "../query.h"
+#include "iterator.h"
 
-class ColumnRelation: public View
+class ColumnRelation
 {
-    class ColumnRelationIterator: public Iterator
-    {
-    public:
-        explicit ColumnRelationIterator(ColumnRelation* relation): relation(relation)
-        {
-
-        }
-
-        bool getNext() override
-        {
-            this->rowIndex++;
-            return this->rowIndex < this->relation->getRowCount();
-        }
-
-        uint64_t getValue(const Selection& selection) override
-        {
-            return this->relation->getValue(this->rowIndex, selection.column);
-        }
-        uint64_t getColumn(uint32_t column) override
-        {
-            return this->relation->getValue(this->rowIndex, column);
-        }
-
-        ColumnRelation* relation;
-    };
-
 public:
     ColumnRelation() = default;
     DISABLE_COPY(ColumnRelation);
     ENABLE_MOVE(ColumnRelation);
 
     uint64_t tupleCount;
-    uint64_t columnCount;
+    uint32_t columnCount;
     uint64_t* data;
     uint32_t id;
 
@@ -52,32 +27,60 @@ public:
         return this->data[column * this->tupleCount + row];
     }
 
-    int64_t getColumnCount() override
+    uint32_t getColumnCount()
     {
         return this->columnCount;
     }
 
-    int64_t getRowCount() override
+    int64_t getRowCount()
     {
         return this->tupleCount;
     }
 
-    uint64_t getValue(const Selection& selection, int row) override
+    uint64_t getValue(const Selection& selection, int row)
     {
         return this->getValue(row, selection.column);
     }
+};
+
+class ColumnRelationIterator: public Iterator
+{
+public:
+    explicit ColumnRelationIterator(ColumnRelation* relation, uint32_t binding)
+            : relation(relation), binding(binding)
+    {
+
+    }
+
+    bool getNext() override
+    {
+        this->rowIndex++;
+        return this->rowIndex < this->relation->getRowCount();
+    }
+
+    uint64_t getValue(const Selection& selection) override
+    {
+        return this->relation->getValue(this->rowIndex, selection.column);
+    }
+    uint64_t getColumn(uint32_t column) override
+    {
+        return this->relation->getValue(this->rowIndex, column);
+    }
     SelectionId getSelectionIdForColumn(uint32_t column) override
     {
-        return Selection::getId(this->id, 0, column);
+        return Selection::getId(this->relation->id, this->binding, column);
     }
 
-    std::unique_ptr<Iterator> createIterator() override
+    int32_t getColumnCount() override
     {
-        return std::make_unique<ColumnRelationIterator>(this);
+        return this->relation->getColumnCount();
     }
 
-    void fillRelationIds(std::vector<uint32_t>& ids) override
+    void fillBindings(std::vector<uint32_t>& ids) override
     {
-        ids.push_back(this->id);
+        ids.push_back(this->binding);
     }
+
+    ColumnRelation* relation;
+    uint32_t binding;
 };

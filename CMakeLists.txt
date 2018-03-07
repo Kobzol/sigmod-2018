@@ -8,17 +8,17 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fsanitize=address -W
 add_subdirectory("reference")
 
 set(SOURCE_FILES
-        src/relation/column-relation.cpp
-        src/join/hash-joiner.cpp
-        src/relation/filter-view.cpp
-        src/relation/view.cpp
         src/aggregator.cpp
         src/executor.cpp
-        src/stats.cpp
         src/io.cpp
+        src/join/hash-joiner.cpp
         src/join/joiner.cpp
+        src/join/nested-joiner.cpp
+        src/relation/column-relation.cpp
+        src/relation/filter-iterator.cpp
         src/relation/iterator.cpp
-        src/join/nested-joiner.cpp src/join/nested-joiner.h)
+        src/stats.cpp
+)
 
 add_executable(sigmod-2018 ${SOURCE_FILES} src/main.cpp)
 add_executable(tester ${SOURCE_FILES} src/test/main.cpp)

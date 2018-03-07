@@ -53,7 +53,7 @@ public:
 class Query
 {
 public:
-    std::vector<uint32_t> relations;
+    std::vector<uint32_t> relations; // real ids of relations
     std::vector<Join> joins;
     std::vector<Filter> filters;
     std::vector<Selection> selections;

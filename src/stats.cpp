@@ -7,8 +7,8 @@
 #ifdef STATISTICS
     size_t tupleCount = 0;
     size_t columnCount = 0;
-    size_t minColumns = std::numeric_limits<size_t>::max();
-    size_t maxColumns = 0;
+    uint32_t minColumns = std::numeric_limits<uint32_t>::max();
+    uint32_t maxColumns = 0;
     size_t minTuples = std::numeric_limits<size_t>::max();
     size_t maxTuples = 0;
     size_t queryCount = 0;

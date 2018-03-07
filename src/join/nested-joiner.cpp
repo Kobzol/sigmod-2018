@@ -1,6 +1,6 @@
 #include "nested-joiner.h"
 
-NestedJoiner::NestedJoiner(View* left, View* right, const std::vector<Join>& joins): Joiner(left, right, joins)
+/*NestedJoiner::NestedJoiner(View* left, View* right, const std::vector<Join>& joins): Joiner(left, right, joins)
 {
 
 }
@@ -78,3 +78,4 @@ void NestedJoiner::NestedJoinIterator::initialize()
 
     this->initialized = true;
 }
+*/

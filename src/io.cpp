@@ -30,7 +30,7 @@ void loadDatabase(Database& database)
 
         rel.tupleCount = *reinterpret_cast<uint64_t*>(addr);
         addr += sizeof(uint64_t);
-        rel.columnCount = *reinterpret_cast<uint64_t*>(addr);
+        rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
         rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
         rel.id = static_cast<uint32_t>(database.relations.size() - 1);
@@ -90,7 +90,7 @@ void loadQuery(Query& query, std::string& line)
     // load predicates
     while (true)
     {
-        uint32_t binding = static_cast<uint32_t>(readInt(line, index));
+        uint32_t binding = static_cast<uint32_t>(readInt(line, index)); // index to query relations
         uint32_t relation = query.relations[binding];
         index++;
         Selection selection(relation, binding, (uint32_t) readInt(line, index));
@@ -104,6 +104,7 @@ void loadQuery(Query& query, std::string& line)
             join.selections[0] = selection;
 
             join.selections[1].relation = query.relations[value];
+            join.selections[1].binding = static_cast<uint32_t>(value);
             index++;
             join.selections[1].column = (uint32_t) readInt(line, index);
 

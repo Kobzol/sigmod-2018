@@ -37,7 +37,7 @@ int main()
 {
     Query query;
     //std::string line = "0 1 2|0.1=1.0&1.1=2.0|0.2 1.1 2.0";
-    std::string line = "2 2|0.0=1.1|0.2";
+    std::string line = "2 2|0.0=1.1|1.2";
     loadQuery(query, line);
 
     Database database{};
