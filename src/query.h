@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 
 using SelectionId = uint32_t;
 
@@ -57,4 +58,5 @@ public:
     std::vector<Join> joins;
     std::vector<Filter> filters;
     std::vector<Selection> selections;
+    std::string result;
 };

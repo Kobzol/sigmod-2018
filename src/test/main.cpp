@@ -62,7 +62,8 @@ int main()
     });
 
     Executor executor;
-    std::cout << executor.executeQuery(database, query) << std::endl;
+    executor.executeQuery(database, query);
+    std::cout << query.result << std::flush;
 
     return 0;
 }

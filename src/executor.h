@@ -10,7 +10,7 @@
 class Executor
 {
 public:
-    std::string executeQuery(Database& database, Query& query);
+    void executeQuery(Database& database, Query& query);
 
 private:
     void createViews(Database& database,

@@ -4,7 +4,7 @@
 #include "aggregator.h"
 #include "join/nested-joiner.h"
 
-std::string Executor::executeQuery(Database& database, Query& query)
+void Executor::executeQuery(Database& database, Query& query)
 {
     std::unordered_map<uint32_t, Iterator*> views;
     std::vector<std::unique_ptr<Iterator>> container;
@@ -13,7 +13,8 @@ std::string Executor::executeQuery(Database& database, Query& query)
     auto root = this->createRootView(database, query, views, container);
 
     Aggregator aggregator;
-    return aggregator.aggregate(database, query, root);
+    aggregator.aggregate(database, query, root);
+    query.result[query.result.size() - 1] = '\n';
 }
 
 void Executor::createViews(Database& database,

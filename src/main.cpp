@@ -41,24 +41,34 @@ int main(int argc, char** argv)
 
     Executor executor;
     std::string line;
+    std::vector<Query> queries;
     while (std::getline(std::cin, line))
     {
         if (line[0] == 'F')
         {
+            auto queryCount = static_cast<int32_t>(queries.size());
+
+            //#pragma omp parallel for
+            for (int i = 0; i < queryCount; i++)
+            {
+                executor.executeQuery(database, queries[i]);
+            }
+            for (int i = 0; i < queryCount; i++)
+            {
+                std::cout << queries[i].result;
+            }
+
             std::cout << std::flush;
+            queries.clear();
 #ifdef STATISTICS
             batchCount++;
 #endif
         }
         else
         {
-            Query query;
-            loadQuery(query, line);
+            queries.emplace_back();
+            loadQuery(queries.back(), line);
             assert(!query.joins.empty());
-
-            auto result = executor.executeQuery(database, query);
-            result[result.size() - 1] = '\n';
-            std::cout << result;
 
 #ifdef STATISTICS
             queryCount++;

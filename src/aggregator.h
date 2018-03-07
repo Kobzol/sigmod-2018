@@ -12,7 +12,7 @@
 class Aggregator
 {
 public:
-    std::string aggregate(Database& database, const Query& query, Iterator* root)
+    void aggregate(Database& database, Query& query, Iterator* root)
     {
         auto selectionSize = (int) query.selections.size();
 
@@ -48,6 +48,6 @@ public:
             }
         }
 
-        return ss.str();
+        query.result = ss.str();
     }
 };
