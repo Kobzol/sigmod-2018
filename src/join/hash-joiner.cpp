@@ -123,6 +123,16 @@ uint64_t HashJoiner::getColumn(uint32_t column)
     }
     else return this->right->getColumn(column - this->leftCols);
 }
+void HashJoiner::fillRow(uint64_t* row)
+{
+    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+
+    for (int i = 0; i < this->leftCols; i++)
+    {
+        *row++ = data[i];
+    }
+    this->right->fillRow(row);
+}
 
 void HashJoiner::fillHashTable()
 {
@@ -143,9 +153,6 @@ void HashJoiner::fillHashTable()
         // materialize rows
         it->second.emplace_back(this->leftCols);
         auto& rowData = it->second.back();
-        for (int i = 0; i < this->leftCols; i++)
-        {
-            rowData[i] = iterator->getColumn(i);
-        }
+        iterator->fillRow(rowData.data());
     }
 }

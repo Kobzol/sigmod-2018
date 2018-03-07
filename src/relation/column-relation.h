@@ -60,12 +60,22 @@ public:
 
     uint64_t getValue(const Selection& selection) override
     {
-        return this->relation->getValue(this->rowIndex, selection.column);
+        return this->relation->getValue(static_cast<size_t>(this->rowIndex), selection.column);
     }
     uint64_t getColumn(uint32_t column) override
     {
-        return this->relation->getValue(this->rowIndex, column);
+        return this->relation->getValue(static_cast<size_t>(this->rowIndex), column);
     }
+
+    void fillRow(uint64_t* row) override
+    {
+        auto cols = this->getColumnCount();
+        for (int i = 0; i < cols; i++)
+        {
+            *row++ = this->relation->getValue(static_cast<size_t>(this->rowIndex), static_cast<size_t>(i));
+        }
+    }
+
     SelectionId getSelectionIdForColumn(uint32_t column) override
     {
         return Selection::getId(this->relation->id, this->binding, column);
