@@ -22,13 +22,13 @@ private:
     bool findRowByHash();
     bool checkRowPredicates();
 
-    std::vector<uint32_t> activeRows;
+    uint64_t activeValue = 0;
+    int32_t activeRowCount = 0;
     int activeRowIndex = -1;
 
     uint32_t leftIndex;
     uint32_t rightIndex;
 
     int joinSize;
-    std::unordered_map<uint64_t, std::vector<uint32_t>> hashTable;
-    std::unordered_map<uint32_t, std::vector<uint64_t>> rowData;
+    std::unordered_map<uint64_t, std::vector<std::vector<uint64_t>>> hashTable;
 };

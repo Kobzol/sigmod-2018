@@ -25,7 +25,6 @@ bool HashJoiner::findRowByHash()
     if (this->activeRowIndex == -1)
     {
         if (!iterator->getNext()) return false;
-        this->activeRows.clear();
 
         while (true)
         {
@@ -38,7 +37,8 @@ bool HashJoiner::findRowByHash()
             }
             else
             {
-                this->activeRows = it->second;
+                this->activeValue = value;
+                this->activeRowCount = static_cast<int32_t>(this->hashTable[value].size());
                 break;
             }
         }
@@ -53,10 +53,9 @@ bool HashJoiner::findRowByHash()
 bool HashJoiner::checkRowPredicates()
 {
     auto iterator = this->right;
-    while (this->activeRowIndex < static_cast<int32_t>(this->activeRows.size()))
+    while (this->activeRowIndex < this->activeRowCount)
     {
-        auto row = this->activeRows[this->activeRowIndex];
-        auto& data = this->rowData[row];
+        auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
 
         bool rowOk = true;
         for (int i = 1; i < this->joinSize; i++)
@@ -83,7 +82,7 @@ bool HashJoiner::checkRowPredicates()
 bool HashJoiner::getNext()
 {
     this->activeRowIndex++;
-    if (this->activeRowIndex == static_cast<int32_t>(this->activeRows.size()))
+    if (this->activeRowIndex == this->activeRowCount)
     {
         this->activeRowIndex = -1;
     }
@@ -105,8 +104,7 @@ bool HashJoiner::getNext()
 
 uint64_t HashJoiner::getValue(const Selection& selection)
 {
-    auto row = this->activeRows[this->activeRowIndex];
-    auto& data = this->rowData[row];
+    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
 
     uint64_t value;
     if (this->right->getValueMaybe(selection, value))
@@ -118,8 +116,7 @@ uint64_t HashJoiner::getValue(const Selection& selection)
 }
 uint64_t HashJoiner::getColumn(uint32_t column)
 {
-    auto row = this->activeRows[this->activeRowIndex];
-    auto& data = this->rowData[row];
+    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
     if (column < static_cast<uint32_t>(this->leftCols))
     {
         return data[column];
@@ -129,22 +126,26 @@ uint64_t HashJoiner::getColumn(uint32_t column)
 
 void HashJoiner::fillHashTable()
 {
-    uint32_t row = 0;
     auto iterator = this->left;
-    iterator->reset();
+    auto& predicate = this->join[0];
+    auto selection = predicate.selections[this->leftIndex];
+
     while (iterator->getNext())
     {
-        // materialize rows
-        auto it = this->rowData.insert({ row, std::vector<uint64_t>(static_cast<size_t>(this->leftCols)) }).first;
-        for (int i = 0; i < this->leftCols; i++)
+        uint64_t value = iterator->getValue(selection);
+
+        auto it = this->hashTable.find(value);
+        if (it == this->hashTable.end())
         {
-            it->second[i] = iterator->getColumn(i);
+            it = this->hashTable.insert({ value, {} }).first;
         }
 
-        auto& predicate = this->join[0];
-        uint64_t value = iterator->getValue(predicate.selections[this->leftIndex]);
-        this->hashTable[value].push_back(row);
-
-        row++;
+        // materialize rows
+        it->second.emplace_back(this->leftCols);
+        auto& rowData = it->second.back();
+        for (int i = 0; i < this->leftCols; i++)
+        {
+            rowData[i] = iterator->getColumn(i);
+        }
     }
 }
