@@ -16,7 +16,8 @@ public:
     uint64_t getValue(const Selection& selection) override;
     uint64_t getColumn(uint32_t column) override;
 
-    virtual void fillRow(uint64_t* row) override;
+    void fillRow(uint64_t* row) override;
+    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) override;
 
 private:
     void fillHashTable();

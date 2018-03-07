@@ -28,10 +28,7 @@ public:
         root->reset();
         while (root->getNext())
         {
-            for (int i = 0; i < selectionSize; i++)
-            {
-                results[i] += root->getColumn(columnIds[i]);
-            }
+            root->sumRow(results, columnIds);
             count++;
         }
 
