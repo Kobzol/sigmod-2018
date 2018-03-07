@@ -85,11 +85,11 @@ bool HashJoiner::getNext()
     auto row = this->activeRows[this->activeRowIndex];
     auto* rowData = &this->row[0];
     auto& data = this->rowData[row];
-    for (int i = 0; i < this->left->getColumnCount(); i++)
+    for (int i = 0; i < this->leftCols; i++)
     {
         *rowData++ = data[i];
     }
-    for (int i = 0; i < this->right->getColumnCount(); i++)
+    for (int i = 0; i < this->rightCols; i++)
     {
         *rowData++ = iterator->getColumn(static_cast<uint32_t>(i));
     }
@@ -120,7 +120,7 @@ void HashJoiner::fillHashTable()
     while (iterator->getNext())
     {
         auto it = this->rowData.insert({ row, {} }).first;
-        for (int i = 0; i < this->left->getColumnCount(); i++)
+        for (int i = 0; i < this->leftCols; i++)
         {
             it->second.push_back(iterator->getColumn(i));
         }

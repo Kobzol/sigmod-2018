@@ -25,6 +25,11 @@ int main(int argc, char** argv)
 
 #ifdef LOAD_FROM_FILE
     freopen(LOAD_FROM_FILE, "r", stdin);
+#else
+    if (getenv("VTUNE") != nullptr)
+    {
+        freopen(INPUT_FILE, "r", stdin);
+    }
 #endif
 
     Database database;
