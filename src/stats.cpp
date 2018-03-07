@@ -17,7 +17,6 @@
     size_t batchCount = 0;
     size_t multipleColumnsPerRelJoins = 0;
     size_t columnsPerJoin = 0;
-    size_t relationsMissingInJoins = 0;
     size_t sortedOnFirstColumn = 0;
     size_t joinsOnFirstColumn = 0;
     size_t filtersOnFirstColumn = 0;

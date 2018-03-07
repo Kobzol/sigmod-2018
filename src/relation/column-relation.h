@@ -68,7 +68,7 @@ public:
     }
     SelectionId getSelectionIdForColumn(uint32_t column) override
     {
-        return Selection::getId(this->id, column);
+        return Selection::getId(this->id, 0, column);
     }
 
     std::unique_ptr<Iterator> createIterator() override

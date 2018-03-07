@@ -10,96 +10,40 @@
 #include "query.h"
 #include "database.h"
 
-struct SumData
-{
-public:
-    SumData() = default;
-    SumData(View* view, uint64_t sum, size_t count): view(view), sum(sum), count(count)
-    {
-
-    }
-
-    View* view;
-    uint64_t sum;
-    size_t count;
-};
-
 class Aggregator
 {
 public:
-    // TODO: aggregate results from same root on multiple columns
-    std::string aggregate(Database& database, const Query& query,
-                          std::unordered_map<uint32_t, View*>& views)
+    std::string aggregate(Database& database, const Query& query, View* root)
     {
-        std::unordered_map<uint32_t, SumData> cache;
-        std::vector<View*> roots;
-        for (auto& kv: views)
-        {
-            if (std::find(roots.begin(), roots.end(), kv.second) == roots.end())
-            {
-                roots.push_back(kv.second);
-            }
-        }
+        auto selectionSize = (int) query.selections.size();
 
-        std::vector<SumData> results(query.selections.size());
-        int i = 0;
-        for (auto& select : query.selections)
-        {
-            auto it = views.find(select.relation);
-            assert(it != views.end());
+        std::vector<uint64_t> results(static_cast<size_t>(selectionSize));
+        size_t count = 0;
 
-            auto key = select.getId();
-            auto cacheIter = cache.find(key);
-            if (cacheIter == cache.end())
+        auto iterator = root->createIterator(); // has to be joined
+        while (iterator->getNext())
+        {
+            for (int i = 0; i < selectionSize; i++)
             {
-                View* view = it->second;
-                results[i] = this->sum(view, select);
-                cache.insert({ key, results[i] });
+                auto& select = query.selections[i];
+                results[i] += iterator->getValue(select);
             }
-            else results[i] = cacheIter->second;
-            i++;
+            count++;
         }
 
         std::stringstream ss;
         for (auto& result: results)
         {
-            if (result.count == 0)
+            if (count == 0)
             {
                 ss << "NULL ";
             }
             else
             {
-                size_t multiplier = 1;
-                for (auto& root : roots)
-                {
-                    if (root != result.view)
-                    {
-                        multiplier *= this->rootMap[root];
-                    }
-                }
-
-                ss << std::to_string(multiplier * result.sum) << ' ';
+                ss << std::to_string(result) << ' ';
             }
         }
 
         return ss.str();
     }
-
-    SumData sum(View* view, const Selection& selection)
-    {
-        auto iterator = view->createIterator();
-        size_t sum = 0;
-        size_t count = 0;
-
-        while (iterator->getNext())
-        {
-            sum += iterator->getValue(selection);
-            count++;
-        }
-
-        this->rootMap[view] = count;
-        return SumData{view, sum, count};
-    }
-
-    std::unordered_map<View*, size_t> rootMap;
 };

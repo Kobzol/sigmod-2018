@@ -14,7 +14,6 @@ extern size_t filterCount;
 extern size_t batchCount;
 extern size_t multipleColumnsPerRelJoins;
 extern size_t columnsPerJoin;
-extern size_t relationsMissingInJoins;
 extern size_t sortedOnFirstColumn;
 extern size_t joinsOnFirstColumn;
 extern size_t filtersOnFirstColumn;

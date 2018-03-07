@@ -18,6 +18,6 @@ private:
                      std::unordered_map<uint32_t, View*>& views,
                      std::vector<std::unique_ptr<View>>& container);
 
-    void createRootViews(Database& database, Query& query, std::unordered_map<uint32_t, View*>& views,
+    View* createRootView(Database& database, Query& query, std::unordered_map<uint32_t, View*>& views,
                          std::vector<std::unique_ptr<View>>& container);
 };

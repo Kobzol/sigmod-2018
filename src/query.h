@@ -8,23 +8,25 @@ using SelectionId = uint32_t;
 class Selection
 {
 public:
-    static SelectionId getId(uint32_t relation, uint32_t column)
+    static SelectionId getId(uint32_t relation, uint32_t binding, uint32_t column)
     {
-        return relation * 1000 + column;
+        return relation * 1000 + binding * 100 + column;
     }
 
     Selection() = default;
-    Selection(uint32_t relation, uint32_t column) : relation(relation), column(column)
+    Selection(uint32_t relation, uint32_t binding, uint32_t column)
+            : relation(relation), binding(binding), column(column)
     {
 
     }
 
     uint32_t relation;
+    uint32_t binding; // index of relation in query
     uint32_t column;
 
     SelectionId getId() const
     {
-        return Selection::getId(this->relation, this->column);
+        return Selection::getId(this->relation, this->binding, this->column);
     }
 };
 

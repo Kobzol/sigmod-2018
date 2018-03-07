@@ -1,8 +1,6 @@
 #pragma once
 
-#define STATISTICS
-#define CHECK_ERRORS
-
 #ifndef NDEBUG
+    #define STATISTICS
     #define LOAD_FROM_FILE "small.complete"
 #endif

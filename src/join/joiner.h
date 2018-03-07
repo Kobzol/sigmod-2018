@@ -26,11 +26,6 @@ public:
         return -1;
     }
 
-    uint64_t getValue(const Selection& selection, int row) override
-    {
-        return 0; // TODO
-    }
-
     void fillRelationIds(std::vector<uint32_t>& ids) override
     {
         this->left->fillRelationIds(ids);

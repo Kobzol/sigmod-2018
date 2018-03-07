@@ -95,11 +95,6 @@ int main(int argc, char** argv)
             {
                 multipleColumnsPerRelJoins++;
             }
-
-            if (joinedRelations.size() < query.relations.size())
-            {
-                relationsMissingInJoins++;
-            }
 #endif
         }
     }
@@ -119,7 +114,6 @@ int main(int argc, char** argv)
     std::cerr << "Batch count: " << batchCount << std::endl;
     std::cerr << "Multiple-columns for joins: " << multipleColumnsPerRelJoins << std::endl;
     std::cerr << "Avg columns for join: " << columnsPerJoin / (double) queryCount << std::endl;
-    std::cerr << "Relations missing on joins: " << relationsMissingInJoins << std::endl;
     std::cerr << "Sorted on first column: " << sortedOnFirstColumn << std::endl;
     std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;

@@ -90,9 +90,10 @@ void loadQuery(Query& query, std::string& line)
     // load predicates
     while (true)
     {
-        uint32_t relation = query.relations[readInt(line, index)];
+        uint32_t binding = static_cast<uint32_t>(readInt(line, index));
+        uint32_t relation = query.relations[binding];
         index++;
-        Selection selection(relation, (uint32_t) readInt(line, index));
+        Selection selection(relation, binding, (uint32_t) readInt(line, index));
         char oper = line[index++];
 
         uint64_t value = readInt(line, index);
@@ -122,9 +123,10 @@ void loadQuery(Query& query, std::string& line)
     // load selections
     while (true)
     {
-        auto relation = query.relations[readInt(line, index)];
+        auto binding = readInt(line, index);
+        auto relation = query.relations[binding];
         index++;
-        query.selections.emplace_back(relation, readInt(line, index));
+        query.selections.emplace_back(relation, binding, readInt(line, index));
 
         if (line[index++] == '|') break;
     }

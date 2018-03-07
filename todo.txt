@@ -1,5 +1,6 @@
 - handle self joins
 - sort joins (self-joins, size, filtered)
+- reorder joins (move non-used relations to the end, see Joiner.cpp)
 
 - leverage presorted first column
 - dynamic programming

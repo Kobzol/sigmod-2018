@@ -10,10 +10,10 @@ std::string Executor::executeQuery(Database& database, Query& query)
     std::vector<std::unique_ptr<View>> container;
 
     this->createViews(database, query, views, container);
-    this->createRootViews(database, query, views, container);
+    auto root = this->createRootView(database, query, views, container);
 
     Aggregator aggregator;
-    return aggregator.aggregate(database, query, views);
+    return aggregator.aggregate(database, query, root);
 }
 
 void Executor::createViews(Database& database,
@@ -42,7 +42,7 @@ void Executor::createViews(Database& database,
     }
 }
 
-void Executor::createRootViews(Database& database, Query& query,
+View* Executor::createRootView(Database& database, Query& query,
                                std::unordered_map<uint32_t, View*>& views,
                                std::vector<std::unique_ptr<View>>& container)
 {
@@ -58,6 +58,8 @@ void Executor::createRootViews(Database& database, Query& query,
     std::vector<Join> joins;
     size_t index = 0;
     size_t joinSize = query.joins.size();
+    View* root = nullptr;
+
     while (index < joinSize)
     {
         joins.push_back(query.joins[index++]);
@@ -87,7 +89,10 @@ void Executor::createRootViews(Database& database, Query& query,
             views[id] = joiner.get();
         }
 
+        root = joiner.get();
         container.push_back(std::move(joiner));
         joins.clear();
     }
+
+    return root;
 }
