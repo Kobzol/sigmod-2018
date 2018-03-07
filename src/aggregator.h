@@ -19,16 +19,23 @@ public:
         std::vector<uint64_t> results(static_cast<size_t>(selectionSize));
         size_t count = 0;
 
-        std::vector<uint32_t> columnIds;
-        for (auto& selection: query.selections)
+        std::unordered_map<SelectionId, Selection> selectionMap;
+        for (auto& sel: query.selections)
         {
-            columnIds.emplace_back(root->getColumnForSelection(selection));
+            selectionMap[sel.getId()] = sel;
         }
 
-        root->reset();
+        root->requireSelections(selectionMap);
+
+        std::vector<uint32_t> columnsIds;
+        for (auto& sel: query.selections)
+        {
+            columnsIds.push_back(root->getColumnForSelection(sel));
+        }
+
         while (root->getNext())
         {
-            root->sumRow(results, columnIds);
+            root->sumRow(results, columnsIds);
             count++;
         }
 

@@ -1,4 +1,3 @@
-#include <iostream>
 #include "hash-joiner.h"
 
 HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -7,16 +6,7 @@ HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join
           rightIndex(1 - leftIndex),
           joinSize(static_cast<int>(join.size()))
 {
-    this->fillHashTable();
-}
 
-void HashJoiner::reset()
-{
-    Iterator::reset();
-
-    //this->left->reset();
-    //this->right->reset();
-    //this->initialized = false;
 }
 
 bool HashJoiner::findRowByHash()
@@ -52,10 +42,11 @@ bool HashJoiner::findRowByHash()
 
 bool HashJoiner::checkRowPredicates()
 {
+    auto& vec = this->hashTable[this->activeValue];
     auto iterator = this->right;
     while (this->activeRowIndex < this->activeRowCount)
     {
-        auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+        auto& data = vec[this->activeRowIndex];
 
         bool rowOk = true;
         for (int i = 1; i < this->joinSize; i++)
@@ -63,7 +54,7 @@ bool HashJoiner::checkRowPredicates()
             auto& leftSel = this->join[i].selections[this->leftIndex];
             auto& rightSel = this->join[i].selections[this->rightIndex];
 
-            uint64_t leftVal = data[this->left->getColumnForSelection(leftSel)];
+            uint64_t leftVal = data[this->getColumnForSelection(leftSel)];
             uint64_t rightVal = iterator->getValue(rightSel);
             if (leftVal != rightVal)
             {
@@ -104,36 +95,34 @@ bool HashJoiner::getNext()
 
 uint64_t HashJoiner::getValue(const Selection& selection)
 {
-    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
-
     uint64_t value;
     if (this->right->getValueMaybe(selection, value))
     {
         return value;
     }
 
-    return data[this->left->getColumnForSelection(selection)];
-}
-uint64_t HashJoiner::getColumn(uint32_t column)
-{
     auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
-    if (column < static_cast<uint32_t>(this->leftCols))
-    {
-        return data[column];
-    }
-    else return this->right->getColumn(column - this->leftCols);
+    return data[this->getColumnForSelection(selection)];
 }
-void HashJoiner::fillRow(uint64_t* row)
+
+void HashJoiner::fillRow(uint64_t* row, const std::vector<Selection>& selections)
 {
     auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
 
-    for (int i = 0; i < this->leftCols; i++)
+    for (auto& sel: selections)
     {
-        *row++ = data[i];
+        uint64_t value;
+        if (!this->right->getValueMaybe(sel, value))
+        {
+            value = data[this->getColumnForSelection(sel)];
+        }
+
+//        _mm_stream_si64(reinterpret_cast<long long int*>(row), static_cast<int64_t>(value));
+//        row++;
+        *row++ = value;
     }
-    this->right->fillRow(row);
 }
-void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns)
+void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections)
 {
     auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
 
@@ -149,20 +138,35 @@ void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& 
 
     this->right->sumRow(sums, right);*/
 
-    auto colSize = static_cast<int32_t>(columns.size());
+    auto colSize = static_cast<int32_t>(selections.size());
     for (int i = 0; i < colSize; i++)
     {
-        auto col = columns[i];
-        if (col < static_cast<uint32_t>(this->leftCols))
+        auto column = selections[i];
+        uint64_t value;
+
+        if (column < static_cast<uint32_t>(this->columnMapCols))
         {
-            sums[i] += data[col];
+            value = data[column];
         }
-        else sums[i] += this->right->getColumn(static_cast<uint32_t>(col - this->leftCols));
+        else value = this->right->getColumn(column - this->columnMapCols);
+
+        sums[i] += value;
     }
 }
 
-void HashJoiner::fillHashTable()
+// assumes left deep tree, doesn't initialize right child
+void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
 {
+    for (auto& j: join)
+    {
+        selections[j.selections[0].getId()] = j.selections[0];
+        selections[j.selections[1].getId()] = j.selections[1];
+    }
+    left->requireSelections(selections);
+
+    std::vector<Selection> leftSelections;
+    this->prepareColumnMappings(selections, leftSelections);
+
     auto iterator = this->left;
     auto& predicate = this->join[0];
     auto selection = predicate.selections[this->leftIndex];
@@ -173,8 +177,76 @@ void HashJoiner::fillHashTable()
         auto& vec = this->hashTable[value];
 
         // materialize rows
-        vec.emplace_back(this->leftCols);
-        auto& rowData = vec.back();
-        iterator->fillRow(rowData.data());
+        vec.emplace_back(this->columnMapCols);
+        auto rowData = vec.back().data();
+        iterator->fillRow(rowData, leftSelections);
     }
+}
+
+void HashJoiner::prepareColumnMappings(
+        const std::unordered_map<SelectionId, Selection>& selections,
+        std::vector<Selection>& leftSelections)
+{
+    for (auto& kv: selections)
+    {
+        if (this->left->hasSelection(kv.second))
+        {
+            leftSelections.push_back(kv.second);
+        }
+    }
+
+    this->columnMapCols = static_cast<int32_t>(leftSelections.size());
+    this->columnMap.resize(leftSelections.size());
+
+    uint32_t columnId = 0;
+    for (auto& sel: leftSelections)
+    {
+        this->setColumn(sel.getId(), columnId++);
+    }
+}
+
+bool HashJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
+{
+    if (this->right->getValueMaybe(selection, value))
+    {
+        return true;
+    }
+
+    auto id = selection.getId();
+    for (int i = 0; i < this->columnMapCols; i++)
+    {
+        if (this->columnMap[i] == id)
+        {
+            auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+            value = data[i];
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool HashJoiner::hasSelection(const Selection& selection)
+{
+    if (this->right->hasSelection(selection)) return true;
+
+    auto id = selection.getId();
+    for (int i = 0; i < this->columnMapCols; i++)
+    {
+        if (this->columnMap[i] == id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+uint64_t HashJoiner::getColumn(uint32_t column)
+{
+    if (column < static_cast<uint32_t>(this->columnMapCols))
+    {
+        auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+        return data[column];
+    }
+    else return this->right->getColumn(column - this->columnMapCols);
 }

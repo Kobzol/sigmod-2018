@@ -13,14 +13,10 @@ class Joiner: public Iterator
 public:
     Joiner(Iterator* left, Iterator* right, Join& join)
             : left(left), right(right),
-              join(join),
-              leftCols(left->getColumnCount()), rightCols(right->getColumnCount()),
-              totalCols(leftCols + rightCols),
-              columnMap(static_cast<size_t>(totalCols))
+              join(join)
     {
-        this->setColumnMappings();
+
     }
-    DISABLE_COPY(Joiner);
 
     int32_t getColumnCount() override
     {
@@ -33,37 +29,17 @@ public:
         this->right->fillBindings(ids);
     }
 
-    bool getValueMaybe(const Selection& selection, uint64_t& value) override
-    {
-        auto id = selection.getId();
-        for (int i = 0; i < this->totalCols; i++)
-        {
-            if (this->columnMap[i] == id)
-            {
-                value = this->getColumn(i);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    SelectionId getSelectionIdForColumn(uint32_t column) override
-    {
-        return this->columnMap[column];
-    }
     uint32_t getColumnForSelection(const Selection& selection) override
     {
         auto id = selection.getId();
-        for (int i = 0; i < this->totalCols; i++)
+        for (int i = 0; i < this->columnMapCols; i++)
         {
             if (this->columnMap[i] == id) return static_cast<uint32_t>(i);
         }
-        assert(false);
-        return 0;
+
+        return this->right->getColumnForSelection(selection) + this->columnMapCols;
     }
 
-    void setColumnMappings();
     void setColumn(SelectionId selectionId, uint32_t column);
 
     Iterator* left;
@@ -71,9 +47,6 @@ public:
 
     Join& join;
 
-    int32_t leftCols;
-    int32_t rightCols;
-    int32_t totalCols;
-
+    int32_t columnMapCols = 0;
     std::vector<SelectionId> columnMap;
 };

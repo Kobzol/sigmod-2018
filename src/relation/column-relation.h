@@ -18,7 +18,6 @@ public:
     uint64_t tupleCount;
     uint32_t columnCount;
     uint64_t* data;
-    uint32_t id;
 
     uint64_t getValue(size_t row, size_t column)
     {
@@ -62,11 +61,7 @@ public:
 
     }
 
-    bool getNext() override
-    {
-        this->rowIndex++;
-        return this->rowIndex < this->relation->getRowCount();
-    }
+    bool getNext() override;
 
     uint64_t getValue(const Selection& selection) override
     {
@@ -77,40 +72,20 @@ public:
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), column);
     }
 
-    void fillRow(uint64_t* row) override
-    {
-        auto cols = this->getColumnCount();
-        for (int i = 0; i < cols; i++)
-        {
-            *row++ = this->relation->getValue(static_cast<size_t>(this->rowIndex), static_cast<size_t>(i));
-        }
-    }
-
-    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) override
-    {
-        auto colSize = static_cast<int32_t>(columns.size());
-        for (int i = 0; i < colSize; i++)
-        {
-            sums[i] += this->getColumn(columns[i]);
-        }
-    }
-
-    SelectionId getSelectionIdForColumn(uint32_t column) override
-    {
-        return Selection::getId(this->relation->id, this->binding, column);
-    }
+    void fillRow(uint64_t* row, const std::vector<Selection>& selections) override;
+    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) override;
 
     uint32_t getColumnForSelection(const Selection& selection) override
     {
         return selection.column;
     }
 
-    bool getValueMaybe(const Selection& selection, uint64_t& value) override
+    bool hasSelection(const Selection& selection) override
     {
-        if (selection.binding != this->binding) return false;
-        value = this->getValue(selection);
-        return true;
+        return this->binding == selection.binding;
     }
+
+    bool getValueMaybe(const Selection& selection, uint64_t& value) override;
 
     int32_t getColumnCount() override
     {

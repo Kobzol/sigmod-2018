@@ -34,7 +34,6 @@ void loadDatabase(Database& database)
         addr += sizeof(uint64_t);
         rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
-        rel.id = static_cast<uint32_t>(database.relations.size() - 1);
         rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
 
 #ifdef TRANSPOSE_RELATIONS
