@@ -6,6 +6,6 @@ cd ${DIR}
 mkdir -p build
 cd build
 
-cmake -DCMAKE_BUILD_TYPE=Release -DFORCE_TESTS=OFF ../
+cmake -DCMAKE_BUILD_TYPE=Release -DREAL_RUN=ON ../
 
-make -j8
+make -j

@@ -35,7 +35,9 @@ int main(int argc, char** argv)
     Database database;
     loadDatabase(database);
 
+#ifndef REAL_RUN
     std::cout << "Ready" << std::endl;
+#endif
 
     Executor executor;
     std::string line;

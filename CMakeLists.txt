@@ -5,7 +5,13 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fsanitize=address -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -Wall")
 
-add_subdirectory("reference")
+OPTION(REAL_RUN "Real run" OFF)
+
+if(NOT REAL_RUN)
+    add_subdirectory("reference")
+else()
+    ADD_DEFINITIONS(-DREAL_RUN)
+endif()
 
 set(SOURCE_FILES
         src/aggregator.cpp
