@@ -19,6 +19,5 @@ void Joiner::setColumnMappings()
 
 void Joiner::setColumn(SelectionId selectionId, uint32_t column)
 {
-    this->columnMap[selectionId] = column;
-    this->columnMapReverted[column] = selectionId;
+    this->columnMap[column] = selectionId;
 }

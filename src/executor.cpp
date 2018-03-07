@@ -7,6 +7,7 @@
 #include "relation/filter-iterator.h"
 #include "join/hash-joiner.h"
 #include "aggregator.h"
+#include "settings.h"
 #include "join/nested-joiner.h"
 
 void Executor::executeQuery(Database& database, Query& query)
@@ -93,6 +94,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
 
         auto usedLeft = usedBindings.find(leftBinding) != usedBindings.end();
         auto usedRight = usedBindings.find(rightBinding) != usedBindings.end();
+        Iterator* left = root;
         Iterator* right;
         uint32_t leftIndex = 0;
 
@@ -114,7 +116,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         }
 
         std::unique_ptr<Iterator> newJoin = std::make_unique<HashJoiner>(
-                root,
+                left,
                 right,
                 leftIndex,
                 *join

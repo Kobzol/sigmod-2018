@@ -17,7 +17,6 @@ public:
     uint64_t getColumn(uint32_t column) override;
 
 private:
-    void initialize();
     void fillHashTable();
 
     bool findRowByHash();

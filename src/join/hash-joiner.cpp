@@ -1,3 +1,4 @@
+#include <iostream>
 #include "hash-joiner.h"
 
 HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -146,9 +147,4 @@ void HashJoiner::fillHashTable()
 
         row++;
     }
-}
-
-void HashJoiner::initialize()
-{
-
 }
