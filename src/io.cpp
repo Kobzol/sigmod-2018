@@ -34,9 +34,26 @@ void loadDatabase(Database& database)
         addr += sizeof(uint64_t);
         rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
-        rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
         rel.id = static_cast<uint32_t>(database.relations.size() - 1);
+        rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
+
+#ifdef TRANSPOSE_RELATIONS
+        auto data = new uint64_t[rel.tupleCount * rel.columnCount];
+        std::memcpy(data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
+
+        for (int c = 0; c < rel.columnCount; c++)
+        {
+            for (int r = 0; r < rel.tupleCount; r++)
+            {
+                rel.data[r * rel.columnCount + c] = data[c * rel.tupleCount + r];
+            }
+        }
+
+        delete[] data;
+#else
         std::memcpy(rel.data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
+#endif
+
         munmap(addr, length);
         close(fd);
 

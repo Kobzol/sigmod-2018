@@ -8,6 +8,7 @@
     #define CHECK_ERRORS
 #endif
 
-#define SORT_JOINS_BY_SIZE
+//#define SORT_JOINS_BY_SIZE
+//#define TRANSPOSE_RELATIONS
 
-#define QUERY_NUM_THREADS 4
+#define QUERY_NUM_THREADS 20

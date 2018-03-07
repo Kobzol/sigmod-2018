@@ -2,8 +2,10 @@
 
 #include <cstdint>
 #include <cstddef>
+
 #include "../util.h"
 #include "../query.h"
+#include "../settings.h"
 #include "iterator.h"
 
 class ColumnRelation
@@ -20,11 +22,19 @@ public:
 
     uint64_t getValue(size_t row, size_t column)
     {
+#ifdef TRANSPOSE_RELATIONS
+        return this->data[row * this->columnCount + column];
+#else
         return this->data[column * this->tupleCount + row];
+#endif
     }
     uint64_t& getValueMutable(size_t row, size_t column)
     {
+#ifdef TRANSPOSE_RELATIONS
+        return this->data[row * this->columnCount + column];
+#else
         return this->data[column * this->tupleCount + row];
+#endif
     }
 
     uint32_t getColumnCount()
