@@ -19,13 +19,18 @@ public:
         std::vector<uint64_t> results(static_cast<size_t>(selectionSize));
         size_t count = 0;
 
+        std::vector<uint32_t> columnIds;
+        for (auto& selection: query.selections)
+        {
+            columnIds.push_back(root->getColumnForSelection(selection));
+        }
+
         root->reset();
         while (root->getNext())
         {
             for (int i = 0; i < selectionSize; i++)
             {
-                auto& select = query.selections[i];
-                results[i] += root->getValue(select);
+                results[i] += root->getColumn(columnIds[i]);
             }
             count++;
         }

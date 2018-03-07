@@ -71,6 +71,11 @@ public:
         return Selection::getId(this->relation->id, this->binding, column);
     }
 
+    uint32_t getColumnForSelection(const Selection& selection) override
+    {
+        return selection.column;
+    }
+
     int32_t getColumnCount() override
     {
         return this->relation->getColumnCount();

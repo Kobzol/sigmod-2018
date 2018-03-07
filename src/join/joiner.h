@@ -33,6 +33,10 @@ public:
     {
         return this->columnMapReverted[column];
     }
+    uint32_t getColumnForSelection(const Selection& selection) override
+    {
+        return this->columnMap[selection.getId()];
+    }
 
     void setColumnMappings();
     void setColumn(SelectionId selectionId, uint32_t column);

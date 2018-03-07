@@ -20,7 +20,10 @@ public:
     virtual int32_t getColumnCount() = 0;
     virtual uint64_t getValue(const Selection& selection) = 0;
     virtual uint64_t getColumn(uint32_t column) = 0;
+
+    virtual uint32_t getColumnForSelection(const Selection& selection) = 0;
     virtual SelectionId getSelectionIdForColumn(uint32_t column) = 0;
+
     virtual void fillBindings(std::vector<uint32_t>& ids) = 0;
 
     int rowIndex = -1;
