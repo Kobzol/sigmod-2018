@@ -1,31 +1,5 @@
 #include "hash-joiner.h"
 
-static std::vector<uint32_t> intersect(const std::vector<uint32_t> active, const std::vector<uint32_t> added)
-{
-    if (active.empty()) return added;
-
-    int indexL = 0;
-    int indexR = 0;
-    std::vector<uint32_t> result;
-
-    auto activeSize = static_cast<int>(active.size());
-    auto addedSize = static_cast<int>(added.size());
-
-    while (true)
-    {
-        if (indexL >= activeSize) return result;
-        if (indexR >= addedSize) return result;
-
-        if (active[indexL] == added[indexR])
-        {
-            result.push_back(active[indexL]);
-            indexL++, indexR++;
-        }
-        else if (active[indexL] < added[indexR]) indexL++;
-        else indexR++;
-    }
-}
-
 HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, join),
           leftIndex(leftIndex),
@@ -44,6 +18,68 @@ void HashJoiner::reset()
     this->initialized = false; // TODO: switch to true
 }
 
+bool HashJoiner::findRowByHash()
+{
+    auto iterator = this->right;
+    if (this->activeRowIndex == -1)
+    {
+        if (!iterator->getNext()) return false;
+        this->activeRows.clear();
+
+        while (true)
+        {
+            uint64_t value = iterator->getValue(this->join[0].selections[this->rightIndex]);
+            auto it = this->hashTable.find(value);
+            if (it == this->hashTable.end())
+            {
+                if (!iterator->getNext()) return false;
+                continue;
+            }
+            else
+            {
+                this->activeRows = it->second;
+                break;
+            }
+        }
+
+        this->activeRowIndex = 0;
+        return true;
+    }
+
+    return true;
+}
+
+bool HashJoiner::checkRowPredicates()
+{
+    auto iterator = this->right;
+    auto joinSize = static_cast<int>(this->join.size());
+    while (this->activeRowIndex < static_cast<int32_t>(this->activeRows.size()))
+    {
+        auto row = this->activeRows[this->activeRowIndex];
+        auto& data = this->rowData[row];
+
+        bool rowOk = true;
+        for (int i = 1; i < joinSize; i++)
+        {
+            auto& leftSel = this->join[i].selections[this->leftIndex];
+            auto& rightSel = this->join[i].selections[this->rightIndex];
+
+            uint64_t leftVal = data[this->left->getColumnForSelection(leftSel)];
+            uint64_t rightVal = iterator->getValue(rightSel);
+            if (leftVal != rightVal)
+            {
+                rowOk = false;
+                break;
+            }
+        }
+
+        if (rowOk) return true;
+        this->activeRowIndex++;
+    }
+
+    return false;
+}
+
 bool HashJoiner::getNext()
 {
     if (!this->initialized)
@@ -51,41 +87,21 @@ bool HashJoiner::getNext()
         this->initialize();
     }
 
-    auto joinSize = static_cast<int>(this->join.size());
-    auto iterator = this->right;
-    if (this->activeRowIndex == -1)
+    while (true)
     {
-        if (!iterator->getNext()) return false;
-
-        while (true)
+        if (!this->findRowByHash()) return false;
+        if (!this->checkRowPredicates())
         {
-            this->activeRows.clear();
-            bool matches = true;
-            for (int i = 0; i < joinSize; i++)
-            {
-                uint64_t value = iterator->getValue(this->join[i].selections[this->rightIndex]);
-                auto it = hashes[i].find(value);
-                if (it == hashes[i].end())
-                {
-                    matches = false;
-                    break;
-                }
-                else this->activeRows = intersect(this->activeRows, it->second);
-            }
-
-            if (matches && !this->activeRows.empty())
-            {
-                break;
-            }
-            else if (!iterator->getNext()) return false;
+            this->activeRowIndex = -1;
+            continue;
         }
-
-        this->activeRowIndex = 0;
+        else break;
     }
 
+    auto iterator = this->right;
     auto row = this->activeRows[this->activeRowIndex];
-    auto* rowData = &this->row[0];
     auto& data = this->rowData[row];
+    auto* rowData = &this->row[0];
     for (int i = 0; i < this->leftCols; i++)
     {
         *rowData++ = data[i];
@@ -96,7 +112,7 @@ bool HashJoiner::getNext()
     }
 
     this->activeRowIndex++;
-    if (this->activeRowIndex == (int) this->activeRows.size())
+    if (this->activeRowIndex == static_cast<int32_t>(this->activeRows.size()))
     {
         this->activeRowIndex = -1;
     }
@@ -113,24 +129,20 @@ uint64_t HashJoiner::getValue(const Selection& selection)
 void HashJoiner::fillHashTable()
 {
     uint32_t row = 0;
-    auto joinSize = (int) this->join.size();
-
     auto iterator = this->left;
     iterator->reset();
     while (iterator->getNext())
     {
+        // materialize rows
         auto it = this->rowData.insert({ row, {} }).first;
         for (int i = 0; i < this->leftCols; i++)
         {
             it->second.push_back(iterator->getColumn(i));
         }
 
-        for (int i = 0; i < joinSize; i++)
-        {
-            auto& predicate = this->join[i];
-            uint64_t value = iterator->getValue(predicate.selections[this->leftIndex]);
-            hashes[i][value].push_back(row);
-        }
+        auto& predicate = this->join[0];
+        uint64_t value = iterator->getValue(predicate.selections[this->leftIndex]);
+        this->hashTable[value].push_back(row);
 
         row++;
     }
@@ -141,8 +153,7 @@ void HashJoiner::initialize()
     this->left->reset();
     this->right->reset();
 
-    this->hashes.clear();
-    this->hashes.resize(this->join.size());
+    this->hashTable.clear();
 
     this->fillHashTable();
 
