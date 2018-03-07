@@ -78,10 +78,10 @@ public:
 
     void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) override
     {
-        auto colSize = columns.size();
+        auto colSize = static_cast<int32_t>(columns.size());
         for (int i = 0; i < colSize; i++)
         {
-            sums[i] += this->getColumn(static_cast<uint32_t>(columns[i]));
+            sums[i] += this->getColumn(columns[i]);
         }
     }
 

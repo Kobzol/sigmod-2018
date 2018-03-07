@@ -32,6 +32,20 @@ public:
     }
 };
 
+struct SumColumn
+{
+public:
+    SumColumn() = default;
+    SumColumn(uint32_t sumIndex, uint32_t columnIndex)
+            : sumIndex(sumIndex), columnIndex(columnIndex)
+    {
+
+    }
+
+    uint32_t sumIndex;
+    uint32_t columnIndex;
+};
+
 struct JoinPredicate
 {
 public:

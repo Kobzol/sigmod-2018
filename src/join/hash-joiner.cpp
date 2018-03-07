@@ -136,27 +136,24 @@ void HashJoiner::fillRow(uint64_t* row)
 void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns)
 {
     auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
-    /*std::vector<uint32_t> left;
-    std::vector<uint32_t> right;
 
-    for (auto col: columns)
+    /*std::vector<SumColumn> right;
+    for (auto& col: columns)
     {
-        if (col < this->leftCols) left.push_back(col);
-        else right.push_back(col - this->leftCols);
-    }
-
-    auto leftSize = static_cast<int32_t>(left.size());
-    for (int i = 0; i < leftSize; i++)
-    {
-        sums
+        if (col.columnIndex < static_cast<uint32_t>(this->leftCols))
+        {
+            sums[col.sumIndex] += data[col.columnIndex];
+        }
+        else right.emplace_back(col.sumIndex, col.columnIndex - this->leftCols);
     }
 
     this->right->sumRow(sums, right);*/
 
-    for (int i = 0; i < columns.size(); i++)
+    auto colSize = static_cast<int32_t>(columns.size());
+    for (int i = 0; i < colSize; i++)
     {
         auto col = columns[i];
-        if (col < this->leftCols)
+        if (col < static_cast<uint32_t>(this->leftCols))
         {
             sums[i] += data[col];
         }

@@ -22,7 +22,7 @@ public:
         std::vector<uint32_t> columnIds;
         for (auto& selection: query.selections)
         {
-            columnIds.push_back(root->getColumnForSelection(selection));
+            columnIds.emplace_back(root->getColumnForSelection(selection));
         }
 
         root->reset();
