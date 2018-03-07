@@ -8,7 +8,8 @@
 class HashJoiner: public Joiner
 {
 public:
-    HashJoiner(Iterator* left, Iterator* right, const std::vector<Join>& joins);
+    // leftIndex - index of join selection that is on the left side
+    HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
 
     void reset() override;
     bool getNext() override;
@@ -23,6 +24,9 @@ private:
     int activeRowIndex = -1;
 
     std::vector<uint64_t> row;
+
+    uint32_t leftIndex;
+    uint32_t rightIndex;
 
     bool initialized = false;
     std::vector<std::unordered_map<uint64_t, std::vector<uint32_t>>> hashes;

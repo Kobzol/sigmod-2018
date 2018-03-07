@@ -1,4 +1,9 @@
 #include "executor.h"
+
+#include <unordered_set>
+#include <algorithm>
+#include <iostream>
+
 #include "relation/filter-iterator.h"
 #include "join/hash-joiner.h"
 #include "aggregator.h"
@@ -57,52 +62,66 @@ Iterator* Executor::createRootView(Database& database, Query& query,
                                std::unordered_map<uint32_t, Iterator*>& views,
                                std::vector<std::unique_ptr<Iterator>>& container)
 {
-    if (query.joins.size() > 1)
+#ifdef SORT_JOINS_BY_SIZE
+    std::sort(query.joins.begin(), query.joins.end(), [&database](const Join& a, const Join& b) {
+        auto& relLeft = database.relations[a[0].selections[0].relation];
+        auto& relRight = database.relations[b[0].selections[0].relation];
+        return relLeft.getRowCount() <= relRight.getRowCount();
+    });
+#endif
+
+    auto* join = &query.joins[0];
+
+    auto leftBinding = (*join)[0].selections[0].binding;
+    auto rightBinding = (*join)[0].selections[1].binding;
+    assert(leftBinding <= rightBinding);
+
+    container.push_back(std::move(std::make_unique<HashJoiner>(
+            views[leftBinding],
+            views[rightBinding],
+            0,
+            *join
+    )));
+
+    std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
+    Iterator* root = container.back().get();
+    for (int i = 1; i < static_cast<int32_t>(query.joins.size()); i++)
     {
-        sort(query.joins.begin(), query.joins.end(), [](const Join& a, const Join& b) {
-            if (a.selections[0].binding < b.selections[0].binding) return true;
-            if (a.selections[0].binding > b.selections[0].binding) return false;
-            return a.selections[1].binding <= b.selections[1].binding;
-        });
-    }
+        join = &query.joins[i];
+        leftBinding = (*join)[0].selections[0].binding;
+        rightBinding = (*join)[0].selections[1].binding;
 
-    std::vector<Join> joins;
-    size_t index = 0;
-    size_t joinSize = query.joins.size();
-    Iterator* root = nullptr;
+        auto usedLeft = usedBindings.find(leftBinding) != usedBindings.end();
+        auto usedRight = usedBindings.find(rightBinding) != usedBindings.end();
+        Iterator* right;
+        uint32_t leftIndex = 0;
 
-    while (index < joinSize)
-    {
-        joins.push_back(query.joins[index++]);
-        uint32_t lowerRelation = joins.back().selections[0].binding;
-        uint32_t higherRelation = joins.back().selections[1].binding;
-
-        while (index < joinSize)
+        if (usedLeft)
         {
-            if (query.joins[index].selections[0].binding == lowerRelation &&
-                query.joins[index].selections[1].binding == higherRelation)
-            {
-                joins.push_back(query.joins[index]);
-                index++;
-            }
-            else break;
+            right = views[rightBinding];
+            usedBindings.insert(rightBinding);
+        }
+        else if (usedRight)
+        {
+            right = views[leftBinding];
+            usedBindings.insert(leftBinding);
+            leftIndex = 1;
+        }
+        else
+        {
+            query.joins.push_back(*join);
+            continue;
         }
 
-        auto joiner = std::make_unique<HashJoiner>(
-                views[lowerRelation],
-                views[higherRelation],
-                joins
+        std::unique_ptr<Iterator> newJoin = std::make_unique<HashJoiner>(
+                root,
+                right,
+                leftIndex,
+                *join
         );
-        std::vector<uint32_t> bindings;
-        joiner->fillBindings(bindings);
-        for (auto binding: bindings)
-        {
-            views[binding] = joiner.get();
-        }
 
-        root = joiner.get();
-        container.push_back(std::move(joiner));
-        joins.clear();
+        root = newJoin.get();
+        container.push_back(std::move(newJoin));
     }
 
     return root;

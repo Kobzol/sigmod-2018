@@ -26,8 +26,10 @@ static std::vector<uint32_t> intersect(const std::vector<uint32_t> active, const
     }
 }
 
-HashJoiner::HashJoiner(Iterator* left, Iterator* right, const std::vector<Join>& joins)
-        : Joiner(left, right, joins),
+HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+        : Joiner(left, right, join),
+          leftIndex(leftIndex),
+          rightIndex(1 - leftIndex),
           row(static_cast<size_t>(left->getColumnCount() + right->getColumnCount()))
 {
 
@@ -49,8 +51,7 @@ bool HashJoiner::getNext()
         this->initialize();
     }
 
-    auto joins = this->joins;
-    auto joinSize = static_cast<int>(joins.size());
+    auto joinSize = static_cast<int>(this->join.size());
     auto iterator = this->right;
     if (this->activeRowIndex == -1)
     {
@@ -62,7 +63,7 @@ bool HashJoiner::getNext()
             bool matches = true;
             for (int i = 0; i < joinSize; i++)
             {
-                uint64_t value = iterator->getValue(joins[i].selections[1]);
+                uint64_t value = iterator->getValue(this->join[i].selections[this->rightIndex]);
                 auto it = hashes[i].find(value);
                 if (it == hashes[i].end())
                 {
@@ -112,8 +113,7 @@ uint64_t HashJoiner::getValue(const Selection& selection)
 void HashJoiner::fillHashTable()
 {
     uint32_t row = 0;
-    auto& joins = this->joins;
-    auto joinSize = (int) joins.size();
+    auto joinSize = (int) this->join.size();
 
     auto iterator = this->left;
     iterator->reset();
@@ -127,8 +127,8 @@ void HashJoiner::fillHashTable()
 
         for (int i = 0; i < joinSize; i++)
         {
-            auto& join = joins[i];
-            uint64_t value = iterator->getValue(join.selections[0]);
+            auto& predicate = this->join[i];
+            uint64_t value = iterator->getValue(predicate.selections[this->leftIndex]);
             hashes[i][value].push_back(row);
         }
 
@@ -142,7 +142,7 @@ void HashJoiner::initialize()
     this->right->reset();
 
     this->hashes.clear();
-    this->hashes.resize(this->joins.size());
+    this->hashes.resize(this->join.size());
 
     this->fillHashTable();
 

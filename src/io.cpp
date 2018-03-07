@@ -6,6 +6,8 @@
 #include <sys/mman.h>
 #include <cstring>
 #include <unistd.h>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "settings.h"
 #include "stats.h"
@@ -74,6 +76,14 @@ uint64_t readInt(std::string& str, int& index)
 
     return value;
 }
+
+static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
+{
+    uint32_t first = std::min(bindingA, bindingB);
+    uint32_t second = std::max(bindingA, bindingB);
+
+    return second * 1000 + first;
+}
 void loadQuery(Query& query, std::string& line)
 {
     line += '|';
@@ -87,10 +97,12 @@ void loadQuery(Query& query, std::string& line)
         if (line[index++] == '|') break;
     }
 
+    std::unordered_map<SelectionId, uint32_t> joinMap;
+
     // load predicates
     while (true)
     {
-        uint32_t binding = static_cast<uint32_t>(readInt(line, index)); // index to query relations
+        auto binding = static_cast<uint32_t>(readInt(line, index)); // index to query relations
         uint32_t relation = query.relations[binding];
         index++;
         Selection selection(relation, binding, (uint32_t) readInt(line, index));
@@ -99,18 +111,30 @@ void loadQuery(Query& query, std::string& line)
         uint64_t value = readInt(line, index);
         if (EXPECT(line[index] == '.')) // parse join
         {
-            query.joins.emplace_back();
-            Join& join = query.joins.back();
-            join.selections[0] = selection;
+            auto joinId = getJoinId(binding, static_cast<uint32_t>(value));
+            auto it = joinMap.find(joinId);
+            Join* join;
 
-            join.selections[1].relation = query.relations[value];
-            join.selections[1].binding = static_cast<uint32_t>(value);
-            index++;
-            join.selections[1].column = (uint32_t) readInt(line, index);
-
-            if (join.selections[0].relation > join.selections[1].relation)
+            if (it == joinMap.end())
             {
-                std::swap(join.selections[0], join.selections[1]);
+                query.joins.emplace_back();
+                join = &query.joins.back();
+                joinMap.insert({ joinId, query.joins.size() - 1 });
+            }
+            else join = &query.joins[it->second];
+
+            join->emplace_back();
+            auto& predicate = join->back();
+
+            predicate.selections[0] = selection;
+            predicate.selections[1].relation = query.relations[value];
+            predicate.selections[1].binding = static_cast<uint32_t>(value);
+            index++;
+            predicate.selections[1].column = (uint32_t) readInt(line, index);
+
+            if (predicate.selections[0].binding > predicate.selections[1].binding)
+            {
+                std::swap(predicate.selections[0], predicate.selections[1]);
             }
         }
         else // parse filter
@@ -120,6 +144,27 @@ void loadQuery(Query& query, std::string& line)
 
         if (line[index++] == '|') break;
     }
+
+#ifdef CHECK_ERRORS
+    for (auto& j: query.joins)
+    {
+        std::string joinKey;
+        for (auto& p: j)
+        {
+            uint32_t first = std::min(p.left.binding, p.right.binding);
+            uint32_t second = std::max(p.left.binding, p.right.binding);
+            auto key = std::to_string(first) + "x" + std::to_string(second);
+            if (joinKey.empty())
+            {
+                joinKey = key; // first
+            }
+            else if (joinKey != key)
+            {
+                throw "ERROR";
+            }
+        }
+    }
+#endif
 
     // load selections
     while (true)

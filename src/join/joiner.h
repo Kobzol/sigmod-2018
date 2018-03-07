@@ -9,10 +9,10 @@
 class Joiner: public Iterator
 {
 public:
-    Joiner(Iterator* left, Iterator* right, std::vector<Join> joins)
+    Joiner(Iterator* left, Iterator* right, Join& join)
             : left(left), right(right),
               leftCols(left->getColumnCount()), rightCols(right->getColumnCount()),
-              joins(std::move(joins))
+              join(join)
     {
         this->setColumnMappings();
     }
@@ -47,7 +47,7 @@ public:
     int32_t leftCols;
     int32_t rightCols;
 
-    std::vector<Join> joins;
+    Join& join;
 
     std::unordered_map<SelectionId, uint32_t> columnMap;
     std::unordered_map<uint32_t, SelectionId> columnMapReverted;

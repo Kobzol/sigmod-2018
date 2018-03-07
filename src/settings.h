@@ -5,4 +5,7 @@
 #ifndef NDEBUG
     #define STATISTICS
     #define LOAD_FROM_FILE INPUT_FILE
+    #define CHECK_ERRORS
 #endif
+
+//#define SORT_JOINS_BY_SIZE

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include "util.h"
 
 using SelectionId = uint32_t;
 
@@ -31,11 +32,15 @@ public:
     }
 };
 
-class Join
+struct JoinPredicate
 {
 public:
     Selection selections[2];
 };
+
+// join is for two relations (bindings)
+// all predicates have to share the same tuple (r_a, r_b) and differ only in columns
+using Join = std::vector<JoinPredicate>;
 
 class Filter
 {
