@@ -48,8 +48,9 @@ int main(int argc, char** argv)
         if (line[0] == 'F')
         {
             auto queryCount = static_cast<int32_t>(queries.size());
+            auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
-            #pragma omp parallel for num_threads(QUERY_NUM_THREADS)
+            #pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
             {
                 executor.executeQuery(database, queries[i]);

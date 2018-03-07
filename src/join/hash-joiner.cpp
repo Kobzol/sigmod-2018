@@ -28,7 +28,7 @@ bool HashJoiner::findRowByHash()
             else
             {
                 this->activeValue = value;
-                this->activeRowCount = static_cast<int32_t>(it->second.size());
+                this->activeRowCount = static_cast<int32_t>(it->second.size() / this->columnMapCols);
                 break;
             }
         }
@@ -46,7 +46,7 @@ bool HashJoiner::checkRowPredicates()
     auto iterator = this->right;
     while (this->activeRowIndex < this->activeRowCount)
     {
-        auto& data = vec[this->activeRowIndex];
+        auto data = &vec[this->activeRowIndex * this->columnMapCols];
 
         bool rowOk = true;
         for (int i = 1; i < this->joinSize; i++)
@@ -101,13 +101,13 @@ uint64_t HashJoiner::getValue(const Selection& selection)
         return value;
     }
 
-    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+    auto data = this->getCurrentRow();
     return data[this->getColumnForSelection(selection)];
 }
 
 void HashJoiner::fillRow(uint64_t* row, const std::vector<Selection>& selections)
 {
-    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+    auto data = this->getCurrentRow();
 
     for (auto& sel: selections)
     {
@@ -124,7 +124,7 @@ void HashJoiner::fillRow(uint64_t* row, const std::vector<Selection>& selections
 }
 void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections)
 {
-    auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+    auto data = this->getCurrentRow();
 
     /*std::vector<SumColumn> right;
     for (auto& col: columns)
@@ -171,14 +171,16 @@ void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& s
     auto& predicate = this->join[0];
     auto selection = predicate.selections[this->leftIndex];
 
+    auto countSub = static_cast<size_t>(this->columnMapCols - 1);
+
     while (iterator->getNext())
     {
         uint64_t value = iterator->getValue(selection);
         auto& vec = this->hashTable[value];
 
         // materialize rows
-        vec.emplace_back(this->columnMapCols);
-        auto rowData = vec.back().data();
+        vec.resize(vec.size() + this->columnMapCols);
+        auto rowData = &vec.back() - countSub;
         iterator->fillRow(rowData, leftSelections);
     }
 }
@@ -217,7 +219,7 @@ bool HashJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
     {
         if (this->columnMap[i] == id)
         {
-            auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+            auto data = this->getCurrentRow();
             value = data[i];
             return true;
         }
@@ -245,7 +247,7 @@ uint64_t HashJoiner::getColumn(uint32_t column)
 {
     if (column < static_cast<uint32_t>(this->columnMapCols))
     {
-        auto& data = this->hashTable[this->activeValue][this->activeRowIndex];
+        auto data = this->getCurrentRow();
         return data[column];
     }
     else return this->right->getColumn(column - this->columnMapCols);

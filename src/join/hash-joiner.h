@@ -28,9 +28,13 @@ public:
     void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections) override;
 
 private:
-
     bool findRowByHash();
     bool checkRowPredicates();
+
+    uint64_t* getCurrentRow()
+    {
+        return &this->hashTable[this->activeValue][this->activeRowIndex * this->columnMapCols];
+    }
 
     uint64_t activeValue = 0;
     int32_t activeRowCount = 0;
@@ -40,5 +44,5 @@ private:
     uint32_t rightIndex;
 
     int joinSize;
-    std::unordered_map<uint64_t, std::vector<std::vector<uint64_t>>> hashTable;
+    std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable;
 };
