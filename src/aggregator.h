@@ -8,6 +8,7 @@
 
 #include "query.h"
 #include "database.h"
+#include "settings.h"
 
 class Aggregator
 {
@@ -16,33 +17,38 @@ public:
     {
         auto selectionSize = (int) query.selections.size();
 
-        std::vector<uint64_t> results(static_cast<size_t>(selectionSize));
-        size_t count = 0;
-
         std::unordered_map<SelectionId, Selection> selectionMap;
         for (auto& sel: query.selections)
         {
             selectionMap[sel.getId()] = sel;
         }
 
+        auto map = selectionMap;
+        std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
+
         root->requireSelections(selectionMap);
 
         std::vector<uint32_t> columnsIds;
-        for (auto& sel: query.selections)
+        std::unordered_map<uint32_t, uint32_t> backMap;
+        for (auto& sel: map)
         {
-            columnsIds.push_back(root->getColumnForSelection(sel));
+            backMap[sel.second.getId()] = static_cast<unsigned int>(columnsIds.size());
+            columnsIds.push_back(root->getColumnForSelection(sel.second));
         }
 
+        size_t count = 0;
         while (root->getNext())
         {
             root->sumRow(results, columnsIds);
             count++;
         }
 
+#ifdef STATISTICS
         query.count = count;
+#endif
 
         std::stringstream ss;
-        for (auto& result: results)
+        for (auto& sel: query.selections)
         {
             if (count == 0)
             {
@@ -50,6 +56,7 @@ public:
             }
             else
             {
+                uint64_t result = results[backMap[sel.getId()]];
                 ss << std::to_string(result) << ' ';
             }
         }

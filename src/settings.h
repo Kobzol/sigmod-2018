@@ -9,7 +9,6 @@
 #endif
 
 #define MEASURE_REAL_TIME
-#define STATISTICS
 
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
