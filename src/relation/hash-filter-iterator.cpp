@@ -9,6 +9,7 @@ HashFilterIterator::HashFilterIterator(ColumnRelation* relation, uint32_t bindin
     this->hashFilter = this->filters[equalsIndex];
     this->filters.erase(this->filters.begin() + equalsIndex);
     this->index = &database.getHashIndex(this->hashFilter.selection.relation, this->hashFilter.selection.column);
+    this->index->build();
 
     auto it = this->index->hashTable.find(this->hashFilter.value);
     if (it != this->index->hashTable.end())

@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <atomic>
 
 #include "../util.h"
 
@@ -18,4 +19,7 @@ public:
     std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable; // value to rowid
     ColumnRelation& relation;
     uint32_t column;
+
+    std::atomic_flag buildStarted;
+    std::atomic<bool> buildCompleted { false };
 };

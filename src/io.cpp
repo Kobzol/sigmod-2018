@@ -17,6 +17,7 @@ void loadDatabase(Database& database)
     std::string line;
     struct stat stats{};
 
+    uint32_t columnId = 0;
     while (std::getline(std::cin, line))
     {
         if (line == "Done") break;
@@ -30,11 +31,13 @@ void loadDatabase(Database& database)
         database.relations.emplace_back();
         ColumnRelation& rel = database.relations.back();
 
+        rel.cumulativeColumnId = columnId;
         rel.tupleCount = *reinterpret_cast<uint64_t*>(addr);
         addr += sizeof(uint64_t);
         rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
         rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
+        columnId += rel.columnCount;
 
 #ifdef TRANSPOSE_RELATIONS
         auto data = new uint64_t[rel.tupleCount * rel.columnCount];
@@ -81,21 +84,19 @@ void loadDatabase(Database& database)
 #endif
     }
 
-    for (int r = 0; r < database.relations.size(); r++)
+    for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
         {
-            database.getHashIndex(r, i);
+            database.hashIndices.push_back(std::make_unique<HashIndex>(database.relations[r], i));
         }
     }
 
-    /*for (auto& rel: database.relations)
+    #pragma omp parallel for
+    for (int i = 0; i < columnId; i++)
     {
-        for (int i = 0; i < static_cast<int32_t>(rel.columnCount); i++)
-        {
-            rel.indices.emplace_back(std::make_unique<ColumnIndex>(rel, i));
-        }
-    }*/
+        database.hashIndices[i]->build();
+    }
 }
 uint64_t readInt(std::string& str, int& index)
 {

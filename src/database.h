@@ -13,9 +13,11 @@ public:
 
     std::vector<ColumnRelation> relations;
 
+    uint32_t getGlobalColumnId(uint32_t relation, uint32_t column);
+
     HashIndex& getHashIndex(uint32_t relation, uint32_t column);
 
-    std::unordered_map<SelectionId, std::unique_ptr<HashIndex>> hashIndices;
+    std::vector<std::unique_ptr<HashIndex>> hashIndices;
 };
 
 extern Database database;

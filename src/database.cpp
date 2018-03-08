@@ -2,18 +2,10 @@
 
 HashIndex& Database::getHashIndex(uint32_t relation, uint32_t column)
 {
-    Selection selection(relation, 0, column);
-    auto id = selection.getId();
+    return *this->hashIndices[this->getGlobalColumnId(relation, column)];
+}
 
-    auto it = this->hashIndices.find(id);
-    if (it == this->hashIndices.end())
-    {
-        it = this->hashIndices.insert(std::make_pair(id, std::make_unique<HashIndex>(
-                this->relations[relation],
-                column
-        ))).first;
-        it->second->build();
-    }
-
-    return *it->second;
+uint32_t Database::getGlobalColumnId(uint32_t relation, uint32_t column)
+{
+    return this->relations[relation].cumulativeColumnId + column;
 }

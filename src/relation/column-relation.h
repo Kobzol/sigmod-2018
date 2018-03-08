@@ -17,8 +17,9 @@ public:
     DISABLE_COPY(ColumnRelation);
     ENABLE_MOVE(ColumnRelation);
 
-    uint64_t tupleCount;
     uint32_t columnCount;
+    uint32_t cumulativeColumnId;
+    uint64_t tupleCount;
     uint64_t* data;
 
     //std::vector<std::unique_ptr<ColumnIndex>> indices;

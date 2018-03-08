@@ -57,7 +57,7 @@ int main(int argc, char** argv)
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
 #ifdef REAL_RUN
-            //#pragma omp parallel for num_threads(numThreads)
+            #pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
 #else
             for (int i = 0; i < queryCount; i++)
