@@ -27,8 +27,8 @@ bool HashJoiner::findRowByHash()
             }
             else
             {
-                this->activeValue = value;
-                this->activeRowCount = static_cast<int32_t>(it->second.size() / this->columnMapCols);
+                this->activeRow = &it->second;
+                this->activeRowCount = static_cast<int32_t>(this->activeRow->size() / this->columnMapCols);
                 break;
             }
         }
@@ -42,7 +42,7 @@ bool HashJoiner::findRowByHash()
 
 bool HashJoiner::checkRowPredicates()
 {
-    auto& vec = this->hashTable[this->activeValue];
+    auto& vec = *this->activeRow;
     auto iterator = this->right;
     while (this->activeRowIndex < this->activeRowCount)
     {

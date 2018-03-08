@@ -33,10 +33,10 @@ private:
 
     uint64_t* getCurrentRow()
     {
-        return &this->hashTable[this->activeValue][this->activeRowIndex * this->columnMapCols];
+        return &(*this->activeRow)[this->activeRowIndex * this->columnMapCols];
     }
 
-    uint64_t activeValue = 0;
+    std::vector<uint64_t>* activeRow = nullptr;
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
 
