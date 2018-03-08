@@ -15,17 +15,21 @@ endif()
 
 set(SOURCE_FILES
         src/aggregator.cpp
+        src/database.cpp
         src/executor.cpp
+        src/index/column-index.cpp
+        src/index/hash-index.cpp
         src/io.cpp
         src/join/hash-joiner.cpp
         src/join/joiner.cpp
         src/join/nested-joiner.cpp
         src/relation/column-relation.cpp
         src/relation/filter-iterator.cpp
+        src/relation/hash-filter-iterator.cpp
         src/relation/iterator.cpp
         src/stats.cpp
         src/timer.cpp
 )
 
-add_executable(sigmod-2018 ${SOURCE_FILES} src/main.cpp)
+add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
 add_executable(tester ${SOURCE_FILES} src/test/main.cpp)

@@ -7,7 +7,7 @@
 class FilterIterator: public ColumnRelationIterator
 {
 public:
-    explicit FilterIterator(ColumnRelation* relation, uint32_t binding);
+    explicit FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters);
 
     bool getNext() override;
     uint32_t getFilterReduction() override
@@ -25,6 +25,5 @@ public:
 
     std::vector<Filter> filters;
 
-private:
     bool passesFilters();
 };

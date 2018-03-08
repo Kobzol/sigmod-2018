@@ -15,8 +15,8 @@ static bool passesFilter(const Filter& filter, uint64_t value)
     return false;
 }
 
-FilterIterator::FilterIterator(ColumnRelation* relation, uint32_t binding)
-        : ColumnRelationIterator(relation, binding)
+FilterIterator::FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters)
+        : ColumnRelationIterator(relation, binding), filters(std::move(filters))
 {
 
 }

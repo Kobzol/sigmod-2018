@@ -17,6 +17,7 @@ extern size_t queryRowsCount;
 extern std::string queryMaxRowsString;
 extern size_t joinCount;
 extern size_t filterCount;
+extern size_t filterEqualsCount;
 extern size_t batchCount;
 extern size_t multipleColumnsPerRelJoins;
 extern size_t columnsPerJoin;

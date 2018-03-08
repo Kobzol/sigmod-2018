@@ -15,8 +15,6 @@ class Aggregator
 public:
     void aggregate(Database& database, Query& query, Iterator* root)
     {
-        auto selectionSize = (int) query.selections.size();
-
         std::unordered_map<SelectionId, Selection> selectionMap;
         for (auto& sel: query.selections)
         {

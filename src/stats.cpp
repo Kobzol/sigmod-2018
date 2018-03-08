@@ -18,6 +18,7 @@
     std::string queryMaxRowsString;
     size_t joinCount = 0;
     size_t filterCount = 0;
+    size_t filterEqualsCount = 0;
     size_t batchCount = 0;
     size_t multipleColumnsPerRelJoins = 0;
     size_t columnsPerJoin = 0;

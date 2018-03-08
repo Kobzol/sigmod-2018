@@ -9,6 +9,7 @@
 #include "aggregator.h"
 #include "settings.h"
 #include "join/nested-joiner.h"
+#include "relation/hash-filter-iterator.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
@@ -28,19 +29,36 @@ void Executor::createViews(Database& database,
                            std::unordered_map<uint32_t, Iterator*>& views,
                            std::vector<std::unique_ptr<Iterator>>& container)
 {
+    std::unordered_map<uint32_t, std::vector<Filter>> filtersByBindings;
+
     for (auto& filter: query.filters)
     {
-        auto binding = filter.selection.binding;
-        auto it = views.find(binding);
-        if (it == views.end())
+        filtersByBindings[filter.selection.binding].push_back(filter);
+    }
+
+    for (auto& filterGroup: filtersByBindings)
+    {
+        int equalsIndex = -1;
+        for (int i = 0; i < static_cast<int32_t>(filterGroup.second.size()); i++)
         {
-            container.push_back(std::make_unique<FilterIterator>(
-                    &database.relations[filter.selection.relation],
-                    binding
-            ));
-            it = views.insert({ binding, container.back().get() }).first;
+            if (filterGroup.second[i].oper == '=')
+            {
+                equalsIndex = i;
+                break;
+            }
         }
-        dynamic_cast<FilterIterator*>(it->second)->filters.push_back(filter);
+
+        auto binding = filterGroup.first;
+        auto relation = &database.relations[filterGroup.second[0].selection.relation];
+        auto filter = equalsIndex != -1 ? std::make_unique<HashFilterIterator>(relation,
+                                                                       binding,
+                                                                       filterGroup.second,
+                                                                               equalsIndex)
+                    : std::make_unique<FilterIterator>(relation,
+                                                       binding,
+                                                       filterGroup.second);
+        views.insert({ binding, filter.get() });
+        container.push_back(std::move(filter));
     }
 
     uint32_t binding = 0;

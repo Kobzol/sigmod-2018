@@ -2,11 +2,13 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <memory>
 
 #include "../util.h"
 #include "../query.h"
 #include "../settings.h"
 #include "iterator.h"
+#include "../index/column-index.h"
 
 class ColumnRelation
 {
@@ -18,6 +20,8 @@ public:
     uint64_t tupleCount;
     uint32_t columnCount;
     uint64_t* data;
+
+    //std::vector<std::unique_ptr<ColumnIndex>> indices;
 
     uint64_t getValue(size_t row, size_t column)
     {

@@ -80,6 +80,22 @@ void loadDatabase(Database& database)
         }
 #endif
     }
+
+    for (int r = 0; r < database.relations.size(); r++)
+    {
+        for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
+        {
+            database.getHashIndex(r, i);
+        }
+    }
+
+    /*for (auto& rel: database.relations)
+    {
+        for (int i = 0; i < static_cast<int32_t>(rel.columnCount); i++)
+        {
+            rel.indices.emplace_back(std::make_unique<ColumnIndex>(rel, i));
+        }
+    }*/
 }
 uint64_t readInt(std::string& str, int& index)
 {

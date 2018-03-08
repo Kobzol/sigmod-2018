@@ -30,6 +30,8 @@ static void setRelation(ColumnRelation& relation, const std::vector<uint64_t>& d
     }
 }
 
+Database database;
+
 int main()
 {
     Query query;
@@ -37,7 +39,6 @@ int main()
     //std::string line = "2 2|0.0=1.1|1.2";
     loadQuery(query, line);
 
-    Database database{};
     database.relations.push_back(createRelation(3, 3));
     database.relations.push_back(createRelation(3, 3));
     database.relations.push_back(createRelation(3, 3));

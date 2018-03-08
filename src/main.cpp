@@ -15,6 +15,8 @@
 #include "stats.h"
 #include "timer.h"
 
+Database database;
+
 int main(int argc, char** argv)
 {
     std::ios::sync_with_stdio(false);
@@ -31,7 +33,6 @@ int main(int argc, char** argv)
 #ifdef STATISTICS
     Timer loadTimer;
 #endif
-    Database database;
     loadDatabase(database);
 #ifdef STATISTICS
     std::cerr << "Relation load time: " << loadTimer.get() << std::endl;
@@ -56,7 +57,7 @@ int main(int argc, char** argv)
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
 #ifdef REAL_RUN
-            #pragma omp parallel for num_threads(numThreads)
+            //#pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
 #else
             for (int i = 0; i < queryCount; i++)
@@ -131,6 +132,10 @@ int main(int argc, char** argv)
                 {
                     filtersOnFirstColumn++;
                 }
+                if (filter.oper == '=')
+                {
+                    filterEqualsCount++;
+                }
             }
 
             columnsPerJoin += multipleColumns;
@@ -158,6 +163,7 @@ int main(int argc, char** argv)
     std::cerr << "Avg result rows: " << (size_t) (queryRowsCount / (double) queryCount) << std::endl;
     std::cerr << "Join count: " << joinCount << std::endl;
     std::cerr << "Filter count: " << filterCount << std::endl;
+    std::cerr << "Equals filter count: " << filterEqualsCount << std::endl;
     std::cerr << "Batch count: " << batchCount << std::endl;
     std::cerr << "Multiple-columns for joins: " << multipleColumnsPerRelJoins << std::endl;
     std::cerr << "Avg columns for join: " << columnsPerJoin / (double) queryCount << std::endl;
