@@ -39,6 +39,8 @@ public:
             count++;
         }
 
+        query.count = count;
+
         std::stringstream ss;
         for (auto& result: results)
         {

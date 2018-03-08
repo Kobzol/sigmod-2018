@@ -24,6 +24,7 @@ set(SOURCE_FILES
         src/relation/filter-iterator.cpp
         src/relation/iterator.cpp
         src/stats.cpp
+        src/timer.cpp
 )
 
 add_executable(sigmod-2018 ${SOURCE_FILES} src/main.cpp)

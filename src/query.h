@@ -78,4 +78,5 @@ public:
     std::vector<Filter> filters;
     std::vector<Selection> selections;
     std::string result;
+    size_t count;
 };

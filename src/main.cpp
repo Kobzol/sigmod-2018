@@ -1,8 +1,4 @@
 #include <iostream>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
 #include <cstring>
 #include <cstddef>
 #include <unordered_set>
@@ -11,14 +7,13 @@
 #include <memory>
 #include <sstream>
 #include <algorithm>
-#include <cassert>
-#include <omp.h>
 
 #include "settings.h"
 #include "database.h"
 #include "executor.h"
 #include "io.h"
 #include "stats.h"
+#include "timer.h"
 
 int main(int argc, char** argv)
 {
@@ -33,11 +28,21 @@ int main(int argc, char** argv)
     }
 #endif
 
+#ifdef STATISTICS
+    Timer loadTimer;
+#endif
     Database database;
     loadDatabase(database);
+#ifdef STATISTICS
+    std::cerr << "Relation load time: " << loadTimer.get() << std::endl;
+#endif
 
 #ifndef REAL_RUN
     std::cout << "Ready" << std::endl;
+#endif
+
+#ifdef STATISTICS
+    Timer queryLoadTimer;
 #endif
 
     Executor executor;
@@ -60,18 +65,29 @@ int main(int argc, char** argv)
                 std::cout << queries[i].result;
             }
 
-            std::cout << std::flush;
-            queries.clear();
 #ifdef STATISTICS
+            for (auto& q: queries)
+            {
+                queryRowsMax = std::max(queryRowsMax, q.count);
+                queryRowsCount += q.count;
+            }
             batchCount++;
 #endif
+
+            std::cout << std::flush;
+            queries.clear();
         }
         else
         {
+#ifdef STATISTICS
+            queryLoadTimer.reset();
+#endif
             queries.emplace_back();
             loadQuery(queries.back(), line);
 
 #ifdef STATISTICS
+            queryLoadTime += queryLoadTimer.get();
+
             auto& query = queries.back();
             queryCount++;
             joinCount += query.joins.size();
@@ -120,6 +136,7 @@ int main(int argc, char** argv)
 
 #ifdef STATISTICS
     size_t relationCount = database.relations.size();
+    std::cerr << "Query load time: " << queryLoadTime << std::endl;
     std::cerr << "ColumnRelation count: " << relationCount << std::endl;
     std::cerr << "Min tuple count: " << minTuples << std::endl;
     std::cerr << "Max tuple count: " << maxTuples << std::endl;
@@ -128,6 +145,8 @@ int main(int argc, char** argv)
     std::cerr << "Max column count: " << maxColumns << std::endl;
     std::cerr << "Avg column count: " << columnCount / (double) relationCount << std::endl;
     std::cerr << "Query count: " << queryCount << std::endl;
+    std::cerr << "Max result rows: " << queryRowsMax << std::endl;
+    std::cerr << "Avg result rows: " << (size_t) (queryRowsCount / (double) queryCount) << std::endl;
     std::cerr << "Join count: " << joinCount << std::endl;
     std::cerr << "Filter count: " << filterCount << std::endl;
     std::cerr << "Batch count: " << batchCount << std::endl;
@@ -136,6 +155,7 @@ int main(int argc, char** argv)
     std::cerr << "Sorted on first column: " << sortedOnFirstColumn << std::endl;
     std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
+    std::cerr << std::endl;
 #endif
 
     std::quick_exit(0);

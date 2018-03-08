@@ -5,6 +5,7 @@
 #include "settings.h"
 
 #ifdef STATISTICS
+    double queryLoadTime = 0.0;
     size_t tupleCount = 0;
     size_t columnCount = 0;
     uint32_t minColumns = std::numeric_limits<uint32_t>::max();
@@ -12,6 +13,8 @@
     size_t minTuples = std::numeric_limits<size_t>::max();
     size_t maxTuples = 0;
     size_t queryCount = 0;
+    size_t queryRowsMax = 0;
+    size_t queryRowsCount = 0;
     size_t joinCount = 0;
     size_t filterCount = 0;
     size_t batchCount = 0;
