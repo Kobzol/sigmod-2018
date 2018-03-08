@@ -126,18 +126,6 @@ void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& 
 {
     auto data = this->getCurrentRow();
 
-    /*std::vector<SumColumn> right;
-    for (auto& col: columns)
-    {
-        if (col.columnIndex < static_cast<uint32_t>(this->leftCols))
-        {
-            sums[col.sumIndex] += data[col.columnIndex];
-        }
-        else right.emplace_back(col.sumIndex, col.columnIndex - this->leftCols);
-    }
-
-    this->right->sumRow(sums, right);*/
-
     auto colSize = static_cast<int32_t>(selections.size());
     for (int i = 0; i < colSize; i++)
     {
