@@ -76,18 +76,18 @@ bool HashJoiner::getNext()
     if (this->activeRowIndex == this->activeRowCount)
     {
         this->activeRowIndex = -1;
-    }
 
-    while (true)
-    {
-        if (!this->findRowByHash()) return false;
-        if (this->joinSize == 1) break;
-        if (!this->checkRowPredicates())
+        while (true)
         {
-            this->activeRowIndex = -1;
-            continue;
+            if (!this->findRowByHash()) return false;
+            if (this->joinSize == 1) break;
+            if (!this->checkRowPredicates())
+            {
+                this->activeRowIndex = -1;
+                continue;
+            }
+            else break;
         }
-        else break;
     }
 
     return true;

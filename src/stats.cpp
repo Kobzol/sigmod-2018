@@ -15,6 +15,7 @@
     size_t queryCount = 0;
     size_t queryRowsMax = 0;
     size_t queryRowsCount = 0;
+    std::string queryMaxRowsString;
     size_t joinCount = 0;
     size_t filterCount = 0;
     size_t batchCount = 0;

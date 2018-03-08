@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+
 #include "util.h"
+#include "settings.h"
 
 using SelectionId = uint32_t;
 
@@ -78,5 +80,9 @@ public:
     std::vector<Filter> filters;
     std::vector<Selection> selections;
     std::string result;
+
+#ifdef STATISTICS
     size_t count;
+    std::string input;
+#endif
 };

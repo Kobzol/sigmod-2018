@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 extern double queryLoadTime;
 extern size_t tupleCount;
@@ -13,6 +14,7 @@ extern size_t maxTuples;
 extern size_t queryCount;
 extern size_t queryRowsMax;
 extern size_t queryRowsCount;
+extern std::string queryMaxRowsString;
 extern size_t joinCount;
 extern size_t filterCount;
 extern size_t batchCount;

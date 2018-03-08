@@ -55,20 +55,28 @@ int main(int argc, char** argv)
             auto queryCount = static_cast<int32_t>(queries.size());
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
+#ifdef REAL_RUN
             #pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
+#else
+            for (int i = 0; i < queryCount; i++)
+#endif
             {
                 executor.executeQuery(database, queries[i]);
             }
-            for (int i = 0; i < queryCount; i++)
+            for (auto& q: queries)
             {
-                std::cout << queries[i].result;
+                std::cout << q.result;
             }
 
 #ifdef STATISTICS
             for (auto& q: queries)
             {
                 queryRowsMax = std::max(queryRowsMax, q.count);
+                if (queryRowsMax == q.count)
+                {
+                    queryMaxRowsString = q.input;
+                }
                 queryRowsCount += q.count;
             }
             batchCount++;
@@ -146,6 +154,7 @@ int main(int argc, char** argv)
     std::cerr << "Avg column count: " << columnCount / (double) relationCount << std::endl;
     std::cerr << "Query count: " << queryCount << std::endl;
     std::cerr << "Max result rows: " << queryRowsMax << std::endl;
+    std::cerr << "Max rows query: " << queryMaxRowsString << std::endl;
     std::cerr << "Avg result rows: " << (size_t) (queryRowsCount / (double) queryCount) << std::endl;
     std::cerr << "Join count: " << joinCount << std::endl;
     std::cerr << "Filter count: " << filterCount << std::endl;

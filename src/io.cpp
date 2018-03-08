@@ -192,4 +192,8 @@ void loadQuery(Query& query, std::string& line)
 
         if (line[index++] == '|') break;
     }
+
+#ifdef STATISTICS
+    query.input = line;
+#endif
 }
