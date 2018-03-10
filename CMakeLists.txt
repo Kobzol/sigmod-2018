@@ -17,7 +17,7 @@ set(SOURCE_FILES
         src/aggregator.cpp
         src/database.cpp
         src/executor.cpp
-        src/index/column-index.cpp
+        src/index/sort-index.cpp
         src/index/hash-index.cpp
         src/io.cpp
         src/join/hash-joiner.cpp
@@ -29,7 +29,7 @@ set(SOURCE_FILES
         src/relation/iterator.cpp
         src/stats.cpp
         src/timer.cpp
-)
+        src/relation/sort-filter-iterator.cpp src/relation/sort-filter-iterator.h)
 
 add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
 add_executable(tester ${SOURCE_FILES} src/test/main.cpp)

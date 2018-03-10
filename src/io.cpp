@@ -88,14 +88,24 @@ void loadDatabase(Database& database)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
         {
+#ifdef USE_HASH_INDEX
             database.hashIndices.push_back(std::make_unique<HashIndex>(database.relations[r], i));
+#endif
+#ifdef USE_SORT_INDEX
+            database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
+#endif
         }
     }
 
     #pragma omp parallel for
-    for (int i = 0; i < columnId; i++)
+    for (int i = 0; i < static_cast<int32_t>(columnId); i++)
     {
+#ifdef USE_HASH_INDEX
         database.hashIndices[i]->build();
+#endif
+#ifdef USE_SORT_INDEX
+        database.sortIndices[i]->build();
+#endif
     }
 }
 uint64_t readInt(std::string& str, int& index)

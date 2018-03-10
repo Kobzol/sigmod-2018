@@ -20,6 +20,6 @@ public:
     ColumnRelation& relation;
     uint32_t column;
 
-    std::atomic_flag buildStarted;
+    std::atomic_flag buildStarted = ATOMIC_FLAG_INIT;
     std::atomic<bool> buildCompleted { false };
 };

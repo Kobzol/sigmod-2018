@@ -3,8 +3,8 @@
 
 // TODO: for more equal filters, pick the one with lowest amount of rows
 HashFilterIterator::HashFilterIterator(ColumnRelation* relation, uint32_t binding,
-                                       std::vector<Filter> filters, int equalsIndex)
-        : FilterIterator(relation, binding, std::move(filters))
+                                       const std::vector<Filter>& filters, int equalsIndex)
+        : FilterIterator(relation, binding, filters)
 {
     this->hashFilter = this->filters[equalsIndex];
     this->filters.erase(this->filters.begin() + equalsIndex);
@@ -34,5 +34,11 @@ bool HashFilterIterator::getNext()
         }
     }
 
+    return false;
+}
+
+bool HashFilterIterator::skipSameValue()
+{
+    this->activeRow = nullptr;
     return false;
 }

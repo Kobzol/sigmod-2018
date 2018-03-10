@@ -10,6 +10,7 @@
 #include "settings.h"
 #include "join/nested-joiner.h"
 #include "relation/hash-filter-iterator.h"
+#include "relation/sort-filter-iterator.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
@@ -38,6 +39,7 @@ void Executor::createViews(Database& database,
 
     for (auto& filterGroup: filtersByBindings)
     {
+#ifdef USE_HASH_INDEX
         int equalsIndex = -1;
         for (int i = 0; i < static_cast<int32_t>(filterGroup.second.size()); i++)
         {
@@ -47,16 +49,27 @@ void Executor::createViews(Database& database,
                 break;
             }
         }
+#endif
 
         auto binding = filterGroup.first;
         auto relation = &database.relations[filterGroup.second[0].selection.relation];
-        auto filter = equalsIndex != -1 ? std::make_unique<HashFilterIterator>(relation,
-                                                                       binding,
-                                                                       filterGroup.second,
-                                                                               equalsIndex)
-                    : std::make_unique<FilterIterator>(relation,
-                                                       binding,
-                                                       filterGroup.second);
+#ifdef USE_HASH_INDEX
+        std::unique_ptr<FilterIterator> filter;
+        if (equalsIndex != -1)
+        {
+            filter = std::make_unique<HashFilterIterator>(relation,
+                                                          binding,
+                                                          filterGroup.second,
+                                                          equalsIndex);
+        }
+        else filter = std::make_unique<FILTER_ITERATOR>(relation,
+                                                        binding,
+                                                        filterGroup.second);
+#else
+        auto filter = std::make_unique<FILTER_ITERATOR>(relation,
+                                                        binding,
+                                                        filterGroup.second);
+#endif
         views.insert({ binding, filter.get() });
         container.push_back(std::move(filter));
     }

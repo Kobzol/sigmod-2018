@@ -1,8 +1,6 @@
-- handle self joins
 - sort joins (self-joins, size, filtered)
-- reorder joins (move non-used relations to the end, see Joiner.cpp)
 
 - leverage presorted first column
 - dynamic programming
-- nlj, hj, smj
-- inline sum
+
+- rewrite query to leverage self join (0.1 = 1.1 & 0.2 = 1.1 -> 0.1 = 0.2)

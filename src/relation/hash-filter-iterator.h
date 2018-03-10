@@ -10,9 +10,10 @@ class HashFilterIterator: public FilterIterator
 {
 public:
     explicit HashFilterIterator(ColumnRelation* relation, uint32_t binding,
-                                std::vector<Filter> filters, int equalsIndex);
+                                const std::vector<Filter>& filters, int equalsIndex);
 
     bool getNext() override;
+    bool skipSameValue() override;
 
     HashIndex* index;
     std::vector<uint64_t>* activeRow = nullptr;

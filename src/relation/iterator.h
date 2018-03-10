@@ -13,6 +13,10 @@ public:
     DISABLE_COPY(Iterator);
 
     virtual bool getNext() = 0;
+    virtual bool skipSameValue()
+    {
+        return this->getNext();
+    }
 
     virtual int32_t getColumnCount() = 0;
     virtual uint64_t getValue(const Selection& selection) = 0;

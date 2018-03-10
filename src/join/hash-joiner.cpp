@@ -22,7 +22,7 @@ bool HashJoiner::findRowByHash()
             auto it = this->hashTable.find(value);
             if (it == this->hashTable.end())
             {
-                if (!iterator->getNext()) return false;
+                if (!iterator->skipSameValue()) return false;
                 continue;
             }
             else
@@ -80,18 +80,18 @@ bool HashJoiner::getNext()
     if (this->activeRowIndex == this->activeRowCount)
     {
         this->activeRowIndex = -1;
+    }
 
-        while (true)
+    while (true)
+    {
+        if (!this->findRowByHash()) return false;
+        if (this->joinSize == 1) break;
+        if (!this->checkRowPredicates())
         {
-            if (!this->findRowByHash()) return false;
-            if (this->joinSize == 1) break;
-            if (!this->checkRowPredicates())
-            {
-                this->activeRowIndex = -1;
-                continue;
-            }
-            else break;
+            this->activeRowIndex = -1;
+            continue;
         }
+        else break;
     }
 
     return true;

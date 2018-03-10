@@ -23,7 +23,7 @@ public:
         return filterReduction;
     }
 
-    std::vector<Filter> filters;
-
     bool passesFilters();
+
+    std::vector<Filter> filters;
 };

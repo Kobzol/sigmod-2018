@@ -8,7 +8,6 @@
 #include "../query.h"
 #include "../settings.h"
 #include "iterator.h"
-#include "../index/column-index.h"
 
 class ColumnRelation
 {
@@ -21,8 +20,6 @@ public:
     uint32_t cumulativeColumnId;
     uint64_t tupleCount;
     uint64_t* data;
-
-    //std::vector<std::unique_ptr<ColumnIndex>> indices;
 
     uint64_t getValue(size_t row, size_t column)
     {

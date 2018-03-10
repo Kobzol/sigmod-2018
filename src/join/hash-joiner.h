@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <unordered_map>
+#include <fstream>
+
 #include "../relation/column-relation.h"
 #include "joiner.h"
 #include "../relation/iterator.h"
@@ -45,4 +47,5 @@ private:
 
     int joinSize;
     std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable;
+    std::ofstream debug = std::ofstream("rows-sort.txt", std::ios::app);
 };
