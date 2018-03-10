@@ -44,6 +44,13 @@ bool HashJoiner::checkRowPredicates()
 {
     auto& vec = *this->activeRow;
     auto iterator = this->right;
+
+    std::vector<uint64_t> rightValues(static_cast<size_t>(this->joinSize));
+    for (int i = 1; i < this->joinSize; i++)
+    {
+        rightValues[i] = iterator->getValue(this->join[i].selections[this->rightIndex]);
+    }
+
     while (this->activeRowIndex < this->activeRowCount)
     {
         auto data = &vec[this->activeRowIndex * this->columnMapCols];
@@ -52,11 +59,8 @@ bool HashJoiner::checkRowPredicates()
         for (int i = 1; i < this->joinSize; i++)
         {
             auto& leftSel = this->join[i].selections[this->leftIndex];
-            auto& rightSel = this->join[i].selections[this->rightIndex];
-
             uint64_t leftVal = data[this->getColumnForSelection(leftSel)];
-            uint64_t rightVal = iterator->getValue(rightSel);
-            if (leftVal != rightVal)
+            if (leftVal != rightValues[i])
             {
                 rowOk = false;
                 break;
