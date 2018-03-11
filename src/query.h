@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 #include "util.h"
 #include "settings.h"
@@ -24,14 +25,63 @@ public:
 
     }
 
-    uint32_t relation;
-    uint32_t binding; // index of relation in query
-    uint32_t column;
+    bool operator==(const Selection& other) const
+    {
+        return this->getId() == other.getId();
+    }
 
     SelectionId getId() const
     {
         return Selection::getId(this->relation, this->binding, this->column);
     }
+
+    uint32_t relation;
+    uint32_t binding; // index of relation in query
+    uint32_t column;
+};
+
+class UnionFind
+{
+public:
+    explicit UnionFind(Selection selection): selection(selection)
+    {
+        this->parent = this;
+    }
+    DISABLE_COPY(UnionFind);
+
+    UnionFind* findParent()
+    {
+        if (this->parent != this)
+        {
+            this->parent = this->parent->findParent();
+        }
+        return this->parent;
+    }
+    void join(UnionFind* other)
+    {
+        auto a = this->findParent();
+        auto b = other->findParent();
+
+        if (a == b) return;
+
+        if (a->rank < b->rank)
+        {
+            a->parent = b;
+        }
+        else if (a->rank > b->rank)
+        {
+            b->parent = a;
+        }
+        else
+        {
+            a->parent = b;
+            b->rank++;
+        }
+    }
+
+    uint32_t rank = 0;
+    UnionFind* parent;
+    Selection selection;
 };
 
 struct SumColumn
@@ -80,6 +130,8 @@ public:
     std::vector<Filter> filters;
     std::vector<Selection> selections;
     std::string result;
+
+    std::unordered_map<uint32_t, std::vector<Selection>> selfJoins; // binding to self-join selections
 
 #ifdef STATISTICS
     size_t count;

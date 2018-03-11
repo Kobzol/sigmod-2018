@@ -11,6 +11,7 @@
 #include "join/nested-joiner.h"
 #include "relation/hash-filter-iterator.h"
 #include "relation/sort-filter-iterator.h"
+#include "join/self-join.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
@@ -88,6 +89,19 @@ void Executor::createViews(Database& database,
         }
         binding++;
     }
+
+#ifdef USE_SELF_JOIN
+    // assign self-joins
+    for (auto& kv: query.selfJoins)
+    {
+        auto it = views.find(kv.first);
+        container.push_back(std::make_unique<SelfJoin>(
+                *it->second,
+                kv.second
+        ));
+        views[binding] = container.back().get();
+    }
+#endif
 }
 
 Iterator* Executor::createRootView(Database& database, Query& query,

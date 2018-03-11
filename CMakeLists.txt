@@ -23,13 +23,15 @@ set(SOURCE_FILES
         src/join/hash-joiner.cpp
         src/join/joiner.cpp
         src/join/nested-joiner.cpp
+        src/join/self-join.cpp
         src/relation/column-relation.cpp
         src/relation/filter-iterator.cpp
         src/relation/hash-filter-iterator.cpp
         src/relation/iterator.cpp
+        src/relation/sort-filter-iterator.cpp
         src/stats.cpp
         src/timer.cpp
-        src/relation/sort-filter-iterator.cpp src/relation/sort-filter-iterator.h)
+)
 
 add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
 add_executable(tester ${SOURCE_FILES} src/test/main.cpp)

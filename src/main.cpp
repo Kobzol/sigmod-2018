@@ -126,6 +126,8 @@ int main(int argc, char** argv)
                 }
             }
 
+            selfJoinCount += query.selfJoins.size();
+
             for (auto& filter: query.filters)
             {
                 if (filter.selection.column == 0)
@@ -170,6 +172,7 @@ int main(int argc, char** argv)
     std::cerr << "Sorted on first column: " << sortedOnFirstColumn << std::endl;
     std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
+    std::cerr << "Self-join count: " << selfJoinCount << std::endl;
     std::cerr << std::endl;
 #endif
 

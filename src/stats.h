@@ -24,3 +24,4 @@ extern size_t columnsPerJoin;
 extern size_t sortedOnFirstColumn;
 extern size_t joinsOnFirstColumn;
 extern size_t filtersOnFirstColumn;
+extern size_t selfJoinCount;

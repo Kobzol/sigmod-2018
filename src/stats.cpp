@@ -25,4 +25,5 @@
     size_t sortedOnFirstColumn = 0;
     size_t joinsOnFirstColumn = 0;
     size_t filtersOnFirstColumn = 0;
+    size_t selfJoinCount = 0;
 #endif
