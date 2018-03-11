@@ -74,6 +74,8 @@ public:
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), column);
     }
 
+    int32_t getRowCount() override;
+
     void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
 
     uint32_t getColumnForSelection(const Selection& selection) final

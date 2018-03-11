@@ -12,9 +12,13 @@
 #include "relation/hash-filter-iterator.h"
 #include "relation/sort-filter-iterator.h"
 #include "join/self-join.h"
+#include "timer.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
+#ifdef STATISTICS
+    Timer timer;
+#endif
     std::unordered_map<uint32_t, Iterator*> views;
     std::vector<std::unique_ptr<Iterator>> container;
 
@@ -24,6 +28,10 @@ void Executor::executeQuery(Database& database, Query& query)
     Aggregator aggregator;
     aggregator.aggregate(database, query, root);
     query.result[query.result.size() - 1] = '\n';
+
+#ifdef STATISTICS
+    query.time = timer.get();
+#endif
 }
 
 void Executor::createViews(Database& database,

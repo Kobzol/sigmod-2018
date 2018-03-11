@@ -136,5 +136,6 @@ public:
 #ifdef STATISTICS
     size_t count;
     std::string input;
+    double time;
 #endif
 };

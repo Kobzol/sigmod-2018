@@ -44,6 +44,7 @@ int main(int argc, char** argv)
 
 #ifdef STATISTICS
     Timer queryLoadTimer;
+    std::vector<Query> allQueries;
 #endif
 
     Executor executor;
@@ -81,6 +82,8 @@ int main(int argc, char** argv)
                 queryRowsCount += q.count;
             }
             batchCount++;
+
+            allQueries.insert(allQueries.end(), queries.begin(), queries.end());
 #endif
 
             std::cout << std::flush;
@@ -150,7 +153,21 @@ int main(int argc, char** argv)
     }
 
 #ifdef STATISTICS
-    size_t relationCount = database.relations.size();
+    std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
+        return a.time > b.time;
+    });
+
+    for (int i = 0; i < 5; i++)
+    {
+        std::cerr << i << ": " << allQueries[i].time << "ms " << allQueries[i].input << " ";
+        for (auto& r: allQueries[i].relations)
+        {
+            std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
+        }
+        std::cerr << std::endl;
+    }
+
+    /*size_t relationCount = database.relations.size();
     std::cerr << "Query load time: " << queryLoadTime << std::endl;
     std::cerr << "ColumnRelation count: " << relationCount << std::endl;
     std::cerr << "Min tuple count: " << minTuples << std::endl;
@@ -172,7 +189,7 @@ int main(int argc, char** argv)
     std::cerr << "Sorted on first column: " << sortedOnFirstColumn << std::endl;
     std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
-    std::cerr << "Self-join count: " << selfJoinCount << std::endl;
+    std::cerr << "Self-join count: " << selfJoinCount << std::endl;*/
     std::cerr << std::endl;
 #endif
 

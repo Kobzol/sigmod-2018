@@ -20,3 +20,8 @@ void ColumnRelationIterator::fillRow(uint64_t* row, const std::vector<Selection>
         *row++ = this->getValue(sel);
     }
 }
+
+int32_t ColumnRelationIterator::getRowCount()
+{
+    return static_cast<int32_t>(this->relation->getRowCount());
+}

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "hash/sparse_map.h"
-#include "hash/hopscotch_map.h"
 #include <unordered_map>
 
 #define INPUT_FILE "small.complete"
