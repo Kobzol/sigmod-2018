@@ -163,6 +163,9 @@ void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& s
     auto& predicate = this->join[0];
     auto selection = predicate.selections[this->leftIndex];
 
+#ifdef SORTED_ROWS
+    iterator->fillHashTable(selection, leftSelections, this->hashTable);
+#else
     auto countSub = static_cast<size_t>(this->columnMapCols - 1);
 
     while (iterator->getNext())
@@ -175,6 +178,7 @@ void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& s
         auto rowData = &vec.back() - countSub;
         iterator->fillRow(rowData, leftSelections);
     }
+#endif
 }
 
 void HashJoiner::prepareColumnMappings(

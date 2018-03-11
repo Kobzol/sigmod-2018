@@ -44,5 +44,33 @@ public:
 
     virtual void fillBindings(std::vector<uint32_t>& ids) = 0;
 
+    // assumes sorted rows (has to be used with hash or sort index)
+    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+                       std::unordered_map<uint64_t, std::vector<uint64_t>>& hashTable)
+    {
+        auto columnMapCols = selections.size();
+        auto countSub = static_cast<size_t>(selections.size() - 1);
+
+        if (!this->getNext()) return;
+
+        uint64_t value = this->getValue(hashSelection);
+        auto* vec = &hashTable[value];
+
+        while (true)
+        {
+            vec->resize(vec->size() + columnMapCols);
+            auto rowData = &vec->back() - countSub;
+            this->fillRow(rowData, selections);
+
+            if (!this->getNext()) return;
+            uint64_t current = this->getValue(hashSelection);
+            if (current != value)
+            {
+                value = current;
+                vec = &hashTable[value];
+            }
+        }
+    }
+
     int rowIndex = -1;
 };
