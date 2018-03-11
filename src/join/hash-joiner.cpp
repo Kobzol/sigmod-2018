@@ -1,6 +1,7 @@
 #include "hash-joiner.h"
 
-HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+template <bool HAS_MULTIPLE_JOINS>
+HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, join),
           leftIndex(leftIndex),
           rightIndex(1 - leftIndex),
@@ -10,7 +11,8 @@ HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join
 
 }
 
-bool HashJoiner::findRowByHash()
+template <bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
 {
     auto iterator = this->right;
     if (this->activeRowIndex == -1)
@@ -41,7 +43,8 @@ bool HashJoiner::findRowByHash()
     return true;
 }
 
-bool HashJoiner::checkRowPredicates()
+template <bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::checkRowPredicates()
 {
     auto& vec = *this->activeRow;
     auto iterator = this->right;
@@ -74,7 +77,8 @@ bool HashJoiner::checkRowPredicates()
     return false;
 }
 
-bool HashJoiner::getNext()
+template <bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::getNext()
 {
     this->activeRowIndex++;
     if (this->activeRowIndex == this->activeRowCount)
@@ -85,19 +89,22 @@ bool HashJoiner::getNext()
     while (true)
     {
         if (!this->findRowByHash()) return false;
-        if (this->joinSize == 1) break;
-        if (!this->checkRowPredicates())
+        if (HAS_MULTIPLE_JOINS)
         {
-            this->activeRowIndex = -1;
-            continue;
+            if (!this->checkRowPredicates())
+            {
+                this->activeRowIndex = -1;
+                continue;
+            }
         }
-        else break;
+        break;
     }
 
     return true;
 }
 
-uint64_t HashJoiner::getValue(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getValue(const Selection& selection)
 {
     uint64_t value;
     if (this->right->getValueMaybe(selection, value))
@@ -109,7 +116,8 @@ uint64_t HashJoiner::getValue(const Selection& selection)
     return data[this->getColumnForSelection(selection)];
 }
 
-void HashJoiner::fillRow(uint64_t* row, const std::vector<Selection>& selections)
+template <bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::fillRow(uint64_t* row, const std::vector<Selection>& selections)
 {
     auto data = this->getCurrentRow();
 
@@ -128,7 +136,8 @@ void HashJoiner::fillRow(uint64_t* row, const std::vector<Selection>& selections
 }
 
 // assumes left deep tree, doesn't initialize right child
-void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+template <bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
 {
     for (auto& j: join)
     {
@@ -162,7 +171,8 @@ void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& s
 #endif
 }
 
-void HashJoiner::prepareColumnMappings(
+template <bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::prepareColumnMappings(
         const std::unordered_map<SelectionId, Selection>& selections,
         std::vector<Selection>& leftSelections)
 {
@@ -184,7 +194,8 @@ void HashJoiner::prepareColumnMappings(
     }
 }
 
-bool HashJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
+template <bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::getValueMaybe(const Selection& selection, uint64_t& value)
 {
     if (this->right->getValueMaybe(selection, value))
     {
@@ -205,7 +216,8 @@ bool HashJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
     return false;
 }
 
-bool HashJoiner::hasSelection(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::hasSelection(const Selection& selection)
 {
     if (this->right->hasSelection(selection)) return true;
 
@@ -220,7 +232,9 @@ bool HashJoiner::hasSelection(const Selection& selection)
 
     return false;
 }
-uint64_t HashJoiner::getColumn(uint32_t column)
+
+template <bool HAS_MULTIPLE_JOINS>
+uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 {
     if (column < static_cast<uint32_t>(this->columnMapCols))
     {
@@ -230,7 +244,8 @@ uint64_t HashJoiner::getColumn(uint32_t column)
     else return this->right->getColumn(column - this->columnMapCols);
 }
 
-void HashJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+template <bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;

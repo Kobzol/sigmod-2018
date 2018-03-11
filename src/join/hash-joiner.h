@@ -8,6 +8,7 @@
 #include "../relation/iterator.h"
 #include "../hash/sparse_map.h"
 
+template <bool HAS_MULTIPLE_JOINS>
 class HashJoiner: public Joiner
 {
 public:
@@ -51,3 +52,6 @@ private:
 
     std::vector<uint64_t> rightValues;
 };
+
+template class HashJoiner<false>;
+template class HashJoiner<true>;

@@ -45,9 +45,9 @@ void loadDatabase(Database& database)
         auto data = new uint64_t[rel.tupleCount * rel.columnCount];
         std::memcpy(data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
 
-        for (int c = 0; c < rel.columnCount; c++)
+        for (int c = 0; c < static_cast<int32_t>(rel.columnCount); c++)
         {
-            for (int r = 0; r < rel.tupleCount; r++)
+            for (int r = 0; r < static_cast<int32_t>(rel.tupleCount); r++)
             {
                 rel.data[r * rel.columnCount + c] = data[c * rel.tupleCount + r];
             }

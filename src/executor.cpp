@@ -122,12 +122,21 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto rightBinding = (*join)[0].selections[1].binding;
     assert(leftBinding <= rightBinding);
 
-    container.push_back(std::make_unique<HashJoiner>(
-            views[leftBinding],
-            views[rightBinding],
-            0,
-            *join
-    ));
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<HashJoiner<true>>(
+                views[leftBinding],
+                views[rightBinding],
+                0,
+                *join
+        ));
+    }
+    else container.push_back(std::make_unique<HashJoiner<false>>(
+                views[leftBinding],
+                views[rightBinding],
+                0,
+                *join
+        ));
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -160,12 +169,21 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             continue;
         }
 
-        container.push_back(std::make_unique<HashJoiner>(
-                left,
-                right,
-                leftIndex,
-                *join
-        ));
+        if (join->size() > 1)
+        {
+            container.push_back(std::make_unique<HashJoiner<true>>(
+                    left,
+                    right,
+                    leftIndex,
+                    *join
+            ));
+        }
+        else container.push_back(std::make_unique<HashJoiner<false>>(
+                    left,
+                    right,
+                    leftIndex,
+                    *join
+            ));
         root = container.back().get();
     }
 
