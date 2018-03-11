@@ -1,5 +1,8 @@
 #pragma once
 
+#include "hash/sparse_map.h"
+#include "hash/hopscotch_map.h"
+
 #define INPUT_FILE "small.complete"
 
 #ifndef NDEBUG
@@ -27,3 +30,6 @@
 #endif
 
 #define QUERY_NUM_THREADS 20
+
+template <typename K, typename V>
+using HashMap = tsl::hopscotch_map<K, V>;

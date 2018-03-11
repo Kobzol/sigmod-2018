@@ -6,6 +6,7 @@
 #include "../relation/column-relation.h"
 #include "joiner.h"
 #include "../relation/iterator.h"
+#include "../hash/sparse_map.h"
 
 class HashJoiner: public Joiner
 {
@@ -32,12 +33,12 @@ private:
     bool findRowByHash();
     bool checkRowPredicates();
 
-    uint64_t* getCurrentRow()
+    const uint64_t* getCurrentRow()
     {
         return &(*this->activeRow)[this->activeRowIndex * this->columnMapCols];
     }
 
-    std::vector<uint64_t>* activeRow = nullptr;
+    const std::vector<uint64_t>* activeRow = nullptr;
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
 
@@ -45,7 +46,7 @@ private:
     uint32_t rightIndex;
 
     int joinSize;
-    std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable;
+    HashMap<uint64_t, std::vector<uint64_t>> hashTable;
 
     std::vector<uint64_t> rightValues;
 };

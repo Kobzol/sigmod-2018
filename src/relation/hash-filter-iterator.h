@@ -16,7 +16,7 @@ public:
     bool skipSameValue() override;
 
     HashIndex* index;
-    std::vector<uint64_t>* activeRow = nullptr;
+    const std::vector<uint64_t>* activeRow = nullptr;
     int activeRowIndex = -1;
 
     Filter hashFilter;

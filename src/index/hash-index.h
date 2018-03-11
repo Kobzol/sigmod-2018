@@ -5,6 +5,7 @@
 #include <atomic>
 
 #include "../util.h"
+#include "../settings.h"
 
 class ColumnRelation;
 

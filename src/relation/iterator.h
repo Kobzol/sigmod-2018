@@ -46,7 +46,7 @@ public:
 
     // assumes sorted rows (has to be used with hash or sort index)
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                       std::unordered_map<uint64_t, std::vector<uint64_t>>& hashTable)
+                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable)
     {
         auto columnMapCols = selections.size();
         auto countSub = static_cast<size_t>(selections.size() - 1);
