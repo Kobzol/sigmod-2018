@@ -126,25 +126,6 @@ void HashJoiner::fillRow(uint64_t* row, const std::vector<Selection>& selections
         *row++ = value;
     }
 }
-void HashJoiner::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections)
-{
-    auto data = this->getCurrentRow();
-
-    auto colSize = static_cast<int32_t>(selections.size());
-    for (int i = 0; i < colSize; i++)
-    {
-        auto column = selections[i];
-        uint64_t value;
-
-        if (column < static_cast<uint32_t>(this->columnMapCols))
-        {
-            value = data[column];
-        }
-        else value = this->right->getColumn(column - this->columnMapCols);
-
-        sums[i] += value;
-    }
-}
 
 // assumes left deep tree, doesn't initialize right child
 void HashJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)

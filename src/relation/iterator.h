@@ -25,7 +25,6 @@ public:
     virtual bool getValueMaybe(const Selection& selection, uint64_t& value) = 0;
 
     virtual void fillRow(uint64_t* row, const std::vector<Selection>& selections) = 0;
-    virtual void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) = 0;
 
     virtual uint32_t getColumnForSelection(const Selection& selection) = 0;
     virtual void requireSelections(std::unordered_map<SelectionId, Selection>& selections)

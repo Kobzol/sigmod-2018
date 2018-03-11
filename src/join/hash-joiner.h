@@ -27,7 +27,6 @@ public:
                                std::vector<Selection>& leftSelections);
 
     void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
-    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections) final;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 

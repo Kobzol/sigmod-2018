@@ -53,11 +53,6 @@ void SelfJoin::fillRow(uint64_t* row, const std::vector<Selection>& selections)
     this->inner.fillRow(row, selections);
 }
 
-void SelfJoin::sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns)
-{
-    this->inner.sumRow(sums, columns);
-}
-
 uint32_t SelfJoin::getColumnForSelection(const Selection& selection)
 {
     return this->inner.getColumnForSelection(selection);

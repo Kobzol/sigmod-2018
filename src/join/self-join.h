@@ -16,7 +16,6 @@ public:
     bool getValueMaybe(const Selection& selection, uint64_t& value) final;
 
     void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
-    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) final;
 
     uint32_t getColumnForSelection(const Selection& selection) final;
 
