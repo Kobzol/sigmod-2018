@@ -40,8 +40,11 @@ int main()
     loadQuery(query, line);
 
     database.relations.push_back(createRelation(3, 3));
+    database.relations.back().cumulativeColumnId = 0;
     database.relations.push_back(createRelation(3, 3));
+    database.relations.back().cumulativeColumnId = 3;
     database.relations.push_back(createRelation(3, 3));
+    database.relations.back().cumulativeColumnId = 6;
 
     setRelation(database.relations[0], {
             1, 2, 3,
@@ -58,6 +61,19 @@ int main()
             4, 4, 8,
             4, 8, 3
     });
+
+    database.hashIndices.resize(9);
+    database.sortIndices.resize(9);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            database.hashIndices[i * 3 + j] = std::make_unique<HashIndex>(database.relations[i], j);
+            database.hashIndices[i * 3 + j]->build();
+            database.sortIndices[i * 3 + j] = std::make_unique<SortIndex>(database.relations[i], j);
+            database.sortIndices[i * 3 + j]->build();
+        }
+    }
 
     Executor executor;
     executor.executeQuery(database, query);

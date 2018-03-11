@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <memory>
+
 #include "../query.h"
 #include "../util.h"
 
@@ -26,9 +28,21 @@ public:
     virtual uint64_t getValue(const Selection& selection) = 0;
     virtual uint64_t getColumn(uint32_t column) = 0;
 
+    virtual void prepareIndexedAccess()
+    {
+
+    }
+    virtual void iterateValue(const Selection& selection, uint64_t value)
+    {
+
+    }
+
     virtual bool getValueMaybe(const Selection& selection, uint64_t& value) = 0;
 
-    virtual void fillRow(uint64_t* row, const std::vector<Selection>& selections) = 0;
+    virtual void fillRow(uint64_t* row, const std::vector<Selection>& selections)
+    {
+
+    }
 
     virtual uint32_t getColumnForSelection(const Selection& selection) = 0;
     virtual void requireSelections(std::unordered_map<SelectionId, Selection>& selections)
@@ -75,10 +89,13 @@ public:
         }
     }
 
-    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                         const std::vector<Selection>& selections, size_t& count)
     {
 
     }
+
+    virtual std::unique_ptr<Iterator> createIndexedIterator() = 0;
 
     int rowIndex = -1;
 };

@@ -27,15 +27,17 @@ public:
         root->requireSelections(selectionMap);
 
         std::vector<uint32_t> columnIds;
+        std::vector<Selection> selections;
         std::unordered_map<uint32_t, uint32_t> backMap;
         for (auto& sel: map)
         {
+            selections.push_back(sel.second);
             backMap[sel.second.getId()] = static_cast<unsigned int>(columnIds.size());
             columnIds.push_back(root->getColumnForSelection(sel.second));
         }
 
         size_t count = 0;
-        root->sumRows(results, columnIds, count);
+        root->sumRows(results, columnIds, selections, count);
 
 #ifdef STATISTICS
         query.count = count;

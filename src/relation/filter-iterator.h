@@ -23,7 +23,11 @@ public:
         return filterReduction;
     }
 
+    std::unique_ptr<Iterator> createIndexedIterator() final;
+
     bool passesFilters();
 
     std::vector<Filter> filters;
+    int startFilterIndex = 0;
+    int filterSize;
 };

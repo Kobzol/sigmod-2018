@@ -1,4 +1,6 @@
 #include "column-relation.h"
+#include "hash-filter-iterator.h"
+#include "sort-filter-iterator.h"
 
 bool ColumnRelationIterator::getNext()
 {
@@ -24,4 +26,9 @@ void ColumnRelationIterator::fillRow(uint64_t* row, const std::vector<Selection>
 int32_t ColumnRelationIterator::getRowCount()
 {
     return static_cast<int32_t>(this->relation->getRowCount());
+}
+
+std::unique_ptr<Iterator> ColumnRelationIterator::createIndexedIterator()
+{
+    return std::make_unique<INDEXED_FILTER>(this->relation, this->binding, std::vector<Filter>());
 }

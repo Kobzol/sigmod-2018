@@ -21,6 +21,7 @@ set(SOURCE_FILES
         src/index/hash-index.cpp
         src/io.cpp
         src/join/hash-joiner.cpp
+        src/join/index-joiner.cpp
         src/join/joiner.cpp
         src/join/nested-joiner.cpp
         src/join/self-join.cpp

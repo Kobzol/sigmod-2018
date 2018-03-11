@@ -2,10 +2,7 @@
 
 template <bool HAS_MULTIPLE_JOINS>
 HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
-        : Joiner(left, right, join),
-          leftIndex(leftIndex),
-          rightIndex(1 - leftIndex),
-          joinSize(static_cast<int>(join.size())),
+        : Joiner(left, right, leftIndex, join),
           rightValues(join.size())
 {
 
@@ -116,35 +113,16 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getValue(const Selection& selection)
     return data[this->getColumnForSelection(selection)];
 }
 
-template <bool HAS_MULTIPLE_JOINS>
-void HashJoiner<HAS_MULTIPLE_JOINS>::fillRow(uint64_t* row, const std::vector<Selection>& selections)
-{
-    auto data = this->getCurrentRow();
-
-    for (auto& sel: selections)
-    {
-        uint64_t value;
-        if (!this->right->getValueMaybe(sel, value))
-        {
-            value = data[this->getColumnForSelection(sel)];
-        }
-
-//        _mm_stream_si64(reinterpret_cast<long long int*>(row), static_cast<int64_t>(value));
-//        row++;
-        *row++ = value;
-    }
-}
-
 // assumes left deep tree, doesn't initialize right child
 template <bool HAS_MULTIPLE_JOINS>
 void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
 {
-    for (auto& j: join)
+    for (auto& j: this->join)
     {
         selections[j.selections[0].getId()] = j.selections[0];
         selections[j.selections[1].getId()] = j.selections[1];
     }
-    left->requireSelections(selections);
+    this->left->requireSelections(selections);
 
     std::vector<Selection> leftSelections;
     this->prepareColumnMappings(selections, leftSelections);
@@ -153,22 +131,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     auto& predicate = this->join[0];
     auto selection = predicate.selections[this->leftIndex];
 
-#ifdef SORTED_ROWS
     iterator->fillHashTable(selection, leftSelections, this->hashTable);
-#else
-    auto countSub = static_cast<size_t>(this->columnMapCols - 1);
-
-    while (iterator->getNext())
-    {
-        uint64_t value = iterator->getValue(selection);
-        auto& vec = this->hashTable[value];
-
-        // materialize rows
-        vec.resize(vec.size() + this->columnMapCols);
-        auto rowData = &vec.back() - countSub;
-        iterator->fillRow(rowData, leftSelections);
-    }
-#endif
 }
 
 template <bool HAS_MULTIPLE_JOINS>
@@ -217,23 +180,6 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::getValueMaybe(const Selection& selection, u
 }
 
 template <bool HAS_MULTIPLE_JOINS>
-bool HashJoiner<HAS_MULTIPLE_JOINS>::hasSelection(const Selection& selection)
-{
-    if (this->right->hasSelection(selection)) return true;
-
-    auto id = selection.getId();
-    for (int i = 0; i < this->columnMapCols; i++)
-    {
-        if (this->columnMap[i] == id)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-template <bool HAS_MULTIPLE_JOINS>
 uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 {
     if (column < static_cast<uint32_t>(this->columnMapCols))
@@ -246,7 +192,7 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 
 template <bool HAS_MULTIPLE_JOINS>
 void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                                             size_t& count)
+                                             const std::vector<Selection>& selections, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;

@@ -13,6 +13,7 @@
 #include "relation/sort-filter-iterator.h"
 #include "join/self-join.h"
 #include "timer.h"
+#include "join/index-joiner.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
@@ -130,7 +131,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto rightBinding = (*join)[0].selections[1].binding;
     assert(leftBinding <= rightBinding);
 
-    if (join->size() > 1)
+    /*if (join->size() > 1)
     {
         container.push_back(std::make_unique<HashJoiner<true>>(
                 views[leftBinding],
@@ -144,7 +145,14 @@ Iterator* Executor::createRootView(Database& database, Query& query,
                 views[rightBinding],
                 0,
                 *join
-        ));
+        ));*/
+    container.push_back(views[rightBinding]->createIndexedIterator());
+    container.push_back(std::make_unique<IndexJoiner>(
+            views[leftBinding],
+            container.back().get(),
+            0,
+            *join
+    ));
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -192,6 +200,13 @@ Iterator* Executor::createRootView(Database& database, Query& query,
                     leftIndex,
                     *join
             ));
+        /*container.push_back(right->createIndexedIterator());
+        container.push_back(std::make_unique<IndexJoiner>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));*/
         root = container.back().get();
     }
 

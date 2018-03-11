@@ -8,50 +8,44 @@
 SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters)
         : FilterIterator(relation, binding, filters)
 {
-    this->sortFilter = this->filters[0];
-    this->filters.erase(this->filters.begin());
-    this->index = &database.getSortIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
-
-    assert(this->index->buildCompleted);
-    assert(static_cast<size_t>(this->relation->getRowCount()) == this->index->data.size());
-
-    uint64_t value = this->sortFilter.value;
-
-    RowEntry* last = this->index->data.data() + this->index->data.size();
-    if (this->sortFilter.oper == '<')
+    if (!filters.empty())
     {
-        this->start = this->index->data.data();
-        assert(this->start->value < value);
-        this->end = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                     [](const RowEntry& entry, uint64_t val) {
-                                         return entry.value < val;
-                                     }));
-        assert(this->end == last || this->end->value >= value);
+        this->sortFilter = this->filters[0];
+        this->startFilterIndex = 1;
+        this->index = &database.getSortIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
+
+        uint64_t value = this->sortFilter.value;
+
+        RowEntry* last = this->index->data.data() + this->index->data.size();
+        if (this->sortFilter.oper == '<')
+        {
+            this->start = this->index->data.data();
+            this->end = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
+                                                     [](const RowEntry& entry, uint64_t val) {
+                                                         return entry.value < val;
+                                                     }));
+        }
+        else if (this->sortFilter.oper == '>')
+        {
+            this->start = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
+                                                       [](uint64_t val, const RowEntry& entry) {
+                                                           return val < entry.value;
+                                                       }));
+            this->end = last;
+        }
+        else
+        {
+            this->start = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
+                                                       [](const RowEntry& entry, uint64_t val) {
+                                                           return entry.value < val;
+                                                       }));
+            this->end = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
+                                                     [](uint64_t val, const RowEntry& entry) {
+                                                         return val < entry.value;
+                                                     }));
+        }
+        this->start--;
     }
-    else if (this->sortFilter.oper == '>')
-    {
-        this->start = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                   [](uint64_t val, const RowEntry& entry) {
-                                                       return val < entry.value;
-                                                   }));
-        assert(this->start == last || this->start->value > value);
-        this->end = last;
-        assert(this->end == last);
-    }
-    else
-    {
-        this->start = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                   [](const RowEntry& entry, uint64_t val) {
-                                                       return entry.value < val;
-                                                   }));
-        assert(this->start == last || this->start->value == value || this->start->value > value);
-        this->end = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                   [](uint64_t val, const RowEntry& entry) {
-                                                       return val < entry.value;
-                                                   }));
-        assert(this->end == last || this->end->value > value);
-    }
-    this->start--;
 }
 
 bool SortFilterIterator::getNext()
@@ -85,4 +79,24 @@ bool SortFilterIterator::skipSameValue()
     }
 
     return false;
+}
+
+void SortFilterIterator::prepareIndexedAccess()
+{
+    this->start = this->end;
+    this->startFilterIndex = 0;
+}
+
+void SortFilterIterator::iterateValue(const Selection& selection, uint64_t value)
+{
+    this->index = &database.getSortIndex(selection.relation, selection.column);
+    this->start = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
+                                               [](const RowEntry& entry, uint64_t val) {
+                                                   return entry.value < val;
+                                               }));
+    this->end = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
+                                             [](uint64_t val, const RowEntry& entry) {
+                                                 return val < entry.value;
+                                             }));
+    this->start--;
 }

@@ -21,17 +21,16 @@ public:
     uint64_t getColumn(uint32_t column) final;
 
     bool getValueMaybe(const Selection& selection, uint64_t& value) final;
-    bool hasSelection(const Selection& selection) final;
 
     void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
     void prepareColumnMappings(const std::unordered_map<SelectionId, Selection>& selections,
                                std::vector<Selection>& leftSelections);
 
-    void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
                        HashMap<uint64_t, std::vector<uint64_t>>& hashTable) final;
 
-    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                 const std::vector<Selection>& selections, size_t& count) final;
 
 private:
     bool findRowByHash();
@@ -46,12 +45,7 @@ private:
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
 
-    uint32_t leftIndex;
-    uint32_t rightIndex;
-
-    int joinSize;
     HashMap<uint64_t, std::vector<uint64_t>> hashTable;
-
     std::vector<uint64_t> rightValues;
 };
 

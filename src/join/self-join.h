@@ -22,6 +22,8 @@ public:
     bool hasSelection(const Selection& selection) final;
     void fillBindings(std::vector<uint32_t>& ids) final;
 
+    std::unique_ptr<Iterator> createIndexedIterator() final;
+
     Iterator& inner;
     std::vector<Selection> selections;
     int32_t selectionSize;

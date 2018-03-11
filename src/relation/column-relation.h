@@ -100,6 +100,8 @@ public:
         ids.push_back(this->binding);
     }
 
+    std::unique_ptr<Iterator> createIndexedIterator() override;
+
     ColumnRelation* relation;
     uint32_t binding;
 };

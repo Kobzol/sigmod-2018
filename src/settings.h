@@ -24,9 +24,7 @@
     #define FILTER_ITERATOR FilterIterator
 #endif
 
-#if defined(USE_HASH_INDEX) || defined(USE_SORT_INDEX)
-    #define SORTED_ROWS
-#endif
+#define INDEXED_FILTER HashFilterIterator
 
 #define QUERY_NUM_THREADS 20
 
