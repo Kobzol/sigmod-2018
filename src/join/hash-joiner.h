@@ -28,6 +28,8 @@ public:
                                std::vector<Selection>& leftSelections);
 
     void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
+    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable) final;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 

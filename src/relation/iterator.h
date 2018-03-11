@@ -48,7 +48,7 @@ public:
     virtual void fillBindings(std::vector<uint32_t>& ids) = 0;
 
     // assumes sorted rows (has to be used with hash or sort index)
-    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+    virtual void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
                        HashMap<uint64_t, std::vector<uint64_t>>& hashTable)
     {
         auto columnMapCols = selections.size();

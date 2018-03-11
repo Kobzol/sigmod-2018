@@ -245,7 +245,8 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 }
 
 template <bool HAS_MULTIPLE_JOINS>
-void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                                             size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -286,6 +287,82 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
                 results[index++] += this->right->getColumn(c.first - this->columnMapCols);
             }
             count++;
+        }
+    }
+}
+
+template<bool HAS_MULTIPLE_JOINS>
+void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelection,
+                                                    const std::vector<Selection>& selections,
+                                                    HashMap<uint64_t, std::vector<uint64_t>>& hashTable)
+{
+    auto columnMapCols = selections.size();
+    auto countSub = static_cast<size_t>(selections.size() - 1);
+
+    if (!this->getNext()) return;
+
+    uint64_t value = this->getValue(hashSelection);
+    auto* vec = &hashTable[value];
+
+    std::vector<std::pair<uint32_t, uint32_t>> leftSelections; // column, index
+    std::vector<std::pair<uint32_t, uint32_t>> rightSelections;
+
+    uint32_t index = 0;
+    for (auto& sel: selections)
+    {
+        auto col = this->getColumnForSelection(sel);
+        if (col < static_cast<uint32_t>(this->columnMapCols))
+        {
+            leftSelections.emplace_back(col, index);
+        }
+        else rightSelections.emplace_back(col - this->columnMapCols, index);
+        index++;
+    }
+
+    if (!leftSelections.empty())
+    {
+        while (true)
+        {
+            vec->resize(vec->size() + columnMapCols);
+            auto rowData = &vec->back() - countSub;
+
+            auto data = this->getCurrentRow();
+            for (auto& sel: leftSelections)
+            {
+                rowData[sel.second] = data[sel.first];
+            }
+            for (auto& sel: rightSelections)
+            {
+                rowData[sel.second] = this->right->getColumn(sel.first);
+            }
+
+            if (!this->getNext()) return;
+            uint64_t current = this->getValue(hashSelection);
+            if (current != value)
+            {
+                value = current;
+                vec = &hashTable[value];
+            }
+        }
+    }
+    else
+    {
+        while (true)
+        {
+            vec->resize(vec->size() + columnMapCols);
+            auto rowData = &vec->back() - countSub;
+            for (auto& sel: rightSelections)
+            {
+                rowData[sel.second] = this->right->getColumn(sel.first - this->columnMapCols);
+            }
+
+            if (!this->getNext()) return;
+            uint64_t current = this->getValue(hashSelection);
+            if (current != value)
+            {
+                value = current;
+                vec = &hashTable[value];
+            }
         }
     }
 }
