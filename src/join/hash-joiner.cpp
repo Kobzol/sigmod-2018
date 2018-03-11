@@ -248,3 +248,48 @@ uint64_t HashJoiner::getColumn(uint32_t column)
     }
     else return this->right->getColumn(column - this->columnMapCols);
 }
+
+void HashJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+{
+    std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
+    std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
+    auto colSize = static_cast<int32_t>(columnIds.size());
+
+    for (int i = 0; i < colSize; i++)
+    {
+        if (columnIds[i] < static_cast<uint32_t>(this->columnMapCols))
+        {
+            leftColumns.emplace_back(columnIds[i], i);
+        }
+        else rightColumns.emplace_back(columnIds[i], i);
+    }
+
+    if (!leftColumns.empty())
+    {
+        while (this->getNext())
+        {
+            auto data = this->getCurrentRow();
+            for (auto c: leftColumns)
+            {
+                results[c.second] += data[c.first];
+            }
+            for (auto c: rightColumns)
+            {
+                results[c.second] += this->right->getColumn(c.first - this->columnMapCols);
+            }
+            count++;
+        }
+    }
+    else
+    {
+        while (this->getNext())
+        {
+            int index = 0;
+            for (auto c: rightColumns)
+            {
+                results[index++] += this->right->getColumn(c.first - this->columnMapCols);
+            }
+            count++;
+        }
+    }
+}

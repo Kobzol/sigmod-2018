@@ -16,18 +16,20 @@ public:
 
     bool getNext() override;
 
-    uint64_t getValue(const Selection& selection) override;
-    uint64_t getColumn(uint32_t column) override;
+    uint64_t getValue(const Selection& selection) final;
+    uint64_t getColumn(uint32_t column) final;
 
-    bool getValueMaybe(const Selection& selection, uint64_t& value) override;
-    bool hasSelection(const Selection& selection) override;
+    bool getValueMaybe(const Selection& selection, uint64_t& value) final;
+    bool hasSelection(const Selection& selection) final;
 
-    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) override;
+    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
     void prepareColumnMappings(const std::unordered_map<SelectionId, Selection>& selections,
                                std::vector<Selection>& leftSelections);
 
-    void fillRow(uint64_t* row, const std::vector<Selection>& selections) override;
-    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections) override;
+    void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
+    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& selections) final;
+
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
 private:
     bool findRowByHash();

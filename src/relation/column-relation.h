@@ -65,36 +65,36 @@ public:
 
     bool getNext() override;
 
-    uint64_t getValue(const Selection& selection) override
+    uint64_t getValue(const Selection& selection) final
     {
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), selection.column);
     }
-    uint64_t getColumn(uint32_t column) override
+    uint64_t getColumn(uint32_t column) final
     {
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), column);
     }
 
-    void fillRow(uint64_t* row, const std::vector<Selection>& selections) override;
-    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) override;
+    void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
+    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) final;
 
-    uint32_t getColumnForSelection(const Selection& selection) override
+    uint32_t getColumnForSelection(const Selection& selection) final
     {
         return selection.column;
     }
 
-    bool hasSelection(const Selection& selection) override
+    bool hasSelection(const Selection& selection) final
     {
         return this->binding == selection.binding;
     }
 
-    bool getValueMaybe(const Selection& selection, uint64_t& value) override;
+    bool getValueMaybe(const Selection& selection, uint64_t& value) final;
 
-    int32_t getColumnCount() override
+    int32_t getColumnCount() final
     {
         return this->relation->getColumnCount();
     }
 
-    void fillBindings(std::vector<uint32_t>& ids) override
+    void fillBindings(std::vector<uint32_t>& ids) final
     {
         ids.push_back(this->binding);
     }

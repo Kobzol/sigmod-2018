@@ -2,6 +2,7 @@
 
 #include "hash/sparse_map.h"
 #include "hash/hopscotch_map.h"
+#include <unordered_map>
 
 #define INPUT_FILE "small.complete"
 
@@ -32,4 +33,4 @@
 #define QUERY_NUM_THREADS 20
 
 template <typename K, typename V>
-using HashMap = tsl::hopscotch_map<K, V>;
+using HashMap = std::unordered_map<K, V>;

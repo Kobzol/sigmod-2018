@@ -72,5 +72,10 @@ public:
         }
     }
 
+    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+    {
+
+    }
+
     int rowIndex = -1;
 };

@@ -18,18 +18,18 @@ public:
 
     }
 
-    int32_t getColumnCount() override
+    int32_t getColumnCount() final
     {
         return this->left->getColumnCount() + this->right->getColumnCount();
     }
 
-    void fillBindings(std::vector<uint32_t>& ids) override
+    void fillBindings(std::vector<uint32_t>& ids) final
     {
         this->left->fillBindings(ids);
         this->right->fillBindings(ids);
     }
 
-    uint32_t getColumnForSelection(const Selection& selection) override
+    uint32_t getColumnForSelection(const Selection& selection) final
     {
         auto id = selection.getId();
         for (int i = 0; i < this->columnMapCols; i++)

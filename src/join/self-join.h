@@ -7,25 +7,21 @@ class SelfJoin: public Iterator
 public:
     SelfJoin(Iterator& inner, std::vector<Selection> selections);
 
-    bool getNext() override;
+    bool getNext() final;
 
-    virtual int32_t getColumnCount() override;
+    int32_t getColumnCount() final;
 
-    virtual uint64_t getValue(const Selection& selection) override;
+    uint64_t getValue(const Selection& selection) final;
+    uint64_t getColumn(uint32_t column) final;
+    bool getValueMaybe(const Selection& selection, uint64_t& value) final;
 
-    virtual uint64_t getColumn(uint32_t column) override;
+    void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
+    void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) final;
 
-    virtual bool getValueMaybe(const Selection& selection, uint64_t& value) override;
+    uint32_t getColumnForSelection(const Selection& selection) final;
 
-    virtual void fillRow(uint64_t* row, const std::vector<Selection>& selections) override;
-
-    virtual void sumRow(std::vector<size_t>& sums, const std::vector<uint32_t>& columns) override;
-
-    virtual uint32_t getColumnForSelection(const Selection& selection) override;
-
-    virtual bool hasSelection(const Selection& selection) override;
-
-    virtual void fillBindings(std::vector<uint32_t>& ids) override;
+    bool hasSelection(const Selection& selection) final;
+    void fillBindings(std::vector<uint32_t>& ids) final;
 
     Iterator& inner;
     std::vector<Selection> selections;
