@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <unordered_map>
-#include <fstream>
 
 #include "../relation/column-relation.h"
 #include "joiner.h"
@@ -15,8 +14,8 @@ public:
     HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
 
     bool getNext() override;
-    uint64_t getValue(const Selection& selection) override;
 
+    uint64_t getValue(const Selection& selection) override;
     uint64_t getColumn(uint32_t column) override;
 
     bool getValueMaybe(const Selection& selection, uint64_t& value) override;
@@ -47,5 +46,6 @@ private:
 
     int joinSize;
     std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable;
-    std::ofstream debug = std::ofstream("rows-sort.txt", std::ios::app);
+
+    std::vector<uint64_t> rightValues;
 };

@@ -4,7 +4,8 @@ HashJoiner::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join
         : Joiner(left, right, join),
           leftIndex(leftIndex),
           rightIndex(1 - leftIndex),
-          joinSize(static_cast<int>(join.size()))
+          joinSize(static_cast<int>(join.size())),
+          rightValues(join.size())
 {
 
 }
@@ -45,7 +46,6 @@ bool HashJoiner::checkRowPredicates()
     auto& vec = *this->activeRow;
     auto iterator = this->right;
 
-    std::vector<uint64_t> rightValues(static_cast<size_t>(this->joinSize));
     for (int i = 1; i < this->joinSize; i++)
     {
         rightValues[i] = iterator->getValue(this->join[i].selections[this->rightIndex]);

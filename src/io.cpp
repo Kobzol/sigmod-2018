@@ -99,8 +99,12 @@ void loadDatabase(Database& database)
         }
     }
 
+#ifdef REAL_RUN
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
+#else
+    for (int i = 0; i < static_cast<int32_t>(columnId); i++)
+#endif
     {
 #ifdef USE_HASH_INDEX
         database.hashIndices[i]->build();
