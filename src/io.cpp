@@ -3,12 +3,24 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <fcntl.h>
-#include <sys/mman.h>
+#include <fstream>
+
 #include <cstring>
-#include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
+
+#ifdef LINUX
+#include <sys/mman.h>
+#include <unistd.h>
+#else
+
+#include <Windows.h>
+// TODO
+#define __builtin_expect(expr1, expr2) expr1
+
+#endif
+
 
 #include "settings.h"
 #include "stats.h"
@@ -23,6 +35,8 @@ void loadDatabase(Database& database)
     while (std::getline(std::cin, line))
     {
         if (line == "Done") break;
+
+#ifdef LINUX
 
         int fd = open(line.c_str(), O_RDONLY);
         fstat(fd, &stats);
@@ -60,30 +74,72 @@ void loadDatabase(Database& database)
 
         munmap(addr, length);
         close(fd);
+#else
+		database.relations.emplace_back();
+		ColumnRelation& rel = database.relations.back();
+		rel.cumulativeColumnId = columnId;
+
+		std::ifstream is(line, std::ifstream::binary);
+
+		if (is)
+		{
+			uint64_t rowCount = 0, columnCount = 0;
+			is.read((char*)&rowCount, sizeof(uint64_t));
+			is.read((char*)&columnCount, sizeof(uint64_t));
+
+			rel.tupleCount = rowCount;
+			rel.columnCount = columnCount;
+
+			rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
+
+#ifdef TRANSPOSE_RELATIONS
+			// TODO
+#else
+			is.read((char*)rel.data, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
+#endif
+
+			is.close();
+
+			columnId += rel.columnCount;
+		}
+		else
+		{
+			std::cerr << "cannot open " << line << std::endl;
+		}
+#endif
 
 #ifdef STATISTICS
-        tupleCount += rel.tupleCount;
-        columnCount += rel.columnCount;
-        minTuples = std::min(minTuples, rel.tupleCount);
-        maxTuples = std::max(maxTuples, rel.tupleCount);
-        minColumns = std::min(minColumns, rel.columnCount);
-        maxColumns = std::max(maxColumns, rel.columnCount);
+		tupleCount += rel.tupleCount;
+		columnCount += rel.columnCount;
 
-        bool sorted = true;
-        for (size_t i = 1; i < rel.tupleCount; i++)
-        {
-            if (rel.getValue(i, 0) <= rel.getValue(i - 1, 0))
-            {
-                sorted = false;
-                break;
-            }
-        }
-
-        if (sorted)
-        {
-            sortedOnFirstColumn++;
-        }
+#ifdef LINUX
+		minTuples = std::min(minTuples, rel.tupleCount);
+		maxTuples = std::max(maxTuples, rel.tupleCount);
+		minColumns = std::min(minColumns, rel.columnCount);
+		maxColumns = std::max(maxColumns, rel.columnCount);
+#else
+		minTuples = min(minTuples, rel.tupleCount);
+		maxTuples = max(maxTuples, rel.tupleCount);
+		minColumns = min(minColumns, rel.columnCount);
+		maxColumns = max(maxColumns, rel.columnCount);
 #endif
+
+		bool sorted = true;
+		for (size_t i = 1; i < rel.tupleCount; i++)
+		{
+			if (rel.getValue(i, 0) <= rel.getValue(i - 1, 0))
+			{
+				sorted = false;
+				break;
+			}
+		}
+
+		if (sorted)
+		{
+			sortedOnFirstColumn++;
+		}
+#endif
+
     }
 
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
@@ -142,8 +198,13 @@ uint64_t readInt(std::string& str, int& index)
 
 static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
 {
+#ifdef LINUX
     uint32_t first = std::min(bindingA, bindingB);
     uint32_t second = std::max(bindingA, bindingB);
+#else
+	uint32_t first = min(bindingA, bindingB);
+	uint32_t second = max(bindingA, bindingB);
+#endif
 
     return second * 1000 + first;
 }

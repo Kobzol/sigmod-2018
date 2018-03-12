@@ -2,7 +2,10 @@
 
 #include <chrono>
 #include <ctime>
+
+#ifdef LINUX
 #include <sys/time.h>
+#endif
 
 #include "settings.h"
 
