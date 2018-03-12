@@ -192,7 +192,7 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 
 template <bool HAS_MULTIPLE_JOINS>
 void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                                             const std::vector<Selection>& selections, size_t& count)
+                                             size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;

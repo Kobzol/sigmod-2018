@@ -1,5 +1,4 @@
 - sort joins (self-joins, size, filtered)
-- lower the amount of data in hash table (push data queries to lower hash joins)
+- sort merge join
 
-- leverage presorted first column
 - dynamic programming

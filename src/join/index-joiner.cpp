@@ -47,8 +47,11 @@ uint64_t IndexJoiner::getValue(const Selection& selection)
 
 uint64_t IndexJoiner::getColumn(uint32_t column)
 {
-    assert(false);
-    return 0;
+    if (column < this->leftColSize)
+    {
+        return this->left->getColumn(column);
+    }
+    return this->right->getColumn(column - this->leftColSize);
 }
 
 bool IndexJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
@@ -67,33 +70,35 @@ void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& 
 
     this->left->requireSelections(selections);
     this->right->prepareIndexedAccess();
+
+    this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
 }
 
-void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                          const std::vector<Selection>& selections, size_t& count)
+void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
 {
-    std::vector<std::pair<Selection, uint32_t>> leftColumns; // column, result index
-    std::vector<std::pair<Selection, uint32_t>> rightColumns;
-    auto colSize = static_cast<int32_t>(selections.size());
+    std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
+    std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
+    auto colSize = static_cast<int32_t>(columnIds.size());
 
     for (int i = 0; i < colSize; i++)
     {
-        if (this->left->hasSelection(selections[i]))
+        auto column = columnIds[i];
+        if (column < this->leftColSize)
         {
-            leftColumns.emplace_back(selections[i], i);
+            leftColumns.emplace_back(columnIds[i], i);
         }
-        else rightColumns.emplace_back(selections[i], i);
+        else rightColumns.emplace_back(columnIds[i] - this->leftColSize, i);
     }
 
     while (this->getNext())
     {
         for (auto c: leftColumns)
         {
-            results[c.second] += this->left->getValue(c.first);
+            results[c.second] += this->left->getColumn(c.first);
         }
         for (auto c: rightColumns)
         {
-            results[c.second] += this->right->getValue(c.first);
+            results[c.second] += this->right->getColumn(c.first);
         }
         count++;
     }
@@ -101,8 +106,11 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
 
 uint32_t IndexJoiner::getColumnForSelection(const Selection& selection)
 {
-    assert(false);
-    return 0;
+    if (this->left->hasSelection(selection))
+    {
+        return this->left->getColumnForSelection(selection);
+    }
+    return this->right->getColumnForSelection(selection) + this->leftColSize;
 }
 
 bool IndexJoiner::hasSelection(const Selection& selection)

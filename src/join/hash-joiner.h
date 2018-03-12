@@ -29,8 +29,7 @@ public:
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
                        HashMap<uint64_t, std::vector<uint64_t>>& hashTable) final;
 
-    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                 const std::vector<Selection>& selections, size_t& count) final;
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
 private:
     bool findRowByHash();

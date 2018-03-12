@@ -23,7 +23,7 @@ public:
 
     int32_t getColumnCount() final
     {
-        return this->left->getColumnCount() + this->right->getColumnCount();
+        return this->columnMapCols + this->right->getColumnCount();
     }
 
     void fillBindings(std::vector<uint32_t>& ids) final

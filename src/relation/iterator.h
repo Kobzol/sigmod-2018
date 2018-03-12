@@ -89,8 +89,7 @@ public:
         }
     }
 
-    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                         const std::vector<Selection>& selections, size_t& count)
+    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
     {
 
     }

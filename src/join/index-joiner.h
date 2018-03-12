@@ -16,8 +16,7 @@ public:
 
     bool hasSelection(const Selection& selection) final;
 
-    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                 const std::vector<Selection>& selections, size_t& count) final;
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
                                HashMap<uint64_t, std::vector<uint64_t>>& hashTable) override;
@@ -25,4 +24,6 @@ public:
     uint32_t getColumnForSelection(const Selection& selection) final;
 
     void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
+
+    uint32_t leftColSize;
 };
