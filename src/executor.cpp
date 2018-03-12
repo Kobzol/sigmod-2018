@@ -14,6 +14,7 @@
 #include "join/self-join.h"
 #include "timer.h"
 #include "join/index-joiner.h"
+#include "join/merge-sort-joiner.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
@@ -152,26 +153,45 @@ void createIndexJoin(Iterator* left,
             *join
     ));
 }
+void createMergesortJoin(Iterator* left,
+                         Iterator* right,
+                         uint32_t leftIndex,
+                         std::vector<std::unique_ptr<Iterator>>& container,
+                         Join* join)
+{
+    if (!left->isJoin())
+    {
+        container.push_back(left->createIndexedIterator());
+        left = container.back().get();
+    }
+
+    container.push_back(right->createIndexedIterator());
+    container.push_back(std::make_unique<MergeSortJoiner>(
+            left,
+            container.back().get(),
+            leftIndex,
+            *join
+    ));
+}
 
 void createJoin(Iterator* left,
                 Iterator* right,
                 uint32_t leftIndex,
-                Join* join,
                 std::vector<std::unique_ptr<Iterator>>& container,
+                Join* join,
                 bool first)
 {
     if (first)
     {
-        createIndexJoin(left, right, leftIndex, container, join);
+        createMergesortJoin(left, right, leftIndex, container, join);
     }
     else
     {
-        /*if (right->getFilterReduction() > 1)
+        if (right->getFilterReduction() > 1)
         {
             createIndexJoin(left, right, leftIndex, container, join);
         }
-        else createHashJoin(left, right, leftIndex, container, join);*/
-        createHashJoin(left, right, leftIndex, container, join);
+        else createHashJoin(left, right, leftIndex, container, join);
     }
 }
 
@@ -185,7 +205,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         auto& aRight = database.relations[a[0].selections[1].relation];
         auto& bLeft = database.relations[b[0].selections[0].relation];
         auto& bRight = database.relations[b[0].selections[1].relation];
-        return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount());
+        return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount()); // TODO: fix
     });
 #endif
 
@@ -194,7 +214,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto leftBinding = (*join)[0].selections[0].binding;
     auto rightBinding = (*join)[0].selections[1].binding;
 
-    createJoin(views[leftBinding], views[rightBinding], 0, join, container, true);
+    createJoin(views[leftBinding], views[rightBinding], 0, container, join, true);
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -227,7 +247,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             continue;
         }
 
-        createJoin(left, right, leftIndex, join, container, false);
+        createJoin(left, right, leftIndex, container, join, false);
         root = container.back().get();
     }
 

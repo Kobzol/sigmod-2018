@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <unordered_map>
 #include <memory>
+#include <cassert>
 
 #include "../query.h"
 #include "../util.h"
@@ -36,6 +37,15 @@ public:
     virtual void prepareIndexedAccess()
     {
 
+    }
+    virtual void prepareSortedAccess(const Selection& selection)
+    {
+
+    }
+
+    virtual bool isJoin()
+    {
+        return false;
     }
 
     /**
@@ -111,6 +121,22 @@ public:
      * It must support iterateValue.
      */
     virtual std::unique_ptr<Iterator> createIndexedIterator() = 0;
+
+    /**
+     * Saves the state of the iterator.
+     */
+    virtual void save()
+    {
+        assert(false);
+    }
+
+    /**
+     * Restores the state of the iterator;
+     */
+    virtual void restore()
+    {
+        assert(false);
+    }
 
     int rowIndex = -1;
 };

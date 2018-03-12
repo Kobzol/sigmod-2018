@@ -3,7 +3,6 @@
 template <bool HAS_MULTIPLE_JOINS>
 HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join),
-          rightSelection(this->join[0].selections[this->rightIndex]),
           rightValues(join.size())
 {
 
@@ -19,7 +18,7 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
 
         while (true)
         {
-            uint64_t value = iterator->getValue(this->rightSelection);
+            uint64_t value = iterator->getColumn(this->rightColumn);
             auto it = this->hashTable.find(value);
             if (it == this->hashTable.end())
             {
@@ -131,6 +130,8 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     auto iterator = this->left;
     auto& predicate = this->join[0];
     auto selection = predicate.selections[this->leftIndex];
+
+    this->rightColumn = this->right->getColumnForSelection(this->join[0].selections[this->rightIndex]);
 
     iterator->fillHashTable(selection, leftSelections, this->hashTable);
 }

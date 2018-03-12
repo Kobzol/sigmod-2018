@@ -52,7 +52,7 @@ private:
     const std::vector<uint64_t>* activeRow = nullptr;
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
-    Selection rightSelection;
+    uint32_t rightColumn;
 
     HashMap<uint64_t, std::vector<uint64_t>> hashTable;
     std::vector<uint64_t> rightValues;

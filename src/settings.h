@@ -15,7 +15,7 @@
 //#define TRANSPOSE_RELATIONS
 
 #define USE_HASH_INDEX
-//#define USE_SORT_INDEX
+#define USE_SORT_INDEX
 //#define USE_SELF_JOIN
 
 #ifdef USE_SORT_INDEX
@@ -24,7 +24,7 @@
     #define FILTER_ITERATOR FilterIterator
 #endif
 
-#define INDEXED_FILTER HashFilterIterator
+#define INDEXED_FILTER SortFilterIterator
 
 #define QUERY_NUM_THREADS 20
 

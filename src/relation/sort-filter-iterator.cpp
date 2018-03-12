@@ -14,9 +14,8 @@ SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t bindin
         this->startFilterIndex = 1;
         this->index = &database.getSortIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
 
-        uint64_t value = this->sortFilter.value;
-
         RowEntry* last = this->index->data.data() + this->index->data.size();
+        uint64_t value = this->sortFilter.value;
         if (this->sortFilter.oper == '<')
         {
             this->start = this->index->data.data();
@@ -44,8 +43,9 @@ SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t bindin
                                                          return val < entry.value;
                                                      }));
         }
-        this->start--;
     }
+
+    this->start--;
 }
 
 bool SortFilterIterator::getNext()
@@ -103,4 +103,24 @@ void SortFilterIterator::iterateValue(const Selection& selection, uint64_t value
                                                  return val < entry.value;
                                              }));
     this->start--;
+}
+
+void SortFilterIterator::save()
+{
+    this->startSaved = this->start;
+}
+
+void SortFilterIterator::restore()
+{
+    this->start = this->startSaved;
+    this->rowIndex = this->start->row;
+}
+
+void SortFilterIterator::prepareSortedAccess(const Selection& selection)
+{
+    this->index = &database.getSortIndex(selection.relation, selection.column);
+    this->start = this->index->data.data() - 1;
+    this->end = this->index->data.data() + this->index->data.size();
+
+    this->startFilterIndex = 0;
 }

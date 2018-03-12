@@ -1,16 +1,16 @@
+#include <iostream>
 #include "index-joiner.h"
 
 IndexJoiner::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
-        : Joiner(left, right, leftIndex, join)
+        : Joiner(left, right, leftIndex, join),
+          leftSel(this->join[0].selections[this->leftIndex]),
+          rightSel(this->join[0].selections[this->rightIndex])
 {
 
 }
 
 bool IndexJoiner::getNext()
 {
-    auto& leftSel = this->join[0].selections[this->leftIndex];
-    auto& rightSel = this->join[0].selections[this->rightIndex];
-
     while (true)
     {
         if (!this->right->getNext())
@@ -19,8 +19,8 @@ bool IndexJoiner::getNext()
             {
                 return false;
             }
-            uint64_t value = this->left->getValue(leftSel);
-            this->right->iterateValue(rightSel, value);
+            uint64_t value = this->left->getValue(this->leftSel);
+            this->right->iterateValue(this->rightSel, value);
             continue;
         }
 
@@ -124,21 +124,22 @@ void IndexJoiner::fillHashTable(const Selection& hashSelection, const std::vecto
     auto columnMapCols = static_cast<int32_t>(selections.size());
     auto countSub = static_cast<size_t>(selections.size() - 1);
 
-    std::vector<std::pair<Selection, uint32_t>> leftColumns; // column, result index
-    std::vector<std::pair<Selection, uint32_t>> rightColumns;
+    std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
+    std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
 
     for (int i = 0; i < columnMapCols; i++)
     {
         if (this->left->hasSelection(selections[i]))
         {
-            leftColumns.emplace_back(selections[i], i);
+            leftColumns.emplace_back(this->left->getColumnForSelection(selections[i]), i);
         }
-        else rightColumns.emplace_back(selections[i], i);
+        else rightColumns.emplace_back(this->left->getColumnForSelection(selections[i]), i);
     }
 
+    uint32_t hashColumn = this->getColumnForSelection(hashSelection);
     while (this->getNext())
     {
-        uint64_t value = this->getValue(hashSelection);
+        uint64_t value = this->getColumn(hashColumn);
         auto& vec = hashTable[value];
 
         // materialize rows
@@ -146,11 +147,11 @@ void IndexJoiner::fillHashTable(const Selection& hashSelection, const std::vecto
         auto rowData = &vec.back() - countSub;
         for (auto c: leftColumns)
         {
-            rowData[c.second] += this->left->getValue(c.first);
+            rowData[c.second] += this->left->getColumn(c.first);
         }
         for (auto c: rightColumns)
         {
-            rowData[c.second] += this->right->getValue(c.first);
+            rowData[c.second] += this->right->getColumn(c.first);
         }
     }
 }

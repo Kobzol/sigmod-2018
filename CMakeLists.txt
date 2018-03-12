@@ -23,6 +23,7 @@ set(SOURCE_FILES
         src/join/hash-joiner.cpp
         src/join/index-joiner.cpp
         src/join/joiner.cpp
+        src/join/merge-sort-joiner.cpp
         src/join/nested-joiner.cpp
         src/join/self-join.cpp
         src/relation/column-relation.cpp

@@ -15,7 +15,12 @@ public:
     bool skipSameValue(const Selection& selection) final;
 
     void prepareIndexedAccess() final;
+    void prepareSortedAccess(const Selection& selection) final;
+
     void iterateValue(const Selection& selection, uint64_t value) final;
+
+    void save() final;
+    void restore() final;
 
     RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator) const;
 
@@ -24,4 +29,6 @@ public:
 
     RowEntry* start = nullptr;
     RowEntry* end = nullptr;
+
+    RowEntry* startSaved;
 };

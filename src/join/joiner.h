@@ -26,6 +26,11 @@ public:
         return this->left->getColumnCount() + this->right->getColumnCount();
     }
 
+    bool isJoin() final
+    {
+        return true;
+    }
+
     uint32_t getColumnForSelection(const Selection& selection) override
     {
         auto id = selection.getId();
