@@ -116,9 +116,68 @@ void Executor::createViews(Database& database,
 #endif
 }
 
+void createHashJoin(Iterator* left,
+                    Iterator* right,
+                    uint32_t leftIndex,
+                    std::vector<std::unique_ptr<Iterator>>& container,
+                    Join* join)
+{
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<HashJoiner<true>>(
+                left,
+                right,
+                leftIndex,
+                *join
+        ));
+    }
+    else container.push_back(std::make_unique<HashJoiner<false>>(
+                left,
+                right,
+                leftIndex,
+                *join
+        ));
+}
+void createIndexJoin(Iterator* left,
+                    Iterator* right,
+                    uint32_t leftIndex,
+                    std::vector<std::unique_ptr<Iterator>>& container,
+                    Join* join)
+{
+    container.push_back(right->createIndexedIterator());
+    container.push_back(std::make_unique<IndexJoiner>(
+            left,
+            container.back().get(),
+            leftIndex,
+            *join
+    ));
+}
+
+void createJoin(Iterator* left,
+                Iterator* right,
+                uint32_t leftIndex,
+                Join* join,
+                std::vector<std::unique_ptr<Iterator>>& container,
+                bool first)
+{
+    if (first)
+    {
+        createIndexJoin(left, right, leftIndex, container, join);
+    }
+    else
+    {
+        /*if (right->getFilterReduction() > 1)
+        {
+            createIndexJoin(left, right, leftIndex, container, join);
+        }
+        else createHashJoin(left, right, leftIndex, container, join);*/
+        createHashJoin(left, right, leftIndex, container, join);
+    }
+}
+
 Iterator* Executor::createRootView(Database& database, Query& query,
-                               std::unordered_map<uint32_t, Iterator*>& views,
-                               std::vector<std::unique_ptr<Iterator>>& container)
+                                   std::unordered_map<uint32_t, Iterator*>& views,
+                                   std::vector<std::unique_ptr<Iterator>>& container)
 {
 #ifdef SORT_JOINS_BY_SIZE
     std::sort(query.joins.begin(), query.joins.end(), [&database, &views](const Join& a, const Join& b) {
@@ -126,7 +185,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         auto& aRight = database.relations[a[0].selections[1].relation];
         auto& bLeft = database.relations[b[0].selections[0].relation];
         auto& bRight = database.relations[b[0].selections[1].relation];
-        return (aLeft.getRowCount() + aRight.getRowCount()) <= (bLeft.getRowCount() + bRight.getRowCount());
+        return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount());
     });
 #endif
 
@@ -135,28 +194,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto leftBinding = (*join)[0].selections[0].binding;
     auto rightBinding = (*join)[0].selections[1].binding;
 
-    /*if (join->size() > 1)
-    {
-        container.push_back(std::make_unique<HashJoiner<true>>(
-                views[leftBinding],
-                views[rightBinding],
-                0,
-                *join
-        ));
-    }
-    else container.push_back(std::make_unique<HashJoiner<false>>(
-                views[leftBinding],
-                views[rightBinding],
-                0,
-                *join
-        ));*/
-    container.push_back(views[rightBinding]->createIndexedIterator());
-    container.push_back(std::make_unique<IndexJoiner>(
-            views[leftBinding],
-            container.back().get(),
-            0,
-            *join
-    ));
+    createJoin(views[leftBinding], views[rightBinding], 0, join, container, true);
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -189,28 +227,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             continue;
         }
 
-        if (join->size() > 1)
-        {
-            container.push_back(std::make_unique<HashJoiner<true>>(
-                    left,
-                    right,
-                    leftIndex,
-                    *join
-            ));
-        }
-        else container.push_back(std::make_unique<HashJoiner<false>>(
-                    left,
-                    right,
-                    leftIndex,
-                    *join
-            ));
-        /*container.push_back(right->createIndexedIterator());
-        container.push_back(std::make_unique<IndexJoiner>(
-                left,
-                container.back().get(),
-                leftIndex,
-                *join
-        ));*/
+        createJoin(left, right, leftIndex, join, container, false);
         root = container.back().get();
     }
 
