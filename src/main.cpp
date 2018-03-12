@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     std::vector<Query> queries;
     while (std::getline(std::cin, line))
     {
-        if (line[0] == 'F')
+        if (NOEXPECT(line[0] == 'F'))
         {
             auto queryCount = static_cast<int32_t>(queries.size());
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);

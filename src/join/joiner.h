@@ -21,9 +21,9 @@ public:
 
     }
 
-    int32_t getColumnCount() final
+    int32_t getColumnCount() override
     {
-        return this->columnMapCols + this->right->getColumnCount();
+        return this->left->getColumnCount() + this->right->getColumnCount();
     }
 
     uint32_t getColumnForSelection(const Selection& selection) override

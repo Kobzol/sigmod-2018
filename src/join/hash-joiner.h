@@ -21,6 +21,11 @@ public:
 
     bool getNext() override;
 
+    int32_t getColumnCount() final
+    {
+        return this->columnMapCols + this->right->getColumnCount();
+    }
+
     uint64_t getValue(const Selection& selection) final;
     uint64_t getColumn(uint32_t column) final;
 
