@@ -24,6 +24,10 @@ public:
     uint32_t row;
 };
 
+/**
+ * Sort index for a given relation and column.
+ * Stores a sorted list of <value, rowid> pairs.
+ */
 class SortIndex
 {
 public:

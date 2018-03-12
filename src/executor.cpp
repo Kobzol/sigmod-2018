@@ -42,11 +42,13 @@ void Executor::createViews(Database& database,
 {
     std::unordered_map<uint32_t, std::vector<Filter>> filtersByBindings;
 
+    // group filters by binding
     for (auto& filter: query.filters)
     {
         filtersByBindings[filter.selection.binding].push_back(filter);
     }
 
+    // assign a filter iterator for filtered bindings
     for (auto& filterGroup: filtersByBindings)
     {
 #ifdef USE_HASH_INDEX
@@ -84,6 +86,7 @@ void Executor::createViews(Database& database,
         container.push_back(std::move(filter));
     }
 
+    // assign a simple relation iterator for bindings without a filter
     uint32_t binding = 0;
     for (auto& relation: query.relations)
     {

@@ -4,6 +4,9 @@
 #include "../util.h"
 #include "column-relation.h"
 
+/**
+ * Iterator that filters rows according to a WHERE clause (list of Filters).
+ */
 class FilterIterator: public ColumnRelationIterator
 {
 public:

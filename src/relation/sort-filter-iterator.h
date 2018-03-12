@@ -3,6 +3,9 @@
 #include "filter-iterator.h"
 #include "../index/sort-index.h"
 
+/**
+ * Filter that looks up values in a sort index. Works for <, > and = filters.
+ */
 class SortFilterIterator: public FilterIterator
 {
 public:

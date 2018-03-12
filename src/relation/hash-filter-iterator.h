@@ -6,6 +6,10 @@
 #include "../index/hash-index.h"
 #include "filter-iterator.h"
 
+/**
+ * Filter that works if there is at least one = in WHERE.
+ * It looks up the = column in a hash index and then checks the rest of the predicates for every row.
+ */
 class HashFilterIterator: public FilterIterator
 {
 public:

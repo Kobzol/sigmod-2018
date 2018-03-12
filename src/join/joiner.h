@@ -26,12 +26,6 @@ public:
         return this->columnMapCols + this->right->getColumnCount();
     }
 
-    void fillBindings(std::vector<uint32_t>& ids) final
-    {
-        this->left->fillBindings(ids);
-        this->right->fillBindings(ids);
-    }
-
     uint32_t getColumnForSelection(const Selection& selection) override
     {
         auto id = selection.getId();

@@ -8,6 +8,10 @@
 #include "../relation/iterator.h"
 #include "../hash/sparse_map.h"
 
+/**
+ * Joins two iterators using a hash join.
+ * @tparam HAS_MULTIPLE_JOINS true if there are multiple column pairs in the join.
+ */
 template <bool HAS_MULTIPLE_JOINS>
 class HashJoiner: public Joiner
 {

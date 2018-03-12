@@ -2,6 +2,9 @@
 
 #include "joiner.h"
 
+/**
+ * Joins two iterators using NLJ on the left iterator and indexed access to the right iterator.
+ */
 class IndexJoiner: public Joiner
 {
 public:

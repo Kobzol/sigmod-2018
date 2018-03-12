@@ -9,6 +9,10 @@
 
 class ColumnRelation;
 
+/**
+ * Index for a given relation and column.
+ * Maps value to a list of row ids.
+ */
 class HashIndex
 {
 public:

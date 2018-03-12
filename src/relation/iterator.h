@@ -14,6 +14,11 @@ public:
     virtual ~Iterator() = default;
     DISABLE_COPY(Iterator);
 
+    /**
+     * Moves to the next row.
+     * After this method is called, getValue and getColumn should return values from the current row.
+     * @return True if a row was found, false if no rows are available
+     */
     virtual bool getNext() = 0;
     virtual bool skipSameValue()
     {
@@ -32,6 +37,10 @@ public:
     {
 
     }
+
+    /**
+     * Resets the iterator and tells it to iterate rows where the given selection equals the given value.
+     */
     virtual void iterateValue(const Selection& selection, uint64_t value)
     {
 
@@ -45,6 +54,11 @@ public:
     }
 
     virtual uint32_t getColumnForSelection(const Selection& selection) = 0;
+
+    /**
+     * Initializes the selection to column mappings and tells the iterator which selections are needed.
+     * After this method completes, getColumnForSelection may be called on this iterator.
+     */
     virtual void requireSelections(std::unordered_map<SelectionId, Selection>& selections)
     {
 
@@ -58,8 +72,6 @@ public:
     {
         return 0;
     }
-
-    virtual void fillBindings(std::vector<uint32_t>& ids) = 0;
 
     // assumes sorted rows (has to be used with hash or sort index)
     virtual void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
@@ -94,6 +106,10 @@ public:
 
     }
 
+    /**
+     * Creates an indexed version of this iterator.
+     * It must support iterateValue.
+     */
     virtual std::unique_ptr<Iterator> createIndexedIterator() = 0;
 
     int rowIndex = -1;

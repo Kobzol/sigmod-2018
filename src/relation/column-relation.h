@@ -54,6 +54,9 @@ public:
     }
 };
 
+/**
+ * Simple relation iterator.
+ */
 class ColumnRelationIterator: public Iterator
 {
 public:
@@ -93,11 +96,6 @@ public:
     int32_t getColumnCount() final
     {
         return this->relation->getColumnCount();
-    }
-
-    void fillBindings(std::vector<uint32_t>& ids) final
-    {
-        ids.push_back(this->binding);
     }
 
     std::unique_ptr<Iterator> createIndexedIterator() override;

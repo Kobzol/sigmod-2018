@@ -63,11 +63,6 @@ bool SelfJoin::hasSelection(const Selection& selection)
     return this->inner.hasSelection(selection);
 }
 
-void SelfJoin::fillBindings(std::vector<uint32_t>& ids)
-{
-    this->inner.fillBindings(ids);
-}
-
 std::unique_ptr<Iterator> SelfJoin::createIndexedIterator()
 {
     return this->inner.createIndexedIterator();

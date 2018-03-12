@@ -2,6 +2,9 @@
 
 #include "../relation/iterator.h"
 
+/**
+ * Iterator that filters rows based on self-join on a single relation.
+ */
 class SelfJoin: public Iterator
 {
 public:
@@ -20,7 +23,6 @@ public:
     uint32_t getColumnForSelection(const Selection& selection) final;
 
     bool hasSelection(const Selection& selection) final;
-    void fillBindings(std::vector<uint32_t>& ids) final;
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
