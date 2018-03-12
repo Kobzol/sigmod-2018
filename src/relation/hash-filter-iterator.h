@@ -17,7 +17,7 @@ public:
                                 const std::vector<Filter>& filters, int equalsIndex = -1);
 
     bool getNext() final;
-    bool skipSameValue() final;
+    bool skipSameValue(const Selection& selection) final;
 
     void prepareIndexedAccess() final;
     void iterateValue(const Selection& selection, uint64_t value) final;

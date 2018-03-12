@@ -69,16 +69,20 @@ RowEntry* SortFilterIterator::toPtr(const std::vector<RowEntry>::iterator& itera
     return this->index->data.data() + (iterator - this->index->data.begin());
 }
 
-bool SortFilterIterator::skipSameValue()
+bool SortFilterIterator::skipSameValue(const Selection& selection)
 {
-    uint64_t value = this->relation->getValue(this->rowIndex, this->sortFilter.selection.column);
-    for (; this->start < this->end; this->start++)
+    if (selection == this->sortFilter.selection)
     {
-        this->rowIndex = this->start->row;
-        if (this->relation->getValue(this->rowIndex, this->sortFilter.selection.column) != value) return true;
-    }
+        uint64_t value = this->relation->getValue(this->rowIndex, this->sortFilter.selection.column);
+        for (; this->start < this->end; this->start++)
+        {
+            this->rowIndex = this->start->row;
+            if (this->relation->getValue(this->rowIndex, this->sortFilter.selection.column) != value) return true;
+        }
 
-    return false;
+        return false;
+    }
+    return this->getNext();
 }
 
 void SortFilterIterator::prepareIndexedAccess()

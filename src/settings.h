@@ -11,7 +11,7 @@
 
 #define MEASURE_REAL_TIME
 
-#define SORT_JOINS_BY_SIZE
+//#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
 #define USE_HASH_INDEX

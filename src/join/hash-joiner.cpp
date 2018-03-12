@@ -3,7 +3,8 @@
 template <bool HAS_MULTIPLE_JOINS>
 HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join),
-          rightValues(join.size())
+          rightValues(join.size()),
+          rightSelection(this->join[0].selections[this->rightIndex])
 {
 
 }
@@ -18,11 +19,11 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
 
         while (true)
         {
-            uint64_t value = iterator->getValue(this->join[0].selections[this->rightIndex]);
+            uint64_t value = iterator->getValue(this->rightSelection);
             auto it = this->hashTable.find(value);
             if (it == this->hashTable.end())
             {
-                if (!iterator->skipSameValue()) return false;
+                if (!iterator->skipSameValue(this->rightSelection)) return false; // check if helps
                 continue;
             }
             else

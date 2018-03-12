@@ -40,10 +40,14 @@ bool HashFilterIterator::getNext()
     return false;
 }
 
-bool HashFilterIterator::skipSameValue()
+bool HashFilterIterator::skipSameValue(const Selection& selection)
 {
-    this->activeRow = nullptr;
-    return false;
+    if (selection == this->hashFilter.selection)
+    {
+        this->activeRow = nullptr;
+        return false;
+    }
+    return this->getNext();
 }
 
 void HashFilterIterator::iterateValue(const Selection& selection, uint64_t value)

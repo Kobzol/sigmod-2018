@@ -12,7 +12,7 @@ public:
     SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters);
 
     bool getNext() final;
-    bool skipSameValue() final;
+    bool skipSameValue(const Selection& selection) final;
 
     void prepareIndexedAccess() final;
     void iterateValue(const Selection& selection, uint64_t value) final;

@@ -20,7 +20,7 @@ public:
      * @return True if a row was found, false if no rows are available
      */
     virtual bool getNext() = 0;
-    virtual bool skipSameValue()
+    virtual bool skipSameValue(const Selection& selection)
     {
         return this->getNext();
     }
