@@ -2,12 +2,6 @@
 #include "hash-filter-iterator.h"
 #include "sort-filter-iterator.h"
 
-bool ColumnRelationIterator::getNext()
-{
-    this->rowIndex++;
-    return this->rowIndex < this->relation->getRowCount();
-}
-
 bool ColumnRelationIterator::getValueMaybe(const Selection& selection, uint64_t& value)
 {
     if (selection.binding != this->binding) return false;

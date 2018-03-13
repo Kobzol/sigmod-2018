@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <memory>
+#include <xmmintrin.h>
 
 #include "../util.h"
 #include "../query.h"
@@ -66,7 +67,15 @@ public:
 
     }
 
-    bool getNext() override;
+    bool getNext()
+    {
+        this->rowIndex++;
+
+#ifdef TRANSPOSE_RELATIONS
+        _mm_prefetch(this->relation->data + this->rowIndex * this->relation->columnCount, _MM_HINT_T0);
+#endif
+        return this->rowIndex < this->relation->getRowCount();
+    }
 
     uint64_t getValue(const Selection& selection) final
     {

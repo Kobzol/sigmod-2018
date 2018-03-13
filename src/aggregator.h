@@ -5,6 +5,7 @@
 #include <sstream>
 #include <cassert>
 #include <algorithm>
+#include <xmmintrin.h>
 
 #include "query.h"
 #include "database.h"
@@ -22,8 +23,6 @@ public:
         }
 
         auto map = selectionMap;
-        std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
-
         root->requireSelections(selectionMap);
 
         std::vector<uint32_t> columnIds;
@@ -35,6 +34,9 @@ public:
         }
 
         size_t count = 0;
+        std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
+        _mm_prefetch(results.data(), _MM_HINT_T0);
+
         root->sumRows(results, columnIds, count);
 
 #ifdef STATISTICS

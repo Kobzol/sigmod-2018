@@ -19,7 +19,7 @@ public:
     // leftIndex - index of join selection that is on the left side
     HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
 
-    bool getNext() override;
+    bool getNext() final;
 
     int32_t getColumnCount() final
     {

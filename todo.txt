@@ -1,4 +1,4 @@
 - sort joins (self-joins, size, filtered)
-- sort merge join
+- propagate sorted information up to enable more merge sort joins
 
 - dynamic programming
