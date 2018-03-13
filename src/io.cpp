@@ -21,10 +21,13 @@
 
 #endif
 
-
 #include "settings.h"
 #include "stats.h"
 #include "query.h"
+
+#ifdef USE_HASH_INDEX
+#include "relation/maxdiff_histogram.h"
+#endif
 
 void loadDatabase(Database& database)
 {
@@ -109,6 +112,14 @@ void loadDatabase(Database& database)
 			std::cerr << "cannot open " << line << std::endl;
 		}
 #endif
+
+#ifdef USE_HASH_INDEX
+		database.histograms.emplace_back();
+		auto& hist = database.histograms.back();
+		hist.loadrelation(rel);
+#endif
+
+
 
 #ifdef STATISTICS
 		tupleCount += rel.tupleCount;

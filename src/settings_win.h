@@ -13,6 +13,8 @@
 
 #define MEASURE_REAL_TIME
 
+#define USE_HISTOGRAM
+#define BUCKET_N 20
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 

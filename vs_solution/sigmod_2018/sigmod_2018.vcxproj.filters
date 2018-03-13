@@ -60,6 +60,9 @@
     <ClCompile Include="..\..\src\main_win.cpp">
       <Filter>test</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\relation\maxdiff_histogram.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\index\hash-index.h">
@@ -108,5 +111,8 @@
     <ClInclude Include="..\..\src\util.h" />
     <ClInclude Include="..\..\src\settings_win.h" />
     <ClInclude Include="..\..\src\settings.h" />
+    <ClInclude Include="..\..\src\relation\maxdiff_histogram.h">
+      <Filter>relation</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
