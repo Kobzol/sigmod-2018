@@ -134,7 +134,7 @@ static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
     return second * 1000 + first;
 }
 
-void createSelfJoins(Query& query)
+void createComponents(Query& query)
 {
     std::unordered_map<uint32_t, std::unique_ptr<UnionFind>> components;
 
@@ -159,7 +159,8 @@ void createSelfJoins(Query& query)
         }
     }
 
-    std::unordered_map<UnionFind*, std::vector<Selection>> groups;
+
+    std::unordered_map<UnionFind*, std::vector<Selection>> groups; // components of join graph
     for (auto& kv: components)
     {
         auto parent = kv.second->findParent();
@@ -199,6 +200,27 @@ void createSelfJoins(Query& query)
                 }
             }
         }
+    }
+
+    // rewrite sum selections
+    std::vector<Selection> usedSelections;
+    for (int i = 0; i < static_cast<int32_t>(query.selections.size()); i++)
+    {
+        auto& sel = query.selections[i];
+        for (auto& used: usedSelections)
+        {
+            auto usedIt = components.find(used.getId());
+            auto selIt = components.find(sel.getId());
+            if (usedIt != components.end() && selIt != components.end())
+            {
+                if (usedIt->second->findParent() == selIt->second->findParent())
+                {
+                    query.selections[i] = used;
+                    break;
+                }
+            }
+        }
+        usedSelections.push_back(query.selections[i]);
     }
 }
 
@@ -275,9 +297,7 @@ void loadQuery(Query& query, std::string& line)
         if (line[index++] == '|') break;
     }
 
-#ifdef USE_SELF_JOIN
-    createSelfJoins(query);
-#endif
+    createComponents(query);
 
 #ifdef STATISTICS
     query.input = line;

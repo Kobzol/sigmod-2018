@@ -1,4 +1,4 @@
 - sort joins (self-joins, size, filtered)
-- propagate sorted information up to enable more merge sort joins
+- bloom filter for hash joiner
 
 - dynamic programming
