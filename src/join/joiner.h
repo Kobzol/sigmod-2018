@@ -54,11 +54,13 @@ public:
 
     void dumpPlan(std::stringstream& ss) final
     {
+#ifdef STATISTICS
         ss << this->getJoinName() << "(";
         this->left->dumpPlan(ss);
         ss << ", ";
         this->right->dumpPlan(ss);
         ss << ", " << this->rowCount << ")";
+#endif
     }
 
     virtual std::string getJoinName() = 0;
@@ -74,4 +76,8 @@ public:
     std::vector<SelectionId> columnMap;
     int32_t columnMapCols = 0;
     int32_t joinSize;
+
+#ifdef STATISTICS
+    size_t rowCount = 0;
+#endif
 };

@@ -13,7 +13,7 @@ public:
     explicit FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters);
 
     bool getNext() override;
-    uint32_t getFilterReduction() override
+    uint32_t getFilterReduction() final
     {
         uint32_t filterReduction = 0;
 

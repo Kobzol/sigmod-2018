@@ -149,11 +149,8 @@ public:
 
     virtual void dumpPlan(std::stringstream& ss)
     {
-        ss << this->rowCount;
+
     }
 
     int rowIndex = -1;
-#ifdef STATISTICS
-    size_t rowCount = 0;
-#endif
 };
