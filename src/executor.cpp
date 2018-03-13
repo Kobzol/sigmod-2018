@@ -47,6 +47,18 @@ void Executor::createViews(Database& database,
     for (auto& filter: query.filters)
     {
         filtersByBindings[filter.selection.binding].push_back(filter);
+
+        /*int64_t count = 0;
+        auto it = std::make_unique<FILTER_ITERATOR>(&database.relations[filter.selection.relation],
+                                                    filter.selection.binding,
+                                                    std::vector<Filter>{ filter });
+        while (it->getNext())
+        {
+            count++;
+        }
+        int64_t expected = database.histograms[filter.selection.relation].estimateResult(filter);
+        std::cerr << (std::to_string(expected - count) + "\n");
+        std::cerr << std::flush;*/
     }
 
     // assign a filter iterator for filtered bindings

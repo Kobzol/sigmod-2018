@@ -97,6 +97,8 @@ void loadDatabase(Database& database)
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
 #endif
         }
+
+        database.histograms.emplace_back();
     }
 
 #ifdef REAL_RUN
@@ -113,6 +115,18 @@ void loadDatabase(Database& database)
         database.sortIndices[i]->build();
 #endif
     }
+
+#ifdef USE_HISTOGRAM
+#ifdef REAL_RUN
+    #pragma omp parallel for
+    for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
+#else
+    for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
+#endif
+    {
+        database.histograms[i].loadRelation(database.relations[i]);
+    }
+#endif
 }
 uint64_t readInt(std::string& str, int& index)
 {

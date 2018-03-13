@@ -30,6 +30,7 @@ set(SOURCE_FILES
         src/relation/filter-iterator.cpp
         src/relation/hash-filter-iterator.cpp
         src/relation/iterator.cpp
+        src/relation/maxdiff_histogram.cpp
         src/relation/sort-filter-iterator.cpp
         src/stats.cpp
         src/timer.cpp
