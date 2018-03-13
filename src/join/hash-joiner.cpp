@@ -213,9 +213,10 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
         {
             leftColumns.emplace_back(columnIds[i], i);
         }
-        else rightColumns.emplace_back(columnIds[i], i);
+        else rightColumns.emplace_back(columnIds[i] - this->columnMapCols, i);
     }
 
+    _mm_prefetch(results.data(), _MM_HINT_T0);
     if (!leftColumns.empty())
     {
         while (this->getNext())
@@ -227,7 +228,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
             }
             for (auto c: rightColumns)
             {
-                results[c.second] += this->right->getColumn(c.first - this->columnMapCols);
+                results[c.second] += this->right->getColumn(c.first);
             }
             count++;
         }
@@ -239,7 +240,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
             int index = 0;
             for (auto c: rightColumns)
             {
-                results[index++] += this->right->getColumn(c.first - this->columnMapCols);
+                results[index++] += this->right->getColumn(c.first);
             }
             count++;
         }
@@ -315,7 +316,7 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
             auto rowData = &vec->back() - countSub;
             for (auto& sel: rightSelections)
             {
-                rowData[sel.second] = this->right->getColumn(sel.first - this->columnMapCols);
+                rowData[sel.second] = this->right->getColumn(sel.first);
             }
 
             if (!this->getNext()) return;

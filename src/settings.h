@@ -18,7 +18,7 @@
 #define USE_SORT_INDEX
 //#define USE_SELF_JOIN
 
-#define USE_HISTOGRAM
+//#define USE_HISTOGRAM
 #define BUCKET_N 50
 
 #ifdef USE_SORT_INDEX
