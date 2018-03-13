@@ -181,7 +181,7 @@ void createJoin(Iterator* left,
                 Join* join,
                 bool first)
 {
-    if (first)
+    if (first || left->isSortedOn((*join)[0].selections[leftIndex]))
     {
         createMergesortJoin(left, right, leftIndex, container, join);
     }

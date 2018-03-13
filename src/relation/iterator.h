@@ -42,6 +42,10 @@ public:
     {
 
     }
+    virtual bool isSortedOn(const Selection& selection)
+    {
+        return false;
+    }
 
     virtual bool isJoin()
     {

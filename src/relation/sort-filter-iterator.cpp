@@ -12,6 +12,7 @@ SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t bindin
     {
         this->sortFilter = this->filters[0];
         this->startFilterIndex = 1;
+        this->sortSelection = this->sortFilter.selection;
         this->index = &database.getSortIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
 
         RowEntry* last = this->index->data.data() + this->index->data.size();
@@ -121,6 +122,7 @@ void SortFilterIterator::prepareSortedAccess(const Selection& selection)
     this->index = &database.getSortIndex(selection.relation, selection.column);
     this->start = this->index->data.data() - 1;
     this->end = this->index->data.data() + this->index->data.size();
+    this->sortSelection = selection;
 
     this->startFilterIndex = 0;
 }

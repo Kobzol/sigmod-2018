@@ -26,6 +26,8 @@ public:
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
+    bool isSortedOn(const Selection& selection) final;
+
     bool moveLeft();
     bool moveRight();
 

@@ -213,3 +213,8 @@ void MergeSortJoiner::fillHashTable(const Selection& hashSelection, const std::v
         }
     }
 }
+
+bool MergeSortJoiner::isSortedOn(const Selection& selection)
+{
+    return selection == this->join[0].selections[this->leftIndex];
+}

@@ -16,6 +16,10 @@ public:
 
     void prepareIndexedAccess() final;
     void prepareSortedAccess(const Selection& selection) final;
+    bool isSortedOn(const Selection& selection) final
+    {
+        return selection == this->sortSelection;
+    }
 
     void iterateValue(const Selection& selection, uint64_t value) final;
 
@@ -26,6 +30,7 @@ public:
 
     SortIndex* index;
     Filter sortFilter;
+    Selection sortSelection;
 
     RowEntry* start = nullptr;
     RowEntry* end = nullptr;
