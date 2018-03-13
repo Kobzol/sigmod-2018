@@ -48,6 +48,10 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
+    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
+                       BloomFilter<BLOOM_FILTER_SIZE>& filter) override;
+
     Iterator* left;
     Iterator* right;
 

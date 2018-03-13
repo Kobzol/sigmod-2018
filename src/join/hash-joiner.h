@@ -7,6 +7,7 @@
 #include "joiner.h"
 #include "../relation/iterator.h"
 #include "../hash/sparse_map.h"
+#include "../bloom-filter.h"
 
 /**
  * Joins two iterators using a hash join.
@@ -36,7 +37,8 @@ public:
                                std::vector<Selection>& leftSelections);
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable) final;
+                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
+                       BloomFilter<BLOOM_FILTER_SIZE>& filter) final;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
@@ -56,6 +58,8 @@ private:
 
     HashMap<uint64_t, std::vector<uint64_t>> hashTable;
     std::vector<uint64_t> rightValues;
+
+    BloomFilter<BLOOM_FILTER_SIZE> bloomFilter;
 };
 
 template class HashJoiner<false>;

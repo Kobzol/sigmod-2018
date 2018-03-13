@@ -7,6 +7,7 @@
 
 #include "../query.h"
 #include "../util.h"
+#include "../bloom-filter.h"
 
 class Iterator
 {
@@ -89,7 +90,8 @@ public:
 
     // assumes sorted rows (has to be used with hash or sort index)
     virtual void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable)
+                               HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
+                               BloomFilter<BLOOM_FILTER_SIZE>& filter)
     {
         auto columnMapCols = selections.size();
         auto countSub = static_cast<size_t>(selections.size() - 1);
@@ -97,6 +99,7 @@ public:
         if (!this->getNext()) return;
 
         uint64_t value = this->getValue(hashSelection);
+        filter.set(value);
         auto* vec = &hashTable[value];
 
         while (true)
@@ -110,6 +113,7 @@ public:
             if (current != value)
             {
                 value = current;
+                filter.set(value);
                 vec = &hashTable[value];
             }
         }

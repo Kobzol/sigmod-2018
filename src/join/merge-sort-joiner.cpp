@@ -177,43 +177,6 @@ bool MergeSortJoiner::hasSelection(const Selection& selection)
     return this->left->hasSelection(selection) || this->right->hasSelection(selection);
 }
 
-void MergeSortJoiner::fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                                    HashMap<uint64_t, std::vector<uint64_t>>& hashTable)
-{
-    auto columnMapCols = static_cast<int32_t>(selections.size());
-    auto countSub = static_cast<size_t>(selections.size() - 1);
-
-    std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
-    std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
-
-    for (int i = 0; i < columnMapCols; i++)
-    {
-        if (this->left->hasSelection(selections[i]))
-        {
-            leftColumns.emplace_back(this->left->getColumnForSelection(selections[i]), i);
-        }
-        else rightColumns.emplace_back(this->right->getColumnForSelection(selections[i]), i);
-    }
-
-    while (this->getNext())
-    {
-        uint64_t value = this->getValue(hashSelection);
-        auto& vec = hashTable[value];
-
-        // materialize rows
-        vec.resize(vec.size() + columnMapCols);
-        auto rowData = &vec.back() - countSub;
-        for (auto c: leftColumns)
-        {
-            rowData[c.second] += this->left->getColumn(c.first);
-        }
-        for (auto c: rightColumns)
-        {
-            rowData[c.second] += this->right->getColumn(c.first);
-        }
-    }
-}
-
 bool MergeSortJoiner::isSortedOn(const Selection& selection)
 {
     return selection == this->join[0].selections[this->leftIndex];

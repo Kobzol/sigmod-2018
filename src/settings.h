@@ -26,6 +26,13 @@
 
 #define INDEXED_FILTER SortFilterIterator
 
+//#define USE_BLOOM_FILTER
+#ifdef USE_BLOOM_FILTER
+    #define BLOOM_FILTER_SIZE (2 << 18)
+#else
+    #define BLOOM_FILTER_SIZE (2 << 3)
+#endif
+
 #define QUERY_NUM_THREADS 20
 
 template <typename K, typename V>

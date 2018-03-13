@@ -19,6 +19,13 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
         while (true)
         {
             uint64_t value = iterator->getColumn(this->rightColumn);
+#ifdef USE_BLOOM_FILTER
+            if (!this->bloomFilter.has(value))
+            {
+                if (!iterator->getNext()) return false; // use skipSameValue?
+                continue;
+            }
+#endif
             auto it = this->hashTable.find(value);
             if (it == this->hashTable.end())
             {
@@ -133,7 +140,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
 
     this->rightColumn = this->right->getColumnForSelection(this->join[0].selections[this->rightIndex]);
 
-    iterator->fillHashTable(selection, leftSelections, this->hashTable);
+    iterator->fillHashTable(selection, leftSelections, this->hashTable, this->bloomFilter);
 }
 
 template <bool HAS_MULTIPLE_JOINS>
@@ -242,7 +249,8 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
 template<bool HAS_MULTIPLE_JOINS>
 void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelection,
                                                     const std::vector<Selection>& selections,
-                                                    HashMap<uint64_t, std::vector<uint64_t>>& hashTable)
+                                                    HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
+                                                    BloomFilter<BLOOM_FILTER_SIZE>& filter)
 {
     auto columnMapCols = selections.size();
     auto countSub = static_cast<size_t>(selections.size() - 1);
@@ -250,6 +258,9 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
     if (!this->getNext()) return;
 
     uint64_t value = this->getValue(hashSelection);
+#ifdef USE_BLOOM_FILTER
+    filter.set(value);
+#endif
     auto* vec = &hashTable[value];
 
     std::vector<std::pair<uint32_t, uint32_t>> leftSelections; // column, index
@@ -289,6 +300,9 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
             if (current != value)
             {
                 value = current;
+#ifdef USE_BLOOM_FILTER
+                filter.set(value);
+#endif
                 vec = &hashTable[value];
             }
         }
@@ -309,6 +323,9 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
             if (current != value)
             {
                 value = current;
+#ifdef USE_BLOOM_FILTER
+                filter.set(value);
+#endif
                 vec = &hashTable[value];
             }
         }
