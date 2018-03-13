@@ -23,6 +23,8 @@ public:
 
     void iterateValue(const Selection& selection, uint64_t value) final;
 
+    int64_t predictSize() final;
+
     void save() final;
     void restore() final;
 
@@ -41,4 +43,5 @@ public:
     RowEntry* end = nullptr;
 
     RowEntry* startSaved;
+    RowEntry* originalStart;
 };

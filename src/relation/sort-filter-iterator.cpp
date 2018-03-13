@@ -47,6 +47,7 @@ SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t bindin
     }
 
     this->start--;
+    this->originalStart = this->start;
 }
 
 bool SortFilterIterator::getNext()
@@ -104,6 +105,7 @@ void SortFilterIterator::iterateValue(const Selection& selection, uint64_t value
                                                  return val < entry.value;
                                              }));
     this->start--;
+    this->originalStart = this->start;
 }
 
 void SortFilterIterator::save()
@@ -125,4 +127,9 @@ void SortFilterIterator::prepareSortedAccess(const Selection& selection)
     this->sortSelection = selection;
 
     this->startFilterIndex = 0;
+}
+
+int64_t SortFilterIterator::predictSize()
+{
+    return this->end - this->originalStart;
 }

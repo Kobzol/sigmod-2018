@@ -23,6 +23,13 @@ public:
 
     std::vector<std::unique_ptr<HashIndex>> hashIndices;
     std::vector<std::unique_ptr<SortIndex>> sortIndices;
+
+    // TODO: look up join result cache
+    int64_t predictSize(Join& join)
+    {
+        return this->relations[join[0].selections[0].relation].getRowCount() *
+                this->relations[join[0].selections[1].relation].getRowCount();
+    }
 };
 
 extern Database database;

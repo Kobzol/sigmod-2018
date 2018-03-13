@@ -28,6 +28,8 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
+    int64_t predictSize() override;
+
     void dumpPlan(std::stringstream& ss) override
     {
         ss << "FI";

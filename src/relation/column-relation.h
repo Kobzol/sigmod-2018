@@ -114,6 +114,11 @@ public:
         bindings.push_back(this->binding);
     }
 
+    int64_t predictSize() override
+    {
+        return this->relation->getRowCount();
+    }
+
     void dumpPlan(std::stringstream& ss) override
     {
         ss << "CI";

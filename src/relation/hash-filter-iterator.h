@@ -22,6 +22,8 @@ public:
     void prepareIndexedAccess() final;
     void iterateValue(const Selection& selection, uint64_t value) final;
 
+    int64_t predictSize() final;
+
     void dumpPlan(std::stringstream& ss) final
     {
         ss << "HFI";

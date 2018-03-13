@@ -58,6 +58,8 @@ public:
         this->right->fillBindings(bindings);
     }
 
+    int64_t predictSize() override;
+
     void dumpPlan(std::stringstream& ss) final
     {
 #ifdef STATISTICS

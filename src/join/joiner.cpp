@@ -1,6 +1,5 @@
-#include "merge-sort-joiner.h"
-#include <iostream>
 #include "joiner.h"
+#include "../database.h"
 
 void Joiner::setColumn(SelectionId selectionId, uint32_t column)
 {
@@ -67,4 +66,9 @@ void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Sel
             rowData[c.second] += this->right->getColumn(c.first);
         }
     }
+}
+
+int64_t Joiner::predictSize()
+{
+    return database.predictSize(this->join);
 }

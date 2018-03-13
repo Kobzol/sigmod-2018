@@ -157,5 +157,10 @@ public:
 
     }
 
+    virtual int64_t predictSize()
+    {
+        return 0;
+    }
+
     int rowIndex = -1;
 };

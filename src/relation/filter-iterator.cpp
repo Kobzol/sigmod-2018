@@ -1,6 +1,7 @@
 #include "filter-iterator.h"
 #include "hash-filter-iterator.h"
 #include "sort-filter-iterator.h"
+#include "../database.h"
 
 #include <cassert>
 
@@ -50,4 +51,9 @@ bool FilterIterator::passesFilters()
 std::unique_ptr<Iterator> FilterIterator::createIndexedIterator()
 {
     return std::make_unique<INDEXED_FILTER>(this->relation, this->binding, this->filters);
+}
+
+int64_t FilterIterator::predictSize()
+{
+    return database.histograms[this->filters[0].selection.relation].estimateResult(this->filters[0]);
 }

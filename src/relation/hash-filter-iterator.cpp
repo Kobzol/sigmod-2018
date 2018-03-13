@@ -67,3 +67,8 @@ void HashFilterIterator::prepareIndexedAccess()
     this->activeRow = nullptr;
     this->startFilterIndex = 0;
 }
+
+int64_t HashFilterIterator::predictSize()
+{
+    return this->rowCount;
+}
