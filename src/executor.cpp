@@ -41,79 +41,86 @@ void Executor::createViews(Database& database,
                            std::unordered_map<uint32_t, Iterator*>& views,
                            std::vector<std::unique_ptr<Iterator>>& container)
 {
-    std::unordered_map<uint32_t, std::vector<Filter>> filtersByBindings;
+	// Pro kazdou tabulku seznam filtru.
+	std::unordered_map<uint32_t, std::vector<Filter>> filtersByBindings;
 
-    // group filters by binding
-    for (auto& filter: query.filters)
-    {
-        filtersByBindings[filter.selection.binding].push_back(filter);
-    }
+	// Nastavi hash mapu tabulka -> seznam filtru.
+	for (auto& filter : query.filters)
+	{
+		filtersByBindings[filter.selection.binding].push_back(filter);
+	}
 
-    // assign a filter iterator for filtered bindings
-    for (auto& filterGroup: filtersByBindings)
-    {
+	// Pro kazdou dvojici (tabulka -> seznam filtru)
+	for (auto& filterGroup : filtersByBindings)
+	{
 #ifdef USE_HASH_INDEX
-        int equalsIndex = -1;
-        for (int i = 0; i < static_cast<int32_t>(filterGroup.second.size()); i++)
-        {
-            if (filterGroup.second[i].oper == '=')
-            {
-                equalsIndex = i;
-                break;
-            }
-        }
+		int equalsIndex = -1;
+		for (int i = 0; i < static_cast<int32_t>(filterGroup.second.size()); i++)
+		{
+			if (filterGroup.second[i].oper == '=')
+			{
+				equalsIndex = i;
+				break;
+			}
+		}
 #endif
 
-        auto binding = filterGroup.first;
-        auto relation = &database.relations[filterGroup.second[0].selection.relation];
+		auto binding = filterGroup.first;
+		auto relation = &database.relations[filterGroup.second[0].selection.relation];
 #ifdef USE_HASH_INDEX
-        std::unique_ptr<FilterIterator> filter;
-        if (equalsIndex != -1)
-        {
-            filter = std::make_unique<HashFilterIterator>(relation,
-                                                          binding,
-                                                          filterGroup.second,
-                                                          equalsIndex);
-        }
-        else filter = std::make_unique<FILTER_ITERATOR>(relation,
-                                                        binding,
-                                                        filterGroup.second);
+		std::unique_ptr<FilterIterator> filter;
+
+		// Vytvorime bud hashovany filtr nebo iteracni filtr.
+		if (equalsIndex != -1)
+		{
+			filter = std::make_unique<HashFilterIterator>(relation,
+				binding,
+				filterGroup.second,
+				equalsIndex);
+		}
+		else
+		{
+			filter = std::make_unique<FILTER_ITERATOR>(relation,
+				binding,
+				filterGroup.second);
+		}
 #else
-        auto filter = std::make_unique<FILTER_ITERATOR>(relation,
-                                                        binding,
-                                                        filterGroup.second);
+		auto filter = std::make_unique<FILTER_ITERATOR>(relation,
+			binding,
+			filterGroup.second);
 #endif
-        views.insert({ binding, filter.get() });
-        container.push_back(std::move(filter));
-    }
 
-    // assign a simple relation iterator for bindings without a filter
-    uint32_t binding = 0;
-    for (auto& relation: query.relations)
-    {
-        auto it = views.find(binding);
-        if (it == views.end())
-        {
-            container.push_back(std::make_unique<ColumnRelationIterator>(
-                    &database.relations[relation],
-                    binding
-            ));
-            views.insert({ binding, container.back().get() });
-        }
-        binding++;
-    }
+		views.insert({ binding, filter.get() });
+		container.push_back(std::move(filter));
+	}
+
+	// Zbytek tabulek, pro ktere nemame zadne filtry.
+	uint32_t binding = 0;
+	for (auto& relation : query.relations)
+	{
+		auto it = views.find(binding);
+		if (it == views.end())
+		{
+			container.push_back(std::make_unique<ColumnRelationIterator>(
+				&database.relations[relation],
+				binding
+				));
+			views.insert({ binding, container.back().get() });
+		}
+		binding++;
+	}
 
 #ifdef USE_SELF_JOIN
-    // assign self-joins
-    for (auto& kv: query.selfJoins)
-    {
-        auto it = views.find(kv.first);
-        container.push_back(std::make_unique<SelfJoin>(
-                *it->second,
-                kv.second
-        ));
-        views[binding] = container.back().get();
-    }
+	// assign self-joins
+	for (auto& kv : query.selfJoins)
+	{
+		auto it = views.find(kv.first);
+		container.push_back(std::make_unique<SelfJoin>(
+			*it->second,
+			kv.second
+			));
+		views[binding] = container.back().get();
+	}
 #endif
 }
 

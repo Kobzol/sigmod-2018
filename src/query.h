@@ -4,12 +4,14 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <iostream>
 
 #include "util.h"
 #include "settings.h"
 
 using SelectionId = uint32_t;
 
+// Odkaz na urcity sloupec v urcite taulce.
 class Selection
 {
 public:
@@ -38,6 +40,11 @@ public:
     uint32_t relation;
     uint32_t binding; // index of relation in query
     uint32_t column;
+
+	void print()
+	{
+		std::cout << "\"" << this->binding << "\".c" << column;
+	}
 };
 
 class UnionFind
@@ -102,6 +109,15 @@ struct JoinPredicate
 {
 public:
     Selection selections[2];
+
+	void print()
+	{
+		std::cout << "(";
+		selections[0].print();
+		std::cout << " = ";
+		selections[1].print();
+		std::cout << ")";
+	}
 };
 
 // join is for two relations (bindings)
@@ -120,6 +136,12 @@ public:
     Selection selection;
     char oper;
     uint64_t value;
+
+	void print()
+	{
+		selection.print();
+		std::cout << " " << oper << " " << value;
+	}
 };
 
 class Query

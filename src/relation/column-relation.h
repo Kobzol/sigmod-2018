@@ -17,7 +17,8 @@ public:
     DISABLE_COPY(ColumnRelation);
     ENABLE_MOVE(ColumnRelation);
 
-    uint32_t columnCount;
+	uint32_t name;
+	uint32_t columnCount;
     uint32_t cumulativeColumnId;
     uint64_t tupleCount;
     uint64_t* data;
@@ -53,6 +54,12 @@ public:
     {
         return this->getValue(row, selection.column);
     }
+
+	void printName()
+	{
+		std::cout << "R";
+		std::cout << this->name;
+	}
 };
 
 /**
@@ -126,4 +133,7 @@ public:
 
     ColumnRelation* relation;
     uint32_t binding;
+
+	void printPlan(unsigned int level) override;
+
 };

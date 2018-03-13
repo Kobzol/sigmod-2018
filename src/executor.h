@@ -28,4 +28,9 @@ private:
     Iterator* createRootView(Database& database, Query& query,
                              std::unordered_map<uint32_t, Iterator*>& views,
                              std::vector<std::unique_ptr<Iterator>>& container);
+
+	// Sestaveni planu dotazu.
+	Iterator* buildQueryPlan1(Database& database, Query& query,
+		std::unordered_map<uint32_t, Iterator*>& views,
+		std::vector<std::unique_ptr<Iterator>>& container);
 };

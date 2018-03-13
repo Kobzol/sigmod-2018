@@ -32,6 +32,7 @@ void loadDatabase(Database& database)
     struct stat stats{};
 
     uint32_t columnId = 0;
+	uint32_t name = 0;
     while (std::getline(std::cin, line))
     {
         if (line == "Done") break;
@@ -78,6 +79,7 @@ void loadDatabase(Database& database)
 		database.relations.emplace_back();
 		ColumnRelation& rel = database.relations.back();
 		rel.cumulativeColumnId = columnId;
+		rel.name = name;
 
 		std::ifstream is(line, std::ifstream::binary);
 
@@ -140,6 +142,7 @@ void loadDatabase(Database& database)
 		}
 #endif
 
+		name++;
     }
 
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
