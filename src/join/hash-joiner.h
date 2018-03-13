@@ -42,6 +42,11 @@ public:
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
+    std::string getJoinName() final
+    {
+        return "HS";
+    }
+
 private:
     bool findRowByHash();
     bool checkRowPredicates();

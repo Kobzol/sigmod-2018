@@ -22,6 +22,11 @@ public:
     void prepareIndexedAccess() final;
     void iterateValue(const Selection& selection, uint64_t value) final;
 
+    void dumpPlan(std::stringstream& ss) final
+    {
+        ss << "HFI";
+    }
+
     HashIndex* index;
     const std::vector<uint64_t>* activeRow = nullptr;
     int activeRowIndex = -1;

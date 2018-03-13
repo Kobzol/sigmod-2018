@@ -67,7 +67,7 @@ public:
 
     }
 
-    bool getNext()
+    bool getNext() override
     {
         this->rowIndex++;
 
@@ -108,6 +108,11 @@ public:
     }
 
     std::unique_ptr<Iterator> createIndexedIterator() override;
+
+    void dumpPlan(std::stringstream& ss) override
+    {
+        ss << "CI";
+    }
 
     ColumnRelation* relation;
     uint32_t binding;

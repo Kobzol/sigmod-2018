@@ -134,8 +134,8 @@ public:
     std::unordered_map<uint32_t, std::vector<Selection>> selfJoins; // binding to self-join selections
 
 #ifdef STATISTICS
-    size_t count;
     std::string input;
+    std::string plan;
     double time;
 #endif
 };

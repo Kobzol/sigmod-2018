@@ -26,6 +26,11 @@ public:
     void save() final;
     void restore() final;
 
+    void dumpPlan(std::stringstream& ss) final
+    {
+        ss << "SFI";
+    }
+
     RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator) const;
 
     SortIndex* index;

@@ -25,6 +25,11 @@ public:
 
     bool isSortedOn(const Selection& selection) final;
 
+    std::string getJoinName() final
+    {
+        return "MS";
+    }
+
     bool moveLeft();
     bool moveRight();
 

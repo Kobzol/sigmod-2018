@@ -28,6 +28,11 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
+    void dumpPlan(std::stringstream& ss) override
+    {
+        ss << "FI";
+    }
+
     bool passesFilters();
 
     std::vector<Filter> filters;

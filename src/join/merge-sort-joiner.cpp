@@ -88,6 +88,9 @@ bool MergeSortJoiner::getNext()
             continue;
         }
 
+#ifdef STATISTICS
+        this->rowCount++;
+#endif
         return true;
     }
 }

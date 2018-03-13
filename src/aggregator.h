@@ -40,7 +40,9 @@ public:
         root->sumRows(results, columnIds, count);
 
 #ifdef STATISTICS
-        query.count = count;
+        std::stringstream planStream;
+        root->dumpPlan(planStream);
+        query.plan = planStream.str();
 #endif
 
         std::stringstream ss;

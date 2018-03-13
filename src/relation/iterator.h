@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <memory>
 #include <cassert>
+#include <sstream>
 
 #include "../query.h"
 #include "../util.h"
@@ -146,5 +147,13 @@ public:
         assert(false);
     }
 
+    virtual void dumpPlan(std::stringstream& ss)
+    {
+        ss << this->rowCount;
+    }
+
     int rowIndex = -1;
+#ifdef STATISTICS
+    size_t rowCount = 0;
+#endif
 };

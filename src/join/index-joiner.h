@@ -24,6 +24,11 @@ public:
 
     void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
 
+    std::string getJoinName() final
+    {
+        return "NL";
+    }
+
     Selection leftSel;
     Selection rightSel;
 

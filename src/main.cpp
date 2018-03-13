@@ -72,17 +72,7 @@ int main(int argc, char** argv)
             }
 
 #ifdef STATISTICS
-            for (auto& q: queries)
-            {
-                queryRowsMax = std::max(queryRowsMax, q.count);
-                if (queryRowsMax == q.count)
-                {
-                    queryMaxRowsString = q.input;
-                }
-                queryRowsCount += q.count;
-            }
             batchCount++;
-
             allQueries.insert(allQueries.end(), queries.begin(), queries.end());
 #endif
 
@@ -157,9 +147,9 @@ int main(int argc, char** argv)
         return a.time > b.time;
     });
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 15; i++)
     {
-        std::cerr << i << ": " << allQueries[i].time << "ms " << allQueries[i].input << " ";
+        std::cerr << allQueries[i].time << "ms, " << allQueries[i].plan << ' ';
         for (auto& r: allQueries[i].relations)
         {
             std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";

@@ -34,7 +34,13 @@ bool IndexJoiner::getNext()
                 break;
             }
         }
-        if (ok) return true;
+        if (ok)
+        {
+#ifdef STATISTICS
+            this->rowCount++;
+#endif
+            return true;
+        }
     }
 }
 

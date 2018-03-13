@@ -52,6 +52,17 @@ public:
                        HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
                        BloomFilter<BLOOM_FILTER_SIZE>& filter) override;
 
+    void dumpPlan(std::stringstream& ss) final
+    {
+        ss << this->getJoinName() << "(";
+        this->left->dumpPlan(ss);
+        ss << ", ";
+        this->right->dumpPlan(ss);
+        ss << ", " << this->rowCount << ")";
+    }
+
+    virtual std::string getJoinName() = 0;
+
     Iterator* left;
     Iterator* right;
 

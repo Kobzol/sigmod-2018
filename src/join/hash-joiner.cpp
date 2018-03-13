@@ -41,9 +41,15 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
         }
 
         this->activeRowIndex = 0;
+#ifdef STATISTICS
+        this->rowCount++;
+#endif
         return true;
     }
 
+#ifdef STATISTICS
+    this->rowCount++;
+#endif
     return true;
 }
 
