@@ -109,6 +109,11 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() override;
 
+    void fillBindings(std::vector<uint32_t>& bindings) final
+    {
+        bindings.push_back(this->binding);
+    }
+
     void dumpPlan(std::stringstream& ss) override
     {
         ss << "CI";

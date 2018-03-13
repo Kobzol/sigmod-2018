@@ -52,6 +52,12 @@ public:
                        HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
                        BloomFilter<BLOOM_FILTER_SIZE>& filter) override;
 
+    void fillBindings(std::vector<uint32_t>& bindings) final
+    {
+        this->left->fillBindings(bindings);
+        this->right->fillBindings(bindings);
+    }
+
     void dumpPlan(std::stringstream& ss) final
     {
 #ifdef STATISTICS

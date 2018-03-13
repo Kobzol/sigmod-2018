@@ -147,6 +147,11 @@ public:
         assert(false);
     }
 
+    virtual void fillBindings(std::vector<uint32_t>& bindings)
+    {
+
+    }
+
     virtual void dumpPlan(std::stringstream& ss)
     {
 
