@@ -18,6 +18,7 @@
 {**************************************************************************/
 
 #include <time.h>
+#include "cTimer.h"
 
 /**
 *	Time measurement in Linux.

@@ -2,7 +2,7 @@
 
 double get_wall_time()
 {
-#ifdef  LINUX
+#ifdef  __linux__
 	struct timeval time {};
 	if (gettimeofday(&time, nullptr))
 	{
@@ -12,5 +12,5 @@ double get_wall_time()
 
 #else
 	return 0;
-#endif //  LINUX
+#endif //  __linux__
 }

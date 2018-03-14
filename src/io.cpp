@@ -115,7 +115,7 @@ void loadDatabase(Database& database)
 		tupleCount += rel.tupleCount;
 		columnCount += rel.columnCount;
 
-#ifdef LINUX
+#ifdef __linux__
 		minTuples = std::min(minTuples, rel.tupleCount);
 		maxTuples = std::max(maxTuples, rel.tupleCount);
 		minColumns = std::min(minColumns, rel.columnCount);

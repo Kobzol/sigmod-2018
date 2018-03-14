@@ -3,7 +3,7 @@
 #include <chrono>
 #include <ctime>
 
-#ifdef LINUX
+#ifdef __linux__
 #include <sys/time.h>
 #endif
 

@@ -35,7 +35,7 @@ public:
 
         size_t count = 0;
         std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
-#ifdef LINUX
+#ifdef __linux__
         _mm_prefetch(results.data(), _MM_HINT_T0);
 #endif
 

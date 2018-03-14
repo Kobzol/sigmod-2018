@@ -53,7 +53,7 @@ public:
 };
 }}
 
-#ifndef LINUX
+#ifndef __linux__
 	#include <windows.h>
 	#include <math.h>
 	#include <iostream>
