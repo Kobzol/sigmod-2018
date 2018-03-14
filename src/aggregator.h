@@ -35,7 +35,9 @@ public:
 
         size_t count = 0;
         std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
+#ifdef LINUX
         _mm_prefetch(results.data(), _MM_HINT_T0);
+#endif
 
         root->sumRows(results, columnIds, count);
 

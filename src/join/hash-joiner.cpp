@@ -214,7 +214,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
         else rightColumns.emplace_back(columnIds[i] - this->columnMapCols, i);
     }
 
+#ifdef LINUX
     _mm_prefetch(results.data(), _MM_HINT_T0);
+#endif
 
     if (!HAS_MULTIPLE_JOINS)
     {

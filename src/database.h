@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional> 
+#include <algorithm>
 #include <vector>
 #include <mutex>
 

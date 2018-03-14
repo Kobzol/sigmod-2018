@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>   // std::greater
+#include <algorithm>
+
 #include "../settings.h"
 #include "iterator.h"
 #include "column-relation.h"

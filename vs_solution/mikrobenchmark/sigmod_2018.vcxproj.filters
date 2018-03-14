@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="index">
+      <UniqueIdentifier>{381a6c4a-03ea-4221-adc3-292216dd27f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="join">
+      <UniqueIdentifier>{0a9cf76d-8ca2-4794-8023-520f5b3d6977}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="relation">
+      <UniqueIdentifier>{45d3ec3b-15f5-4a15-b655-a936705e5682}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="test">
+      <UniqueIdentifier>{01a941ad-ff01-438a-8927-ec0e32b79718}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{662c4953-d104-46cf-9e35-0b66e81f88ed}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\index\hash-index.cpp">
+      <Filter>index</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\index\sort-index.cpp">
+      <Filter>index</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\join\hash-joiner.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\join\index-joiner.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\join\joiner.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\join\nested-joiner.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\join\self-join.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\relation\column-relation.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\relation\filter-iterator.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\relation\hash-filter-iterator.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\relation\iterator.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\relation\sort-filter-iterator.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aggregator.cpp" />
+    <ClCompile Include="..\..\src\database.cpp" />
+    <ClCompile Include="..\..\src\executor.cpp" />
+    <ClCompile Include="..\..\src\io.cpp" />
+    <ClCompile Include="..\..\src\stats.cpp" />
+    <ClCompile Include="..\..\src\timer.cpp" />
+    <ClCompile Include="..\..\src\relation\maxdiff_histogram.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\test\mikrobenchmark.cpp">
+      <Filter>test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\cTimer.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\join\merge-sort-joiner.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\index\hash-index.h">
+      <Filter>index</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\index\sort-index.h">
+      <Filter>index</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\hash-joiner.h">
+      <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\index-joiner.h">
+      <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\joiner.h">
+      <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\nested-joiner.h">
+      <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\self-join.h">
+      <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\column-relation.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\filter-iterator.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\hash-filter-iterator.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\iterator.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\sort-filter-iterator.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregator.h" />
+    <ClInclude Include="..\..\src\database.h" />
+    <ClInclude Include="..\..\src\executor.h" />
+    <ClInclude Include="..\..\src\io.h" />
+    <ClInclude Include="..\..\src\query.h" />
+    <ClInclude Include="..\..\src\stats.h" />
+    <ClInclude Include="..\..\src\timer.h" />
+    <ClInclude Include="..\..\src\util.h" />
+    <ClInclude Include="..\..\src\settings.h" />
+    <ClInclude Include="..\..\src\relation\maxdiff_histogram.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\cTimer.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\merge-sort-joiner.h">
+      <Filter>join</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
