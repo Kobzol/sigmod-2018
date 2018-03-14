@@ -57,8 +57,6 @@ public:
         return "HS";
     }
 
-	void printPlan(unsigned int level) override;
-
 private:
     bool findRowByHash();
     bool checkRowPredicates();

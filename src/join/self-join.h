@@ -29,6 +29,4 @@ public:
     Iterator& inner;
     std::vector<Selection> selections;
     int32_t selectionSize;
-
-	void printPlan(unsigned int level) override;
 };

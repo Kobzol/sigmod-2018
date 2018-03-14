@@ -133,7 +133,4 @@ public:
 
     ColumnRelation* relation;
     uint32_t binding;
-
-	void printPlan(unsigned int level) override;
-
 };

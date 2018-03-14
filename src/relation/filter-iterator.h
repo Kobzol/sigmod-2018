@@ -39,7 +39,5 @@ public:
 
     std::vector<Filter> filters;
     int startFilterIndex = 0;
-    int filterSize;
-
-	void printPlan(unsigned int level) override;
+    int filterSize;;
 };

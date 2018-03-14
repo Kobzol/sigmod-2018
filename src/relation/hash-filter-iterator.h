@@ -35,6 +35,4 @@ public:
     int32_t rowCount;
 
     Filter hashFilter;
-
-	void printPlan(unsigned int level) override;
 };

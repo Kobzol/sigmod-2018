@@ -10,15 +10,13 @@
 #include <unordered_set>
 #include <algorithm>
 
-#ifdef LINUX
-#include <sys/mman.h>
-#include <unistd.h>
+#ifdef __linux__
+    #include <sys/mman.h>
+    #include <unistd.h>
 #else
-
-#include <Windows.h>
-// TODO
-#define __builtin_expect(expr1, expr2) expr1
-
+    #include <Windows.h>
+    // TODO
+    #define __builtin_expect(expr1, expr2) expr1
 #endif
 
 #include "settings.h"
@@ -40,7 +38,7 @@ void loadDatabase(Database& database)
     {
         if (line == "Done") break;
 
-#ifdef LINUX
+#ifdef __linux__
 
         int fd = open(line.c_str(), O_RDONLY);
         fstat(fd, &stats);
@@ -112,14 +110,6 @@ void loadDatabase(Database& database)
 			std::cerr << "cannot open " << line << std::endl;
 		}
 #endif
-
-#ifdef USE_HASH_INDEX
-		database.histograms.emplace_back();
-		auto& hist = database.histograms.back();
-		hist.loadrelation(rel);
-#endif
-
-
 
 #ifdef STATISTICS
 		tupleCount += rel.tupleCount;
@@ -212,7 +202,7 @@ uint64_t readInt(std::string& str, int& index)
 
 static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
 {
-#ifdef LINUX
+#ifdef __linux__
     uint32_t first = std::min(bindingA, bindingB);
     uint32_t second = std::max(bindingA, bindingB);
 #else
