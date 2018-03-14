@@ -34,7 +34,7 @@ bool MergeSortJoiner::checkJoins()
 
 bool MergeSortJoiner::findSameRow()
 {
-    if (!this->hasItems)
+    if (NOEXPECT(!this->hasItems))
     {
         if (!this->moveLeft()) return false;
         if (!this->moveRight()) return false;
@@ -161,17 +161,24 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
         else rightColumns.emplace_back(columnIds[i] - this->left->getColumnCount(), i);
     }
 
-    while (this->getNext())
+    if (this->joinSize == 1)
     {
-        for (auto c: leftColumns)
+        this->aggregateDirect(results, leftColumns, rightColumns, count);
+    }
+    else
+    {
+        while (this->getNext())
         {
-            results[c.second] += this->left->getColumn(c.first);
+            for (auto& c: leftColumns)
+            {
+                results[c.second] += this->left->getColumn(c.first);
+            }
+            for (auto& c: rightColumns)
+            {
+                results[c.second] += this->right->getColumn(c.first);
+            }
+            count++;
         }
-        for (auto c: rightColumns)
-        {
-            results[c.second] += this->right->getColumn(c.first);
-        }
-        count++;
     }
 }
 
@@ -183,4 +190,64 @@ bool MergeSortJoiner::hasSelection(const Selection& selection)
 bool MergeSortJoiner::isSortedOn(const Selection& selection)
 {
     return selection == this->join[0].selections[this->leftIndex];
+}
+
+void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
+                                      const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                                      const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                                      size_t& count)
+{
+    while (true)
+    {
+        if (NOEXPECT(!this->findSameRow())) return;
+
+        uint64_t value = this->rightValue;
+        int32_t rightCount = 0;
+        bool hasNext = true;
+        do
+        {
+            rightCount++;
+            if (!this->moveRight())
+            {
+                hasNext = false;
+                break;
+            }
+        }
+        while (value == this->rightValue);
+
+        value = this->leftValue;
+        int32_t leftCount = 0;
+        do
+        {
+            for (auto& c: leftColumns)
+            {
+                results[c.second] += this->left->getColumn(c.first) * rightCount;
+            }
+            leftCount++;
+            if (!this->moveLeft())
+            {
+                hasNext = false;
+                break;
+            }
+        }
+        while (value == this->leftValue);
+
+        if (!rightColumns.empty())
+        {
+            this->right->restore();
+
+            for (int i = 0; i < rightCount; i++)
+            {
+                for (auto& c: rightColumns)
+                {
+                    results[c.second] += this->right->getColumn(c.first) * leftCount;
+                }
+                this->moveRight();
+            }
+        }
+
+        count += leftCount * rightCount;
+
+        if (NOEXPECT(!hasNext)) return;
+    }
 }

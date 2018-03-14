@@ -98,11 +98,11 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
 
     while (this->getNext())
     {
-        for (auto c: leftColumns)
+        for (auto& c: leftColumns)
         {
             results[c.second] += this->left->getColumn(c.first);
         }
-        for (auto c: rightColumns)
+        for (auto& c: rightColumns)
         {
             results[c.second] += this->right->getColumn(c.first);
         }

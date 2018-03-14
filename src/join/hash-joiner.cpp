@@ -3,7 +3,8 @@
 template <bool HAS_MULTIPLE_JOINS>
 HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join),
-          rightValues(join.size())
+          rightValues(join.size()),
+          rightSelection(this->join[0].selections[this->rightIndex])
 {
 
 }
@@ -144,9 +145,11 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     auto& predicate = this->join[0];
     auto selection = predicate.selections[this->leftIndex];
 
-    this->rightColumn = this->right->getColumnForSelection(this->join[0].selections[this->rightIndex]);
+    this->rightColumn = this->right->getColumnForSelection(this->rightSelection);
 
     iterator->fillHashTable(selection, leftSelections, this->hashTable, this->bloomFilter);
+
+    this->right->prepareSortedAccess(this->rightSelection);
 }
 
 template <bool HAS_MULTIPLE_JOINS>
@@ -223,32 +226,40 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
     }
 
     _mm_prefetch(results.data(), _MM_HINT_T0);
-    if (!leftColumns.empty())
+
+    if (!HAS_MULTIPLE_JOINS)
     {
-        while (this->getNext())
-        {
-            auto data = this->getCurrentRow();
-            for (auto c: leftColumns)
-            {
-                results[c.second] += data[c.first];
-            }
-            for (auto c: rightColumns)
-            {
-                results[c.second] += this->right->getColumn(c.first);
-            }
-            count++;
-        }
+        this->aggregateDirect(results, leftColumns, rightColumns, count);
     }
     else
     {
-        while (this->getNext())
+        if (!leftColumns.empty())
         {
-            int index = 0;
-            for (auto c: rightColumns)
+            while (this->getNext())
             {
-                results[index++] += this->right->getColumn(c.first);
+                auto data = this->getCurrentRow();
+                for (auto& c: leftColumns)
+                {
+                    results[c.second] += data[c.first];
+                }
+                for (auto& c: rightColumns)
+                {
+                    results[c.second] += this->right->getColumn(c.first);
+                }
+                count++;
             }
-            count++;
+        }
+        else
+        {
+            while (this->getNext())
+            {
+                int index = 0;
+                for (auto& c: rightColumns)
+                {
+                    results[index++] += this->right->getColumn(c.first);
+                }
+                count++;
+            }
         }
     }
 }
@@ -336,5 +347,79 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
                 vec = &hashTable[value];
             }
         }
+    }
+}
+
+template<bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& results,
+                                                     const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                                                     const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                                                     size_t& count)
+{
+    this->activeRow = nullptr;
+
+    auto iterator = this->right;
+    uint64_t rightValue;
+
+    while (true)
+    {
+        // find value that is on the left
+        while (this->activeRow == nullptr)
+        {
+            if (!iterator->getNext()) return;
+            rightValue = iterator->getColumn(this->rightColumn);
+
+            auto it = this->hashTable.find(rightValue);
+            if (it != this->hashTable.end())
+            {
+                this->activeRow = &it->second;
+                this->activeRowCount = static_cast<int32_t>(this->activeRow->size() / this->columnMapCols);
+                break;
+            }
+        }
+
+        // iterate all on right
+        uint64_t value;
+        size_t rightCount = 0;
+        bool hasNext = true;
+        do
+        {
+            for (auto& c: rightColumns)
+            {
+                results[c.second] += this->right->getColumn(c.first) * this->activeRowCount;
+            }
+            rightCount++;
+            if (!iterator->getNext())
+            {
+                hasNext = false;
+                break;
+            }
+            value = iterator->getColumn(this->rightColumn);
+        }
+        while (value == rightValue);
+
+        // iterate all on left
+        if (!leftColumns.empty())
+        {
+            for (this->activeRowIndex = 0; this->activeRowIndex < this->activeRowCount; this->activeRowIndex++)
+            {
+                auto data = this->getCurrentRow();
+                for (auto& c: leftColumns)
+                {
+                    results[c.second] += data[c.first] * rightCount;
+                }
+            }
+        }
+
+        count += rightCount * this->activeRowCount;
+
+        if (!hasNext) return;
+        auto it = this->hashTable.find(value);
+        if (it != this->hashTable.end())
+        {
+            this->activeRow = &it->second;
+            this->activeRowCount = static_cast<int32_t>(this->activeRow->size() / this->columnMapCols);
+        }
+        else this->activeRow = nullptr;
     }
 }

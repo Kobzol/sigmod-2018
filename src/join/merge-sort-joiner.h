@@ -25,6 +25,11 @@ public:
 
     bool isSortedOn(const Selection& selection) final;
 
+    void aggregateDirect(std::vector<uint64_t>& results,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                         size_t& count);
+
     std::string getJoinName() final
     {
         return "MS";

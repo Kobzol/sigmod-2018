@@ -121,8 +121,15 @@ void createHashJoin(Iterator* left,
                     Iterator* right,
                     uint32_t leftIndex,
                     std::vector<std::unique_ptr<Iterator>>& container,
-                    Join* join)
+                    Join* join,
+                    bool last)
 {
+    if (last)
+    {
+        container.push_back(right->createIndexedIterator());
+        right = container.back().get();
+    }
+
     if (join->size() > 1)
     {
         container.push_back(std::make_unique<HashJoiner<true>>(
@@ -179,7 +186,8 @@ void createJoin(Iterator* left,
                 uint32_t leftIndex,
                 std::vector<std::unique_ptr<Iterator>>& container,
                 Join* join,
-                bool first)
+                bool first,
+                bool last)
 {
     if (first || left->isSortedOn((*join)[0].selections[leftIndex]))
     {
@@ -191,7 +199,7 @@ void createJoin(Iterator* left,
         {
             createIndexJoin(left, right, leftIndex, container, join);
         }
-        else createHashJoin(left, right, leftIndex, container, join);
+        else createHashJoin(left, right, leftIndex, container, join, last);
     }
 }
 
@@ -205,7 +213,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         auto& aRight = database.relations[a[0].selections[1].relation];
         auto& bLeft = database.relations[b[0].selections[0].relation];
         auto& bRight = database.relations[b[0].selections[1].relation];
-        return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount()); // TODO: fix
+        return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount());
     });
 #endif
 
@@ -214,7 +222,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto leftBinding = (*join)[0].selections[0].binding;
     auto rightBinding = (*join)[0].selections[1].binding;
 
-    createJoin(views[leftBinding], views[rightBinding], 0, container, join, true);
+    createJoin(views[leftBinding], views[rightBinding], 0, container, join, true, query.joins.size() == 1);
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -247,7 +255,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             continue;
         }
 
-        createJoin(left, right, leftIndex, container, join, false);
+        createJoin(left, right, leftIndex, container, join, false, i == (static_cast<int32_t>(query.joins.size()) - 1));
         root = container.back().get();
     }
 
