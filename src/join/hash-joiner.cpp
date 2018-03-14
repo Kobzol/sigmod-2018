@@ -415,7 +415,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
 
         count += rightCount * this->activeRowCount;
 #ifdef COLLECT_JOIN_SIZE
-        this->rowCount += count;
+        this->rowCount += rightCount * this->activeRowCount;
 #endif
 
         if (!hasNext) return;

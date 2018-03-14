@@ -148,21 +148,21 @@ int main(int argc, char** argv)
     }
 
 #ifdef STATISTICS
-    /*std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
+    std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
     });
 
     for (int i = 0; i < 15; i++)
     {
-        std::cerr << allQueries[i].time << "ms, " << allQueries[i].plan << ' ';
+        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << ' ';
         for (auto& r: allQueries[i].relations)
         {
             std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
         }
         std::cerr << std::endl;
-    }*/
+    }
 
-    std::vector<std::pair<std::string, uint32_t>> cachedList;
+    /*std::vector<std::pair<std::string, uint32_t>> cachedList;
     for (auto& kv: cachedJoins)
     {
         cachedList.emplace_back(kv.first, kv.second);
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
             std::cerr << " (" << size->second << ")";
         }
         std::cerr << std::endl;
-    }
+    }*/
 
     /*size_t relationCount = database.relations.size();
     std::cerr << "Query load time: " << queryLoadTime << std::endl;

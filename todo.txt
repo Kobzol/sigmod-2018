@@ -1,4 +1,3 @@
 - sort joins (self-joins, size, filtered)
-- bloom filter for hash joiner
 
 - dynamic programming

@@ -251,7 +251,7 @@ void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
 
         count += leftCount * rightCount;
 #ifdef COLLECT_JOIN_SIZE
-        this->rowCount += count;
+        this->rowCount += leftCount * rightCount;
 #endif
 
         if (NOEXPECT(!hasNext)) return;
