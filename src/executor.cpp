@@ -189,6 +189,11 @@ void createJoin(Iterator* left,
                 bool first,
                 bool last)
 {
+#ifndef USE_SORT_INDEX
+    createHashJoin(left, right, leftIndex, container, join, false);
+    return;
+#endif
+
     if (first || left->isSortedOn((*join)[0].selections[leftIndex]))
     {
         createMergesortJoin(left, right, leftIndex, container, join);

@@ -101,7 +101,7 @@ void loadDatabase(Database& database)
         database.histograms.emplace_back();
     }
 
-#ifdef REAL_RUN
+#ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #else
@@ -117,7 +117,7 @@ void loadDatabase(Database& database)
     }
 
 #ifdef USE_HISTOGRAM
-#ifdef REAL_RUN
+#ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
 #else
