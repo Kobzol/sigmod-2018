@@ -45,6 +45,10 @@ public:
         query.plan = planStream.str();
 #endif
 
+#ifdef COLLECT_JOIN_SIZE
+        root->assignJoinSize(database);
+#endif
+
         std::stringstream ss;
         for (auto& sel: query.selections)
         {

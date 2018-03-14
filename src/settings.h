@@ -36,6 +36,8 @@
     #define BLOOM_FILTER_SIZE (2 << 3)
 #endif
 
+#define COLLECT_JOIN_SIZE
+
 #define QUERY_NUM_THREADS 20
 
 template <typename K, typename V>

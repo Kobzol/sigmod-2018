@@ -36,7 +36,7 @@ bool IndexJoiner::getNext()
         }
         if (ok)
         {
-#ifdef STATISTICS
+#ifdef COLLECT_JOIN_SIZE
             this->rowCount++;
 #endif
             return true;
@@ -107,6 +107,9 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
             results[c.second] += this->right->getColumn(c.first);
         }
         count++;
+#ifdef COLLECT_JOIN_SIZE
+        this->rowCount++;
+#endif
     }
 }
 

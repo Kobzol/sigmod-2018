@@ -10,6 +10,8 @@
 #include "../util.h"
 #include "../bloom-filter.h"
 
+class Database;
+
 class Iterator
 {
 public:
@@ -160,6 +162,11 @@ public:
     virtual int64_t predictSize()
     {
         return 0;
+    }
+
+    virtual void assignJoinSize(Database& database)
+    {
+
     }
 
     int rowIndex = -1;

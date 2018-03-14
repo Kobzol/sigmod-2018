@@ -88,7 +88,7 @@ bool MergeSortJoiner::getNext()
             continue;
         }
 
-#ifdef STATISTICS
+#ifdef COLLECT_JOIN_SIZE
         this->rowCount++;
 #endif
         return true;
@@ -178,6 +178,9 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
                 results[c.second] += this->right->getColumn(c.first);
             }
             count++;
+#ifdef COLLECT_JOIN_SIZE
+            this->rowCount++;
+#endif
         }
     }
 }
@@ -247,6 +250,9 @@ void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
         }
 
         count += leftCount * rightCount;
+#ifdef COLLECT_JOIN_SIZE
+        this->rowCount += count;
+#endif
 
         if (NOEXPECT(!hasNext)) return;
     }

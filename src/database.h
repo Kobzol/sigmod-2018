@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <mutex>
 
 #include "relation/column-relation.h"
 #include "index/hash-index.h"
@@ -18,18 +19,19 @@ public:
     HashIndex& getHashIndex(uint32_t relation, uint32_t column);
     SortIndex& getSortIndex(uint32_t relation, uint32_t column);
 
+    int64_t predictSize(const Join& join);
+    void addJoinSize(const Join& join, int64_t size);
+
+    std::string createJoinKey(const Join& join);
+
     std::vector<ColumnRelation> relations;
     std::vector<MaxdiffHistogram> histograms;
 
     std::vector<std::unique_ptr<HashIndex>> hashIndices;
     std::vector<std::unique_ptr<SortIndex>> sortIndices;
 
-    // TODO: look up join result cache
-    int64_t predictSize(Join& join)
-    {
-        return this->relations[join[0].selections[0].relation].getRowCount() *
-                this->relations[join[0].selections[1].relation].getRowCount();
-    }
+    std::unordered_map<std::string, int64_t> joinSizeMap;
+    std::mutex joinMapMutex;
 };
 
 extern Database database;

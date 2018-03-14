@@ -60,6 +60,8 @@ public:
 
     int64_t predictSize() override;
 
+    void assignJoinSize(Database& database) final;
+
     void dumpPlan(std::stringstream& ss) final
     {
 #ifdef STATISTICS
@@ -85,7 +87,5 @@ public:
     int32_t columnMapCols = 0;
     int32_t joinSize;
 
-#ifdef STATISTICS
     size_t rowCount = 0;
-#endif
 };

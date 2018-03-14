@@ -72,3 +72,15 @@ int64_t Joiner::predictSize()
 {
     return database.predictSize(this->join);
 }
+
+void Joiner::assignJoinSize(Database& database)
+{
+    if (this->left->isJoin())
+    {
+        this->left->assignJoinSize(database);
+    }
+    else if (this->left->getFilterReduction() == 0 && this->right->getFilterReduction() == 0)
+    {
+        database.addJoinSize(this->join, this->rowCount);
+    }
+}

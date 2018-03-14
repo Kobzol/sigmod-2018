@@ -47,7 +47,6 @@ int main(int argc, char** argv)
     Timer queryLoadTimer;
     std::vector<Query> allQueries;
     std::unordered_map<std::string, uint32_t> cachedJoins;
-    std::unordered_map<std::string, size_t> joinSizes;
 #endif
 
     Executor executor;
@@ -127,36 +126,7 @@ int main(int argc, char** argv)
 
                 if (cacheable)
                 {
-                    std::stringstream key;
-                    for (auto& predicate : join)
-                    {
-                        int first = std::min(predicate.selections[0].relation, predicate.selections[1].relation) ==
-                                            predicate.selections[0].relation ? 0 : 1;
-                        int second = 1 - first;
-                        key << predicate.selections[first].relation << '.' << predicate.selections[first].column;
-                        key << '=';
-                        key << predicate.selections[second].relation << '.' << predicate.selections[second].column;
-                        key << ' ';
-                    }
-                    cachedJoins[key.str()]++;
-
-                    if (joinSizes.find(key.str()) == joinSizes.end())
-                    {
-                        auto left = std::make_unique<ColumnRelationIterator>(
-                                &database.relations[join[0].selections[0].relation],
-                                join[0].selections[0].binding
-                        );
-                        auto right = std::make_unique<ColumnRelationIterator>(
-                                &database.relations[join[0].selections[1].relation],
-                                join[0].selections[1].binding
-                        );
-                        auto it = std::make_unique<HashJoiner<true>>(left.get(), right.get(), 0, join);
-
-                        std::unordered_map<SelectionId, Selection> selections;
-                        it->requireSelections(selections);
-                        while (it->getNext());
-                        joinSizes[key.str()] = it->rowCount;
-                    }
+                    cachedJoins[database.createJoinKey(join)]++;
                 }
             }
 
@@ -203,7 +173,15 @@ int main(int argc, char** argv)
     });
     for (auto& kv: cachedList)
     {
-        std::cerr << kv.first << ' ' << kv.second << "x (" << joinSizes[kv.first] << ")" << std::endl;
+        std::cerr << kv.first << ' ' << kv.second << "x";
+
+        auto key = kv.first;
+        auto size = database.joinSizeMap.find(key);
+        if (size != database.joinSizeMap.end())
+        {
+            std::cerr << " (" << size->second << ")";
+        }
+        std::cerr << std::endl;
     }
 
     /*size_t relationCount = database.relations.size();

@@ -42,15 +42,9 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
         }
 
         this->activeRowIndex = 0;
-#ifdef STATISTICS
-        this->rowCount++;
-#endif
         return true;
     }
 
-#ifdef STATISTICS
-    this->rowCount++;
-#endif
     return true;
 }
 
@@ -110,7 +104,9 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::getNext()
         }
         break;
     }
-
+#ifdef COLLECT_JOIN_SIZE
+    this->rowCount++;
+#endif
     return true;
 }
 
@@ -247,6 +243,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
                     results[c.second] += this->right->getColumn(c.first);
                 }
                 count++;
+#ifdef COLLECT_JOIN_SIZE
+                this->rowCount++;
+#endif
             }
         }
         else
@@ -259,6 +258,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
                     results[index++] += this->right->getColumn(c.first);
                 }
                 count++;
+#ifdef COLLECT_JOIN_SIZE
+                this->rowCount++;
+#endif
             }
         }
     }
@@ -412,6 +414,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
         }
 
         count += rightCount * this->activeRowCount;
+#ifdef COLLECT_JOIN_SIZE
+        this->rowCount += count;
+#endif
 
         if (!hasNext) return;
         auto it = this->hashTable.find(value);
