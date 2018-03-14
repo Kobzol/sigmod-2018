@@ -118,14 +118,16 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getValue(const Selection& selection)
 
 // assumes left deep tree, doesn't initialize right child
 template <bool HAS_MULTIPLE_JOINS>
-void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
     for (auto& j: this->join)
     {
         selections[j.selections[0].getId()] = j.selections[0];
         selections[j.selections[1].getId()] = j.selections[1];
     }
+
     this->left->requireSelections(selections);
+    this->right->requireSelections(selections);
 
     std::vector<Selection> leftSelections;
     this->prepareColumnMappings(selections, leftSelections);

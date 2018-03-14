@@ -32,7 +32,7 @@ public:
 
     bool getValueMaybe(const Selection& selection, uint64_t& value) final;
 
-    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
+    void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
     void prepareColumnMappings(const std::unordered_map<SelectionId, Selection>& selections,
                                std::vector<Selection>& leftSelections);
 

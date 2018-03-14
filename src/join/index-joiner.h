@@ -22,7 +22,7 @@ public:
 
     uint32_t getColumnForSelection(const Selection& selection) final;
 
-    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
+    void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
 
     void aggregateDirect(std::vector<uint64_t>& results,
                          const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,

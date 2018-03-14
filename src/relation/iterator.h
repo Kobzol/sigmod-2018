@@ -77,7 +77,7 @@ public:
      * Initializes the selection to column mappings and tells the iterator which selections are needed.
      * After this method completes, getColumnForSelection may be called on this iterator.
      */
-    virtual void requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+    virtual void requireSelections(std::unordered_map<SelectionId, Selection> selections)
     {
 
     }

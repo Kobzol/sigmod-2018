@@ -19,7 +19,7 @@ public:
 
     bool hasSelection(const Selection& selection) final;
     uint32_t getColumnForSelection(const Selection& selection) final;
-    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
+    void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 

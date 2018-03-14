@@ -126,7 +126,7 @@ uint32_t MergeSortJoiner::getColumnForSelection(const Selection& selection)
     return this->right->getColumnForSelection(selection) + this->leftColSize;
 }
 
-void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
     for (auto& j: this->join)
     {
@@ -135,6 +135,7 @@ void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selectio
     }
 
     this->left->requireSelections(selections);
+    this->right->requireSelections(selections);
 
     this->left->prepareSortedAccess(this->join[0].selections[this->leftIndex]);
     this->right->prepareSortedAccess(this->join[0].selections[this->rightIndex]);

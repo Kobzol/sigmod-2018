@@ -67,7 +67,7 @@ bool IndexJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
     return this->right->getValueMaybe(selection, value);
 }
 
-void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
     for (auto& j: this->join)
     {
@@ -76,6 +76,7 @@ void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& 
     }
 
     this->left->requireSelections(selections);
+    this->right->requireSelections(selections);
 
     this->left->prepareSortedAccess(this->leftSel);
     this->right->prepareIndexedAccess();

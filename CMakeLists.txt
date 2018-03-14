@@ -37,4 +37,4 @@ set(SOURCE_FILES
 )
 
 add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
-#add_executable(tester ${SOURCE_FILES} src/test/main.cpp)
+add_executable(tester ${SOURCE_FILES} src/test/main.cpp)
