@@ -1,6 +1,9 @@
-Team: vsb-ber0134
+Team: vsb_ber0134
 Institution: VSB-TUO
 
 Jakub Beránek, BER0134, FEI, Master's, jakub.beranek.st@vsb.cz
 
 Advisor: Ing. Radim Bača, Phd., FEI, VSB-TUO
+
+Third-party code: 
+- sparse map (https://github.com/Tessil/sparse-map), MIT

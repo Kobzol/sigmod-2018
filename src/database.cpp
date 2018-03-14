@@ -15,17 +15,6 @@ SortIndex& Database::getSortIndex(uint32_t relation, uint32_t column)
     return *this->sortIndices[this->getGlobalColumnId(relation, column)];
 }
 
-int64_t Database::predictSize(const Join& join)
-{
-    auto it = this->joinSizeMap.find(this->createJoinKey(join));
-    if (it == this->joinSizeMap.end())
-    {
-        return this->relations[join[0].selections[0].relation].getRowCount() *
-               this->relations[join[0].selections[1].relation].getRowCount();
-    }
-    return it->second;
-}
-
 void Database::addJoinSize(const Join& join, int64_t size)
 {
     auto key = this->createJoinKey(join);

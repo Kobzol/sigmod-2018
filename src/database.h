@@ -19,7 +19,6 @@ public:
     HashIndex& getHashIndex(uint32_t relation, uint32_t column);
     SortIndex& getSortIndex(uint32_t relation, uint32_t column);
 
-    int64_t predictSize(const Join& join);
     void addJoinSize(const Join& join, int64_t size);
 
     std::string createJoinKey(const Join& join);
