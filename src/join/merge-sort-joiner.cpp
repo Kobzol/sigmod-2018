@@ -220,22 +220,26 @@ void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
 
         value = this->leftValue;
         int32_t leftCount = 0;
-        do
-        {
-            for (auto& c: leftColumns)
-            {
-                results[c.second] += this->left->getColumn(c.first) * rightCount;
-            }
-            leftCount++;
-            if (!this->moveLeft())
-            {
-                hasNext = false;
-                break;
-            }
-        }
-        while (value == this->leftValue);
 
-        if (!rightColumns.empty())
+        if (EXPECT(rightCount > 0))
+        {
+            do
+            {
+                for (auto& c: leftColumns)
+                {
+                    results[c.second] += this->left->getColumn(c.first) * rightCount;
+                }
+                leftCount++;
+                if (!this->moveLeft())
+                {
+                    hasNext = false;
+                    break;
+                }
+            }
+            while (value == this->leftValue);
+        }
+
+        if (!rightColumns.empty() && leftCount > 0)
         {
             this->right->restore();
 

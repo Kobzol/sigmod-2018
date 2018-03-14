@@ -24,9 +24,9 @@ public:
 
     int64_t predictSize() final;
 
-    void dumpPlan(std::stringstream& ss) final
+    std::string getFilterName() final
     {
-        ss << "HFI";
+        return "HFI";
     }
 
     HashIndex* index;

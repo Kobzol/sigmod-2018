@@ -59,6 +59,9 @@ bool SortFilterIterator::getNext()
         this->rowIndex = this->start->row;
         if (passesFilters())
         {
+#ifdef COLLECT_JOIN_SIZE
+            this->rowCount++;
+#endif
             return true;
         }
     }
@@ -79,7 +82,13 @@ bool SortFilterIterator::skipSameValue(const Selection& selection)
         for (; this->start < this->end; this->start++)
         {
             this->rowIndex = this->start->row;
-            if (this->relation->getValue(this->rowIndex, this->sortFilter.selection.column) != value) return true;
+            if (this->relation->getValue(this->rowIndex, this->sortFilter.selection.column) != value)
+            {
+#ifdef COLLECT_JOIN_SIZE
+                this->rowCount++;
+#endif
+                return true;
+            }
         }
 
         return false;

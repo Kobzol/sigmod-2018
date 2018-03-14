@@ -195,7 +195,7 @@ void createJoin(Iterator* left,
     }
     else
     {
-        if (right->getFilterReduction() > 1)
+        if (left->predictSize() < 20000)
         {
             createIndexJoin(left, right, leftIndex, container, join);
         }

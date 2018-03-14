@@ -59,7 +59,7 @@ int main(int argc, char** argv)
             auto queryCount = static_cast<int32_t>(queries.size());
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
-#ifdef REAL_RUN
+#ifdef USE_THREADS
             #pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
 #else
@@ -154,12 +154,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < 15; i++)
     {
-        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << ' ';
-        for (auto& r: allQueries[i].relations)
-        {
-            std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
-        }
-        std::cerr << std::endl;
+        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;

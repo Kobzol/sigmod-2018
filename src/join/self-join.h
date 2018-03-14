@@ -26,6 +26,8 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
+    void dumpPlan(std::stringstream& ss) final;
+
     Iterator& inner;
     std::vector<Selection> selections;
     int32_t selectionSize;

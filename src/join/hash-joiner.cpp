@@ -23,7 +23,7 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
             auto it = this->getFromMap(value);
             if (it == this->hashTable.end())
             {
-                if (!iterator->getNext()) return false; // use skipSameValue?
+                if (!iterator->skipSameValue(this->rightSelection)) return false; // use skipSameValue?
                 continue;
             }
             else
@@ -394,7 +394,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
         while (value == rightValue);
 
         // iterate all on left
-        if (!leftColumns.empty())
+        if (!leftColumns.empty() && rightCount > 0)
         {
             for (this->activeRowIndex = 0; this->activeRowIndex < this->activeRowCount; this->activeRowIndex++)
             {

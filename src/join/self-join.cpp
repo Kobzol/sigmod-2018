@@ -1,4 +1,3 @@
-#include <cassert>
 #include "self-join.h"
 
 SelfJoin::SelfJoin(Iterator& inner, std::vector<Selection> selections):
@@ -66,4 +65,11 @@ bool SelfJoin::hasSelection(const Selection& selection)
 std::unique_ptr<Iterator> SelfJoin::createIndexedIterator()
 {
     return this->inner.createIndexedIterator();
+}
+
+void SelfJoin::dumpPlan(std::stringstream& ss)
+{
+    ss << "SJ(";
+    this->inner.dumpPlan(ss);
+    ss << ")";
 }

@@ -24,6 +24,12 @@ public:
 
     void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
 
+    void aggregateDirect(std::vector<uint64_t>& results,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                         size_t& count);
+
+
     std::string getJoinName() final
     {
         return "NL";
@@ -33,4 +39,5 @@ public:
     Selection rightSel;
 
     uint32_t leftColSize;
+    uint32_t leftColumn;
 };

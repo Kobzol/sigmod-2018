@@ -121,7 +121,7 @@ public:
 
     void dumpPlan(std::stringstream& ss) override
     {
-        ss << "CI";
+        ss << "CI(" << this->relation->getRowCount() << ")";
     }
 
     ColumnRelation* relation;

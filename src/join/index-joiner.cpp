@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include "index-joiner.h"
 
 IndexJoiner::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -75,9 +76,12 @@ void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& 
     }
 
     this->left->requireSelections(selections);
+
+    this->left->prepareSortedAccess(this->leftSel);
     this->right->prepareIndexedAccess();
 
     this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
+    this->leftColumn = this->left->getColumnForSelection(this->leftSel);
 }
 
 void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
@@ -96,20 +100,27 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
         else rightColumns.emplace_back(columnIds[i] - this->leftColSize, i);
     }
 
-    while (this->getNext())
+    if (this->joinSize == 1)
     {
-        for (auto& c: leftColumns)
+        this->aggregateDirect(results, leftColumns, rightColumns, count);
+    }
+    else
+    {
+        while (this->getNext())
         {
-            results[c.second] += this->left->getColumn(c.first);
-        }
-        for (auto& c: rightColumns)
-        {
-            results[c.second] += this->right->getColumn(c.first);
-        }
-        count++;
+            for (auto& c: leftColumns)
+            {
+                results[c.second] += this->left->getColumn(c.first);
+            }
+            for (auto& c: rightColumns)
+            {
+                results[c.second] += this->right->getColumn(c.first);
+            }
+            count++;
 #ifdef COLLECT_JOIN_SIZE
-        this->rowCount++;
+            this->rowCount++;
 #endif
+        }
     }
 }
 
@@ -125,4 +136,65 @@ uint32_t IndexJoiner::getColumnForSelection(const Selection& selection)
 bool IndexJoiner::hasSelection(const Selection& selection)
 {
     return this->left->hasSelection(selection) || this->right->hasSelection(selection);
+}
+
+void IndexJoiner::aggregateDirect(std::vector<uint64_t>& results,
+                                  const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                                  const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns, size_t& count)
+{
+    if (!this->left->getNext()) return;
+
+    std::vector<uint64_t> rightResults(results.size());
+    while (true)
+    {
+        uint64_t leftValue = this->left->getColumn(this->leftColumn);
+        this->right->iterateValue(this->rightSel, leftValue);
+
+        std::memset(rightResults.data(), 0, sizeof(uint64_t) * rightResults.size());
+        size_t rightCount = 0;
+        while (this->right->getNext())
+        {
+            for (auto& c: rightColumns)
+            {
+                rightResults[c.second] += this->right->getColumn(c.first);
+            }
+            rightCount++;
+        }
+
+        bool hasNext = true;
+        int32_t leftCount = 0;
+
+        if (rightCount > 0)
+        {
+            uint64_t value;
+            do
+            {
+                for (auto& c: leftColumns)
+                {
+                    results[c.second] += this->left->getColumn(c.first) * rightCount;
+                }
+                leftCount++;
+                if (!this->left->getNext())
+                {
+                    hasNext = false;
+                    break;
+                }
+
+                value = this->left->getColumn(this->leftColumn);
+            }
+            while (value == leftValue);
+        }
+        else if (!this->left->getNext()) return;
+
+        for (int i = 0; i < static_cast<int32_t>(rightResults.size()); i++)
+        {
+            results[i] += rightResults[i] * leftCount;
+        }
+
+        count += leftCount * rightCount;
+#ifdef COLLECT_JOIN_SIZE
+        this->rowCount += leftCount * rightCount;
+#endif
+        if (!hasNext) return;
+    }
 }
