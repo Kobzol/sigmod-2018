@@ -42,6 +42,17 @@ public:
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
+    HashMap<uint64_t, std::vector<uint64_t>>::iterator getFromMap(uint64_t value)
+    {
+#ifdef USE_BLOOM_FILTER
+        if (!this->bloomFilter.has(value))
+        {
+            return this->hashTable.end();
+        }
+#endif
+        return this->hashTable.find(value);
+    }
+
     std::string getJoinName() final
     {
         return "HS";

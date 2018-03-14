@@ -20,14 +20,7 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
         while (true)
         {
             uint64_t value = iterator->getColumn(this->rightColumn);
-#ifdef USE_BLOOM_FILTER
-            if (!this->bloomFilter.has(value))
-            {
-                if (!iterator->getNext()) return false; // use skipSameValue?
-                continue;
-            }
-#endif
-            auto it = this->hashTable.find(value);
+            auto it = this->getFromMap(value);
             if (it == this->hashTable.end())
             {
                 if (!iterator->getNext()) return false; // use skipSameValue?
@@ -371,7 +364,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
             if (!iterator->getNext()) return;
             rightValue = iterator->getColumn(this->rightColumn);
 
-            auto it = this->hashTable.find(rightValue);
+            auto it = this->getFromMap(rightValue);
             if (it != this->hashTable.end())
             {
                 this->activeRow = &it->second;
@@ -419,7 +412,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
 #endif
 
         if (!hasNext) return;
-        auto it = this->hashTable.find(value);
+        auto it = this->getFromMap(value);
         if (it != this->hashTable.end())
         {
             this->activeRow = &it->second;
