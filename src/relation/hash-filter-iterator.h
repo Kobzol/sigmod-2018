@@ -28,7 +28,9 @@ public:
     {
         return "HFI";
     }
-
+	
+	void printPlan(unsigned int level);
+	
     HashIndex* index;
     const std::vector<uint64_t>* activeRow = nullptr;
     int activeRowIndex = -1;

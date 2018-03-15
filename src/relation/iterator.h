@@ -170,4 +170,24 @@ public:
     }
 
     int rowIndex = -1;
+
+
+	void printIndent(unsigned int level)
+	{
+		for (unsigned int i = 0; i < level; i++)
+		{
+			std::cout << "  ";
+		}
+	}
+
+
+
+	virtual void printPlan(unsigned int level) = 0;
+
+	void printResult();
+
+	virtual void writeRowToFile();
+
+	static unsigned int operatorIndexCounter;
+	unsigned int operatorIndex;
 };

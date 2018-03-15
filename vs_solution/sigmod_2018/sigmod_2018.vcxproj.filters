@@ -63,6 +63,9 @@
     <ClCompile Include="..\..\src\relation\maxdiff_histogram.cpp">
       <Filter>relation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\join\merge-sort-joiner.cpp">
+      <Filter>join</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\index\hash-index.h">
@@ -113,6 +116,9 @@
     <ClInclude Include="..\..\src\settings.h" />
     <ClInclude Include="..\..\src\relation\maxdiff_histogram.h">
       <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\join\merge-sort-joiner.h">
+      <Filter>join</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

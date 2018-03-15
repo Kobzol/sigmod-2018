@@ -142,3 +142,27 @@ int64_t SortFilterIterator::predictSize()
 {
     return this->end - this->originalStart;
 }
+
+void SortFilterIterator::printPlan(unsigned int level)
+{
+	std::cout << "SortFilter <" << operatorIndex << "> [";
+	relation->printName();
+	std::cout << " AS \"" << this->binding << "\"";
+
+	bool b = false;
+	for (auto &filter : this->filters)
+	{
+		if (!b)
+		{
+			std::cout << ", ";
+		}
+		else
+		{
+			std::cout << " AND ";
+		}
+
+		filter.print();
+		b = true;
+	}
+	std::cout << "]";
+}

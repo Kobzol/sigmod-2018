@@ -257,3 +257,32 @@ void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
         if (NOEXPECT(!hasNext)) return;
     }
 }
+
+void MergeSortJoiner::printPlan(unsigned int level)
+{
+	printIndent(level);
+	std::cout << "MergeSortJoin <" << operatorIndex << "> [";
+
+	bool b = false;
+	for (auto &predicate : this->join)
+	{
+		if (b)
+		{
+			std::cout << " AND ";
+		}
+		predicate.print();
+		b = true;
+	}
+	std::cout << "]";
+
+	std::cout << std::endl;
+	left->printPlan(level + 1);
+	std::cout << ",";
+
+	std::cout << std::endl;
+	right->printPlan(level + 1);
+
+	std::cout << std::endl;
+	printIndent(level);
+	std::cout << ")";
+}

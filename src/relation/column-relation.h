@@ -17,6 +17,8 @@ public:
     DISABLE_COPY(ColumnRelation);
     ENABLE_MOVE(ColumnRelation);
 
+	uint32_t name;
+
     uint32_t columnCount;
     uint32_t cumulativeColumnId;
     uint64_t tupleCount;
@@ -55,6 +57,8 @@ public:
     }
 
 	void print();
+
+	void printName() { std::cout << "R" << name; }
 };
 
 /**
@@ -126,6 +130,8 @@ public:
         ss << "CI(" << this->relation->getRowCount() << ")";
     }
 
+	void printPlan(unsigned int level);
+	
     ColumnRelation* relation;
     uint32_t binding;
 };

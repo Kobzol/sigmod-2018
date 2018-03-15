@@ -67,3 +67,18 @@ std::unique_ptr<Iterator> SelfJoin::createIndexedIterator()
 {
     return this->inner.createIndexedIterator();
 }
+
+void SelfJoin::printPlan(unsigned int level)
+{
+	printIndent(level);
+	std::cout << "SelfJoin <" << operatorIndex << "> (";
+
+	// TODO... vypsat podminky.
+
+	std::cout << std::endl;
+	inner.printPlan(level + 1);
+
+	std::cout << std::endl;
+	printIndent(level);
+	std::cout << ")";
+}

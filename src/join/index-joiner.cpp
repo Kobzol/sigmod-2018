@@ -126,3 +126,32 @@ bool IndexJoiner::hasSelection(const Selection& selection)
 {
     return this->left->hasSelection(selection) || this->right->hasSelection(selection);
 }
+
+void IndexJoiner::printPlan(unsigned int level)
+{
+	printIndent(level);
+	std::cout << "IndexJoin <" << operatorIndex << "> [";
+
+	bool b = false;
+	for (auto &predicate : this->join)
+	{
+		if (b)
+		{
+			std::cout << " AND ";
+		}
+		predicate.print();
+		b = true;
+	}
+	std::cout << "]";
+
+	std::cout << std::endl;
+	left->printPlan(level + 1);
+	std::cout << ",";
+
+	std::cout << std::endl;
+	right->printPlan(level + 1);
+
+	std::cout << std::endl;
+	printIndent(level);
+	std::cout << ")";
+}

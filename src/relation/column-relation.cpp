@@ -38,3 +38,12 @@ void ColumnRelation::print()
 		std::cout << std::endl;
 	}
 }
+
+void ColumnRelationIterator::printPlan(unsigned int level)
+{
+	printIndent(level);
+
+	std::cout << "FullScan <" << operatorIndex << "> [";
+	relation->printName();
+	std::cout << " AS \"" << this->binding << "\"]";
+}

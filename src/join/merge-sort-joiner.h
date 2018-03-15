@@ -35,6 +35,9 @@ public:
         return "MS";
     }
 
+	void printPlan(unsigned int level);
+
+
     bool moveLeft();
     bool moveRight();
 

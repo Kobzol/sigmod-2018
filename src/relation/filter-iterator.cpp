@@ -61,3 +61,29 @@ int64_t FilterIterator::predictSize()
 {
     return database.histograms[this->filters[0].selection.relation].estimateResult(this->filters[0]);
 }
+
+void FilterIterator::printPlan(unsigned int level)
+{
+	printIndent(level);
+
+	std::cout << "FilterScan <" << operatorIndex << "> [";
+	relation->printName();
+	std::cout << " AS \"" << this->binding << "\"";
+
+	bool b = false;
+	for (auto &filter : this->filters)
+	{
+		if (!b)
+		{
+			std::cout << ", ";
+		}
+		else
+		{
+			std::cout << " AND ";
+		}
+
+		filter.print();
+		b = true;
+	}
+	std::cout << "]";
+}

@@ -42,6 +42,9 @@ public:
 
     bool passesFilters();
 
+	void printPlan(unsigned int level);
+
+
     std::vector<Filter> filters;
     int startFilterIndex = 0;
     int filterSize;

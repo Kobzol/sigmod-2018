@@ -33,6 +33,8 @@ public:
         return "SFI";
     }
 
+	void printPlan(unsigned int level);
+	
     RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator) const;
 
     SortIndex* index;

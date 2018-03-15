@@ -80,7 +80,7 @@ void loadDatabase(Database& database)
 		database.relations.emplace_back();
 		ColumnRelation& rel = database.relations.back();
 		rel.cumulativeColumnId = columnId;
-		//rel.name = name;
+		rel.name = name;
 
 		std::ifstream is(line, std::ifstream::binary);
 

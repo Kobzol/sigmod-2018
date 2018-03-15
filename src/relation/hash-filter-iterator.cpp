@@ -75,3 +75,29 @@ int64_t HashFilterIterator::predictSize()
 {
     return this->rowCount;
 }
+
+void HashFilterIterator::printPlan(unsigned int level)
+{
+	printIndent(level);
+
+	std::cout << "HashFilter <" << operatorIndex << "> [";
+	relation->printName();
+	std::cout << " AS \"" << this->binding << "\"";
+
+	bool b = false;
+	for (auto &filter : this->filters)
+	{
+		if (!b)
+		{
+			std::cout << ", ";
+		}
+		else
+		{
+			std::cout << " AND ";
+		}
+
+		filter.print();
+		b = true;
+	}
+	std::cout << "]";
+}

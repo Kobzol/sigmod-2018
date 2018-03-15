@@ -26,6 +26,9 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
+	void printPlan(unsigned int level);
+
+
     Iterator& inner;
     std::vector<Selection> selections;
     int32_t selectionSize;

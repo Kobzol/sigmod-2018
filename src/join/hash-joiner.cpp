@@ -423,3 +423,34 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
         else this->activeRow = nullptr;
     }
 }
+
+
+template<bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::printPlan(unsigned int level)
+{
+	printIndent(level);
+	std::cout << "HashJoin <" << operatorIndex << "> [";
+
+	bool b = false;
+	for (auto &predicate : this->join)
+	{
+		if (b)
+		{
+			std::cout << " AND ";
+		}
+		predicate.print();
+		b = true;
+	}
+	std::cout << "] (";
+
+	std::cout << std::endl;
+	left->printPlan(level + 1);
+	std::cout << ",";
+
+	std::cout << std::endl;
+	right->printPlan(level + 1);
+
+	std::cout << std::endl;
+	printIndent(level);
+	std::cout << ")";
+}

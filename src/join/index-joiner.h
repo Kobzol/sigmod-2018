@@ -29,6 +29,9 @@ public:
         return "NL";
     }
 
+	void printPlan(unsigned int level);
+
+
     Selection leftSel;
     Selection rightSel;
 

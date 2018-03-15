@@ -28,6 +28,7 @@
     <ClCompile Include="..\..\src\join\hash-joiner.cpp" />
     <ClCompile Include="..\..\src\join\index-joiner.cpp" />
     <ClCompile Include="..\..\src\join\joiner.cpp" />
+    <ClCompile Include="..\..\src\join\merge-sort-joiner.cpp" />
     <ClCompile Include="..\..\src\join\nested-joiner.cpp" />
     <ClCompile Include="..\..\src\join\self-join.cpp" />
     <ClCompile Include="..\..\src\main_win.cpp" />
@@ -50,6 +51,7 @@
     <ClInclude Include="..\..\src\join\hash-joiner.h" />
     <ClInclude Include="..\..\src\join\index-joiner.h" />
     <ClInclude Include="..\..\src\join\joiner.h" />
+    <ClInclude Include="..\..\src\join\merge-sort-joiner.h" />
     <ClInclude Include="..\..\src\join\nested-joiner.h" />
     <ClInclude Include="..\..\src\join\self-join.h" />
     <ClInclude Include="..\..\src\query.h" />
@@ -76,26 +78,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
