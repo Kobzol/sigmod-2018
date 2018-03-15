@@ -73,3 +73,8 @@ void SelfJoin::dumpPlan(std::stringstream& ss)
     this->inner.dumpPlan(ss);
     ss << ")";
 }
+
+int64_t SelfJoin::predictSize()
+{
+    return this->inner.predictSize();
+}

@@ -26,7 +26,7 @@ public:
         return filterReduction;
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator() final;
+    std::unique_ptr<Iterator> createIndexedIterator() override;
 
     int64_t predictSize() override;
 

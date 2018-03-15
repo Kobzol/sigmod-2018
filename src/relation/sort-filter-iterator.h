@@ -10,6 +10,8 @@ class SortFilterIterator: public FilterIterator
 {
 public:
     SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters);
+    SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
+    RowEntry* start, RowEntry* end);
 
     bool getNext() final;
     bool skipSameValue(const Selection& selection) final;
@@ -27,6 +29,10 @@ public:
 
     void save() final;
     void restore() final;
+
+    std::unique_ptr<Iterator> createIndexedIterator() final;
+
+    void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count) final;
 
     std::string getFilterName() final
     {

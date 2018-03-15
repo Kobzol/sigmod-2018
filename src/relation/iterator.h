@@ -159,14 +159,19 @@ public:
 
     }
 
-    virtual int64_t predictSize()
-    {
-        return 0;
-    }
+    virtual int64_t predictSize() = 0;
 
     virtual void assignJoinSize(Database& database)
     {
 
+    }
+
+    /**
+     * Splits the iterator in up to @p count subiterators and store them into @p groups.
+     */
+    virtual void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count)
+    {
+        assert(false);
     }
 
     int rowIndex = -1;

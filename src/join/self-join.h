@@ -22,6 +22,8 @@ public:
 
     uint32_t getColumnForSelection(const Selection& selection) final;
 
+    int64_t predictSize() final;
+
     bool hasSelection(const Selection& selection) final;
 
     std::unique_ptr<Iterator> createIndexedIterator() final;

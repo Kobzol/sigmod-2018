@@ -3,6 +3,7 @@
 #include "../index/sort-index.h"
 
 #include <algorithm>
+#include <cmath>
 
 SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters)
         : FilterIterator(relation, binding, filters)
@@ -47,6 +48,13 @@ SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t bindin
 
     this->start--;
     this->originalStart = this->start;
+}
+
+SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
+                                       RowEntry* start, RowEntry* end)
+        : FilterIterator(relation, binding, filters), start(start), end(end)
+{
+    this->originalStart = start;
 }
 
 bool SortFilterIterator::getNext()
@@ -131,6 +139,7 @@ void SortFilterIterator::prepareSortedAccess(const Selection& selection)
 {
     this->index = &database.getSortIndex(selection.relation, selection.column);
     this->start = this->index->data.data() - 1;
+    this->originalStart = this->start;
     this->end = this->index->data.data() + this->index->data.size();
     this->sortSelection = selection;
 
@@ -139,5 +148,37 @@ void SortFilterIterator::prepareSortedAccess(const Selection& selection)
 
 int64_t SortFilterIterator::predictSize()
 {
-    return this->end - this->originalStart;
+    return (this->end - this->originalStart) - 1; // + 1 because originalStart is one before the first element
+}
+
+std::unique_ptr<Iterator> SortFilterIterator::createIndexedIterator()
+{
+    return std::make_unique<SortFilterIterator>(this->relation, this->binding, this->filters,
+                                                this->originalStart,
+                                                this->end);
+}
+
+void SortFilterIterator::split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count)
+{
+    auto size = (this->end - this->originalStart) - 1;
+    auto chunkSize = static_cast<size_t>(std::ceil(size / (double) count));
+    RowEntry* iter = this->originalStart + 1;
+
+    size_t left = size;
+    while (left > 0)
+    {
+        size_t chunk = std::min(chunkSize, left);
+        left -= chunk;
+
+        groups.push_back(std::make_unique<SortFilterIterator>(
+            this->relation,
+            this->binding,
+            this->filters,
+            iter - 1,
+            iter + chunk
+        ));
+        iter += chunk;
+    }
+
+    assert(iter == this->end);
 }

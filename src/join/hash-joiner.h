@@ -67,6 +67,11 @@ private:
         return &(*this->activeRow)[this->activeRowIndex * this->columnMapCols];
     }
 
+    void workerAggregate(Iterator* iterator, std::vector<uint64_t>& results,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                         std::atomic<size_t>& count);
+
     void aggregateDirect(std::vector<uint64_t>& results,
                          const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                          const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
