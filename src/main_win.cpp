@@ -10,7 +10,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include "settings_win.h"
+#include "settings.h"
 #include "database.h"
 #include "executor.h"
 #include "io.h"
@@ -74,15 +74,6 @@ int main(int argc, char** argv)
 			}
 
 #ifdef STATISTICS
-			for (auto& q : queries)
-			{
-				queryRowsMax = std::max(queryRowsMax, q.count);
-				if (queryRowsMax == q.count)
-				{
-					queryMaxRowsString = q.input;
-				}
-				queryRowsCount += q.count;
-			}
 			batchCount++;
 
 			allQueries.insert(allQueries.end(), queries.begin(), queries.end());
@@ -159,17 +150,28 @@ int main(int argc, char** argv)
 		return a.time > b.time;
 	});
 
-	for (int i = 0; i < 5; i++)
-	{
-		std::cerr << i << ": " << allQueries[i].time << "ms " << allQueries[i].input << " ";
-		for (auto& r : allQueries[i].relations)
+	//for (int i = 0; i < 5; i++)
+	//{
+	//	std::cerr << i << ": " << allQueries[i].time << "ms " << allQueries[i].input << " ";
+	//	for (auto& r : allQueries[i].relations)
+	//	{
+	//		std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
+	//	}
+	//	std::cerr << std::endl;
+	//}
+
+	for (auto q : allQueries)
+	{		
+		std::cout << q.input << std::endl;
+		std::cout << q.time << "ms,  " << q.plan << std::endl;
+		for (auto& r : q.relations)
 		{
 			std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
 		}
-		std::cerr << std::endl;
+		std::cout << q.filters[0].selection.relation << ": " << database.histograms[q.filters[0].selection.relation].estimateResult(q.filters[0]) << std::endl << std::endl;
 	}
 
-	/*size_t relationCount = database.relations.size();
+	size_t relationCount = database.relations.size();
 	std::cerr << "Query load time: " << queryLoadTime << std::endl;
 	std::cerr << "ColumnRelation count: " << relationCount << std::endl;
 	std::cerr << "Min tuple count: " << minTuples << std::endl;
@@ -179,9 +181,6 @@ int main(int argc, char** argv)
 	std::cerr << "Max column count: " << maxColumns << std::endl;
 	std::cerr << "Avg column count: " << columnCount / (double) relationCount << std::endl;
 	std::cerr << "Query count: " << queryCount << std::endl;
-	std::cerr << "Max result rows: " << queryRowsMax << std::endl;
-	std::cerr << "Max rows query: " << queryMaxRowsString << std::endl;
-	std::cerr << "Avg result rows: " << (size_t) (queryRowsCount / (double) queryCount) << std::endl;
 	std::cerr << "Join count: " << joinCount << std::endl;
 	std::cerr << "Filter count: " << filterCount << std::endl;
 	std::cerr << "Equals filter count: " << filterEqualsCount << std::endl;
@@ -191,7 +190,7 @@ int main(int argc, char** argv)
 	std::cerr << "Sorted on first column: " << sortedOnFirstColumn << std::endl;
 	std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
 	std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
-	std::cerr << "Self-join count: " << selfJoinCount << std::endl;*/
+	std::cerr << "Self-join count: " << selfJoinCount << std::endl;
 	std::cerr << std::endl;
 #endif
 

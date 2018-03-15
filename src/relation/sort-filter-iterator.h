@@ -28,9 +28,9 @@ public:
     void save() final;
     void restore() final;
 
-    void dumpPlan(std::stringstream& ss) final
+    std::string getFilterName() final
     {
-        ss << "SFI";
+        return "SFI";
     }
 
     RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator) const;

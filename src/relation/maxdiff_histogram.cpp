@@ -55,13 +55,13 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             {
                 int diff = (int) last - element.second;
                 last = element.second;
-                diffs[c] = diff = (diff < 0 ? -diff : diff);
+				diffs[c] = diff;
                 isBorder[c] = false;
 
                 if (buckets_diff.size() == 0 || diff >= (int) buckets_diff.back())
                 {
                     auto it = std::lower_bound(buckets_diff.cbegin(), buckets_diff.cend(), diff,
-                                          std::greater<uint32_t>()); //< choosing '5' will return end()
+                                          std::greater<uint32_t>());
                     int pos = it - buckets_diff.cbegin();
 
                     buckets_diff.insert(it, diff);
@@ -188,13 +188,14 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 		{
 			if (value < histogram[colId][i].max_value)
 			{
-				return sum + histogram[colId][0].frequency;
+				return sum +  (float)(value - last) / (histogram[colId][i].max_value - last) * histogram[colId][0].frequency;
 			}
 			if (value == histogram[colId][i].max_value)
 			{
 				return sum + histogram[colId][i].max_value_frequency;
 			}
 			sum += histogram[colId][i].max_value_frequency + histogram[colId][i].frequency;
+			last = histogram[colId][i].max_value;
 		}
 		return sum;
 	}
@@ -202,6 +203,7 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 	{
 		int pos = histogramCount[colId] - 1;
 		auto last = histogram[colId][pos].max_value;
+		auto lastfrequency = histogram[colId][pos].frequency;
 		uint32_t sum = 0;
 		if (value >= last)
 		{
@@ -212,13 +214,15 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 		{
 			if (value > histogram[colId][pos].max_value)
 			{
-				return sum;
+				return sum - (float)(value - histogram[colId][pos].max_value) / (last - histogram[colId][pos].max_value) * lastfrequency;
 			}
 			if (value == histogram[colId][pos].max_value)
 			{
 				return sum + histogram[colId][pos].max_value_frequency;
 			}
 			sum += histogram[colId][pos].max_value_frequency + histogram[colId][pos].frequency;
+			last = histogram[colId][pos].max_value;
+			lastfrequency = histogram[colId][pos].frequency;
 		}
 		return sum;
 	}

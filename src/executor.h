@@ -12,7 +12,7 @@ class Executor
 public:
     void executeQuery(Database& database, Query& query);
 
-private:
+//private:
     /**
      * Prepares iterators for all bindings of a query.
      * After this method every binding has a corresponding iterator in the views hashmap.

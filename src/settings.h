@@ -9,16 +9,17 @@
     #define LOAD_FROM_FILE INPUT_FILE
 #endif
 
-#define MEASURE_REAL_TIME
+#define STATISTICS
+//#define MEASURE_REAL_TIME
 
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
-#define USE_HASH_INDEX
+//#define USE_HASH_INDEX
 #define USE_SORT_INDEX
 //#define USE_SELF_JOIN
 
-//#define USE_HISTOGRAM
+#define USE_HISTOGRAM
 #define BUCKET_N 50
 
 #ifdef USE_SORT_INDEX
@@ -36,7 +37,7 @@
     #define BLOOM_FILTER_SIZE (2 << 3)
 #endif
 
-//#define COLLECT_JOIN_SIZE
+#define COLLECT_JOIN_SIZE
 
 #define QUERY_NUM_THREADS 20
 

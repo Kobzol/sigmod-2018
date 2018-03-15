@@ -53,6 +53,8 @@ public:
     {
         return this->getValue(row, selection.column);
     }
+
+	void print();
 };
 
 /**

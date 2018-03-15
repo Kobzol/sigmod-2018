@@ -33,6 +33,9 @@ bool HashFilterIterator::getNext()
         this->rowIndex = static_cast<int32_t>((*this->activeRow)[this->activeRowIndex]);
         if (passesFilters())
         {
+#ifdef COLLECT_JOIN_SIZE
+            this->rowCount++;
+#endif
             return true;
         }
     }
