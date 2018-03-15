@@ -12,6 +12,11 @@ class Executor
 public:
     void executeQuery(Database& database, Query& query);
 
+	void executeNew(Database& database, Query& query);
+
+	void remapJoin(Join* join, std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>& map);
+
+
 //private:
     /**
      * Prepares iterators for all bindings of a query.

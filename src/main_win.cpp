@@ -67,6 +67,7 @@ int main(int argc, char** argv)
 #endif
 			{
 				executor.executeQuery(database, queries[i]);
+				//executor.executeNew(database, queries[i]);
 			}
 			for (auto& q : queries)
 			{

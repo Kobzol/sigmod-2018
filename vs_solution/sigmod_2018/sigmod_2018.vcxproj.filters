@@ -13,6 +13,12 @@
     <Filter Include="test">
       <UniqueIdentifier>{01a941ad-ff01-438a-8927-ec0e32b79718}</UniqueIdentifier>
     </Filter>
+    <Filter Include="aggregation">
+      <UniqueIdentifier>{ee30f1fe-7881-48ca-99ef-480123aaec65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{5ca35d97-b305-4b23-a52b-acf6b55d4ceb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\index\hash-index.cpp">
@@ -65,6 +71,18 @@
     </ClCompile>
     <ClCompile Include="..\..\src\join\merge-sort-joiner.cpp">
       <Filter>join</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aggregation\aggregate.cpp">
+      <Filter>aggregation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aggregation\compute.cpp">
+      <Filter>aggregation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\cCommon.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\cTimer.cpp">
+      <Filter>common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -119,6 +137,18 @@
     </ClInclude>
     <ClInclude Include="..\..\src\join\merge-sort-joiner.h">
       <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregation\aggregate.h">
+      <Filter>aggregation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregation\compute.h">
+      <Filter>aggregation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\cCommon.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\common\cTimer.h">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

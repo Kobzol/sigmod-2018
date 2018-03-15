@@ -11,10 +11,14 @@
 #include "join/nested-joiner.h"
 #include "relation/hash-filter-iterator.h"
 #include "relation/sort-filter-iterator.h"
+#include "aggregation/aggregate.h"
+#include "aggregation/compute.h"
 #include "join/self-join.h"
 #include "timer.h"
 #include "join/index-joiner.h"
 #include "join/merge-sort-joiner.h"
+
+#include "common/cTimer.h"
 
 void Executor::executeQuery(Database& database, Query& query)
 {
@@ -267,4 +271,281 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     }
 
     return root;
+}
+
+
+void Executor::remapJoin(Join* join, std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>& map)
+{
+	for (auto & pred : *join)
+	{
+		pred.selections[0].column = map[pred.selections[0].binding][pred.selections[0].column];
+		pred.selections[1].column = map[pred.selections[1].binding][pred.selections[1].column];
+	}
+}
+
+void Executor::executeNew(Database & database, Query & query)
+{
+	std::vector<std::unique_ptr<Iterator>> container;
+	std::unordered_map<uint32_t, AggregateAbstract*> aggregates;
+	std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> columnMapping;
+
+	// Nejprve sestaveni agregatoru.
+	uint32_t binding = 0;
+	for (auto &relation : query.relations)
+	{
+		Iterator* iterator = NULL;
+
+		// Filtry.
+		std::vector<Filter> filters;
+		for (auto &filter : query.filters)
+		{
+			if (filter.selection.binding == binding)
+			{
+				filters.push_back(filter);
+			}
+		}
+
+		// Pokud existuje filtr, vytvorime FilterIterator.
+		if (filters.size() > 0)
+		{
+			container.push_back(std::make_unique<FilterIterator>(&database.relations[relation], binding, filters));
+			iterator = container.back().get();
+		}
+		// Jinak vytvorim standardni iterator nad tabulkou.
+		else
+		{
+			container.push_back(std::make_unique<ColumnRelationIterator>(&database.relations[relation], binding));
+			iterator = container.back().get();
+		}
+
+		// Zjistim, podle ceho je potreba relace seskupovat.
+		std::vector<Selection> groupBy;
+		for (auto &join : query.joins)
+		{
+			for (auto &predicate : join)
+			{
+				// Obe strany predikatu.
+				for (unsigned int i = 0; i < 2; i++)
+				{
+					if (predicate.selections[i].binding == binding)
+					{
+						// Projdu, jestli nahodou uz dana selekce neni obsazena.
+						bool b = false;
+						for (auto selection : groupBy)
+						{
+							if (selection == predicate.selections[i])
+							{
+								b = true;
+								break;
+							}
+						}
+
+						if (!b)
+						{
+							// Premapovani sloupce.
+							columnMapping[binding][predicate.selections[i].column] = groupBy.size();
+
+							groupBy.push_back(predicate.selections[i]);
+						}
+					}
+				}
+			}
+		}
+
+		// Nakonec, podle ceho je potreba sumovat.
+		std::vector<Selection> sum;
+		for (auto &selection : query.selections)
+		{
+			if (selection.binding == binding)
+			{
+				// Premapovani sloupce.
+				columnMapping[binding][selection.column] = groupBy.size() + sum.size() + 1;
+
+				sum.push_back(selection);
+			}
+		}
+
+		// Podpora max. 5 sloupcu pro groupovani.
+		switch (groupBy.size())
+		{
+		case 1:
+			container.push_back(std::make_unique<Aggregate<1>>(iterator, groupBy, sum, binding));
+			break;
+		case 2:
+			container.push_back(std::make_unique<Aggregate<2>>(iterator, groupBy, sum, binding));
+			break;
+		case 3:
+			container.push_back(std::make_unique<Aggregate<3>>(iterator, groupBy, sum, binding));
+			break;
+		case 4:
+			container.push_back(std::make_unique<Aggregate<4>>(iterator, groupBy, sum, binding));
+			break;
+		case 5:
+			container.push_back(std::make_unique<Aggregate<5>>(iterator, groupBy, sum, binding));
+			break;
+		default:
+			// TODO.
+			assert(false);
+			break;
+		}
+
+		aggregates[binding] = (AggregateAbstract*)container.back().get();
+
+		binding++;
+	}
+
+	// Sestaveni planu.
+
+	auto* join = &query.joins[0];
+	remapJoin(join, columnMapping);
+
+
+	auto leftBinding = (*join)[0].selections[0].binding;
+	auto rightBinding = (*join)[0].selections[1].binding;
+	assert(leftBinding <= rightBinding);
+
+	if (join->size() > 1)
+	{
+		container.push_back(std::make_unique<HashJoiner<true>>(
+			aggregates[leftBinding],
+			aggregates[rightBinding],
+			0,
+			*join
+			));
+	}
+	else
+	{
+		container.push_back(std::make_unique<HashJoiner<false>>(
+			aggregates[leftBinding],
+			aggregates[rightBinding],
+			0,
+			*join
+			));
+	}
+
+	std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
+	Iterator* root = container.back().get();
+	for (int i = 1; i < static_cast<int32_t>(query.joins.size()); i++)
+	{
+		join = &query.joins[i];
+		leftBinding = (*join)[0].selections[0].binding;
+		rightBinding = (*join)[0].selections[1].binding;
+
+		remapJoin(join, columnMapping);
+
+		auto usedLeft = usedBindings.find(leftBinding) != usedBindings.end();
+		auto usedRight = usedBindings.find(rightBinding) != usedBindings.end();
+		Iterator* left = root;
+		Iterator* right;
+		uint32_t leftIndex = 0;
+
+		if (usedLeft)
+		{
+			right = aggregates[rightBinding];
+			usedBindings.insert(rightBinding);
+		}
+		else if (usedRight)
+		{
+			right = aggregates[leftBinding];
+			usedBindings.insert(leftBinding);
+			leftIndex = 1;
+		}
+		else
+		{
+			query.joins.push_back(*join);
+			continue;
+		}
+
+		if (join->size() > 1)
+		{
+			container.push_back(std::make_unique<HashJoiner<true>>(
+				left,
+				right,
+				leftIndex,
+				*join
+				));
+		}
+		else
+		{
+			container.push_back(std::make_unique<HashJoiner<false>>(
+				left,
+				right,
+				leftIndex,
+				*join
+				));
+		}
+		root = container.back().get();
+	}
+
+	const unsigned int computeBinding = 1000;
+
+
+	std::vector<std::vector<Selection>> computeExprs;
+	std::vector<Selection> newQuerySelections;
+	uint32_t selIndex = 0;
+	for (auto selection : query.selections)
+	{
+		std::vector<Selection> expr;
+
+		// Premapovany sloupec pro soucet.
+
+		Selection newSelection;
+		newSelection.binding = selection.binding;
+		newSelection.column = columnMapping[selection.binding][selection.column];
+		newSelection.relation = selection.relation;
+
+		expr.push_back(newSelection);
+
+		// Sloupce pro pocty - vsechny ostatni relace mimo tu, nad kterou se provadi suma.
+		for (uint32_t binding = 0; binding < query.relations.size(); binding++)
+		{
+			if (binding != selection.binding)
+			{
+				Selection newSelection2;
+				newSelection2.binding = binding;
+				newSelection2.column = aggregates[binding]->groupBy.size();
+				newSelection2.relation = query.relations[binding];
+
+				expr.push_back(newSelection2);
+			}
+		}
+
+		computeExprs.push_back(expr);
+
+		Selection newQuerySelection;
+		newQuerySelection.binding = computeBinding;
+		newQuerySelection.column = selIndex++;
+		newQuerySelection.relation = 0;
+
+		newQuerySelections.push_back(newQuerySelection);
+	}
+
+	//Aggregator aggTest;
+	//aggTest.printResult(database, query, root);
+	//exit(0);
+
+
+	// std::cout << computeExprs.size() << std::endl;
+
+	container.push_back(std::make_unique<Compute>(
+		root, computeExprs, computeBinding));
+
+	root = container.back().get();
+
+	//root->printPlan(0);
+
+
+	query.selections = newQuerySelections;
+
+	common::utils::cTimer timer;
+	timer.Start();
+
+	Aggregator aggregator;
+	aggregator.aggregate(database, query, root);
+	query.result[query.result.size() - 1] = '\n';
+
+	timer.Stop();
+	timer.Print("\n");
+
+	//exit(0);
 }
