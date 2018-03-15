@@ -20,7 +20,11 @@ class MaxdiffHistogram
 	std::vector<bool> isUnique;
 	std::vector<hist_bucket*> histogram;
 	std::vector<uint32_t> histogramCount;
+
+	std::vector<HashMap<uint64_t, uint32_t>> fullhistograms;
 public:
+	
+
 	void loadRelation(ColumnRelation& relation);
 
 	uint32_t estimateResult(const Filter& filter);
