@@ -23,5 +23,5 @@
     size_t joinsOnFirstColumn = 0;
     size_t filtersOnFirstColumn = 0;
     size_t selfJoinCount = 0;
-    std::unordered_map<uint32_t, uint32_t> columnIndexCounter;
+    size_t filtersSkippedByHistogram = 0;
 #endif

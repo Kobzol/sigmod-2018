@@ -3,7 +3,6 @@
 #include "../index/sort-index.h"
 
 #include <algorithm>
-#include <cassert>
 
 SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters)
         : FilterIterator(relation, binding, filters)

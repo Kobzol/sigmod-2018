@@ -18,7 +18,7 @@
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
-#define USE_HASH_INDEX
+//#define USE_HASH_INDEX
 #define USE_SORT_INDEX
 #define USE_SELF_JOIN
 

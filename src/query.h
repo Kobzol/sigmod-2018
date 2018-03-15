@@ -117,6 +117,8 @@ public:
 
     }
 
+    bool isSkippable() const;
+
     Selection selection;
     char oper;
     uint64_t value;

@@ -59,5 +59,9 @@ std::unique_ptr<Iterator> FilterIterator::createIndexedIterator()
 
 int64_t FilterIterator::predictSize()
 {
+#ifdef USE_HISTOGRAM
     return database.histograms[this->filters[0].selection.relation].estimateResult(this->filters[0]);
+#else
+    return this->relation->getRowCount();
+#endif
 }

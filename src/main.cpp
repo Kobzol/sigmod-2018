@@ -142,15 +142,17 @@ int main(int argc, char** argv)
                 {
                     filterEqualsCount++;
                 }
+                if (filter.isSkippable())
+                {
+                    filtersSkippedByHistogram++;
+                }
             }
 #endif
         }
     }
 
 #ifdef STATISTICS
-    std::cerr << "Total columns: " << database.relations[database.relations.size() - 1].cumulativeColumnId
-                                      + database.relations[database.relations.size() - 1].columnCount << std::endl;
-    std::cerr << "Indexed columns: " << columnIndexCounter.size() << std::endl;
+    std::cerr << "Filters skipped by histogram: " << filtersSkippedByHistogram << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
@@ -204,6 +206,8 @@ int main(int argc, char** argv)
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
     std::cerr << "Self-join count: " << selfJoinCount << std::endl;
     std::cerr << std::endl;*/
+
+    std::cerr << std::flush;
 #endif
 
     std::quick_exit(0);

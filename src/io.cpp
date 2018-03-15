@@ -98,7 +98,9 @@ void loadDatabase(Database& database)
 #endif
         }
 
+#ifdef USE_HISTOGRAM
         database.histograms.emplace_back();
+#endif
     }
 
 #ifdef USE_THREADS

@@ -23,4 +23,4 @@ extern size_t sortedOnFirstColumn;
 extern size_t joinsOnFirstColumn;
 extern size_t filtersOnFirstColumn;
 extern size_t selfJoinCount;
-extern std::unordered_map<uint32_t, uint32_t> columnIndexCounter;
+extern size_t filtersSkippedByHistogram;

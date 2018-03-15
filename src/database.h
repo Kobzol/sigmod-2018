@@ -24,7 +24,9 @@ public:
     std::string createJoinKey(const Join& join);
 
     std::vector<ColumnRelation> relations;
+#ifdef USE_HISTOGRAM
     std::vector<MaxdiffHistogram> histograms;
+#endif
 
     std::vector<std::unique_ptr<HashIndex>> hashIndices;
     std::vector<std::unique_ptr<SortIndex>> sortIndices;
