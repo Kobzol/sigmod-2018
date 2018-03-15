@@ -25,5 +25,5 @@ public:
 
 	uint32_t estimateResult(const Filter& filter);
 	uint64_t maxValue(uint32_t colId) { return histogram[colId][histogramCount[colId] - 1].max_value; }
-	}
+	
 };

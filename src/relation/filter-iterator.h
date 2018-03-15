@@ -30,14 +30,21 @@ public:
 
     int64_t predictSize() override;
 
-    void dumpPlan(std::stringstream& ss) override
+    void dumpPlan(std::stringstream& ss) final
     {
-        ss << "FI";
+        ss << this->getFilterName() << "(" << this->rowCount << ")";
+    }
+
+    virtual std::string getFilterName()
+    {
+        return "FI";
     }
 
     bool passesFilters();
 
     std::vector<Filter> filters;
     int startFilterIndex = 0;
-    int filterSize;;
+    int filterSize;
+
+    size_t rowCount = 0;
 };

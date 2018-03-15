@@ -34,6 +34,10 @@ bool FilterIterator::getNext()
         this->rowIndex++;
     }
 
+#ifdef COLLECT_JOIN_SIZE
+    this->rowCount++;
+#endif
+
     return this->rowIndex < rowCount;
 }
 

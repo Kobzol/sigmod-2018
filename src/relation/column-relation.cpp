@@ -26,3 +26,15 @@ std::unique_ptr<Iterator> ColumnRelationIterator::createIndexedIterator()
 {
     return std::make_unique<INDEXED_FILTER>(this->relation, this->binding, std::vector<Filter>());
 }
+
+void ColumnRelation::print()
+{
+	for (int i = 0; i < getRowCount(); i++)
+	{
+		for (int j = 0; j < getColumnCount(); j++)
+		{
+			std::cout << getValue(i, j) << ' ';
+		}
+		std::cout << std::endl;
+	}
+}
