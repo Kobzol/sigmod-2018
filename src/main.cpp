@@ -148,11 +148,15 @@ int main(int argc, char** argv)
     }
 
 #ifdef STATISTICS
+    std::cerr << "Total columns: " << database.relations[database.relations.size() - 1].cumulativeColumnId
+                                      + database.relations[database.relations.size() - 1].columnCount << std::endl;
+    std::cerr << "Indexed columns: " << columnIndexCounter.size() << std::endl;
+
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
     });
 
-    for (int i = 0; i < 15; i++)
+    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 5); i++)
     {
         std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
     }

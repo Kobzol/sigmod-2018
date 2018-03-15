@@ -1,4 +1,5 @@
 #include "database.h"
+#include "stats.h"
 
 uint32_t Database::getGlobalColumnId(uint32_t relation, uint32_t column)
 {
@@ -12,6 +13,10 @@ HashIndex& Database::getHashIndex(uint32_t relation, uint32_t column)
 
 SortIndex& Database::getSortIndex(uint32_t relation, uint32_t column)
 {
+#ifdef STATISTICS
+    Selection sel(relation, 0, column);
+    columnIndexCounter[sel.getId()] = 1;
+#endif
     return *this->sortIndices[this->getGlobalColumnId(relation, column)];
 }
 

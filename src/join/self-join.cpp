@@ -3,8 +3,8 @@
 SelfJoin::SelfJoin(Iterator& inner, std::vector<Selection> selections):
     inner(inner), selections(std::move(selections))
 {
-    assert(selections.size() > 1);
-    this->selectionSize = static_cast<int32_t>(selections.size() - 1);
+    assert(this->selections.size() > 1);
+    this->selectionSize = static_cast<int32_t>(this->selections.size() - 1);
 }
 
 bool SelfJoin::getNext()

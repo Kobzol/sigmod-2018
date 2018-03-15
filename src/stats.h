@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 extern double queryLoadTime;
 extern size_t tupleCount;
@@ -22,3 +23,4 @@ extern size_t sortedOnFirstColumn;
 extern size_t joinsOnFirstColumn;
 extern size_t filtersOnFirstColumn;
 extern size_t selfJoinCount;
+extern std::unordered_map<uint32_t, uint32_t> columnIndexCounter;
