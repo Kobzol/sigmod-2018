@@ -5,8 +5,7 @@
 template <bool HAS_MULTIPLE_JOINS>
 HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join),
-          rightValues(join.size()),
-          rightSelection(this->join[0].selections[this->rightIndex])
+          rightValues(join.size())
 {
 
 }
@@ -21,7 +20,7 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
 
         while (true)
         {
-            uint64_t value = iterator->getColumn(this->rightColumn);
+            uint64_t value = iterator->getColumn(this->rightColumns[0]);
             auto it = this->getFromMap(value);
             if (it == this->hashTable.end())
             {
@@ -51,7 +50,7 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::checkRowPredicates()
 
     for (int i = 1; i < this->joinSize; i++)
     {
-        rightValues[i] = iterator->getValue(this->join[i].selections[this->rightIndex]);
+        rightValues[i] = iterator->getColumn(this->rightColumns[i]);
     }
 
     while (this->activeRowIndex < this->activeRowCount)
@@ -122,26 +121,12 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getValue(const Selection& selection)
 template <bool HAS_MULTIPLE_JOINS>
 void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
-    for (auto& j: this->join)
-    {
-        selections[j.selections[0].getId()] = j.selections[0];
-        selections[j.selections[1].getId()] = j.selections[1];
-    }
-
-    this->left->requireSelections(selections);
-    this->right->requireSelections(selections);
+    this->initializeSelections(selections);
 
     std::vector<Selection> leftSelections;
     this->prepareColumnMappings(selections, leftSelections);
 
-    auto iterator = this->left;
-    auto& predicate = this->join[0];
-    auto selection = predicate.selections[this->leftIndex];
-
-    this->rightColumn = this->right->getColumnForSelection(this->rightSelection);
-
-    iterator->fillHashTable(selection, leftSelections, this->hashTable, this->bloomFilter);
-
+    this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable, this->bloomFilter);
     this->right->prepareSortedAccess(this->rightSelection);
 }
 
@@ -276,7 +261,8 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
 
     if (!this->getNext()) return;
 
-    uint64_t value = this->getValue(hashSelection);
+    uint32_t hashColumn = this->getColumnForSelection(hashSelection);
+    uint64_t value = this->getColumn(hashColumn);
 #ifdef USE_BLOOM_FILTER
     filter.set(value);
 #endif
@@ -315,7 +301,7 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
             }
 
             if (!this->getNext()) return;
-            uint64_t current = this->getValue(hashSelection);
+            uint64_t current = this->getColumn(hashColumn);
             if (current != value)
             {
                 value = current;
@@ -338,7 +324,7 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
             }
 
             if (!this->getNext()) return;
-            uint64_t current = this->getValue(hashSelection);
+            uint64_t current = this->getColumn(hashColumn);
             if (current != value)
             {
                 value = current;
@@ -375,7 +361,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
                 count += localCount;
                 return;
             }
-            rightValue = iterator->getColumn(this->rightColumn);
+            rightValue = iterator->getColumn(this->rightColumns[0]);
 
             auto it = this->getFromMap(rightValue);
             if (it != this->hashTable.end())
@@ -402,7 +388,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
                 hasNext = false;
                 break;
             }
-            value = iterator->getColumn(this->rightColumn);
+            value = iterator->getColumn(this->rightColumns[0]);
         }
         while (value == rightValue);
 
@@ -467,4 +453,39 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
 #endif
 
     count = atomicCount;
+}
+
+template<bool HAS_MULTIPLE_JOINS>
+void HashJoiner<HAS_MULTIPLE_JOINS>::setColumn(SelectionId selectionId, uint32_t column)
+{
+    this->columnMap[column] = selectionId;
+}
+
+template<bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::hasSelection(const Selection& selection)
+{
+    if (this->right->hasSelection(selection)) return true;
+
+    auto id = selection.getId();
+    for (int i = 0; i < this->columnMapCols; i++)
+    {
+        if (this->columnMap[i] == id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+template<bool HAS_MULTIPLE_JOINS>
+uint32_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumnForSelection(const Selection& selection)
+{
+    auto id = selection.getId();
+    for (int i = 0; i < this->columnMapCols; i++)
+    {
+        if (this->columnMap[i] == id) return static_cast<uint32_t>(i);
+    }
+
+    return this->right->getColumnForSelection(selection) + this->columnMapCols;
 }

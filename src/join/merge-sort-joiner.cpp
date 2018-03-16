@@ -10,21 +10,21 @@ MergeSortJoiner::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftI
 bool MergeSortJoiner::moveLeft()
 {
     if (!this->left->getNext()) return false;
-    this->leftValue = this->left->getColumn(this->leftColumn);
+    this->leftValue = this->left->getColumn(this->leftColumns[0]);
     return true;
 }
 bool MergeSortJoiner::moveRight()
 {
     if (!this->right->getNext()) return false;
-    this->rightValue = this->right->getColumn(this->rightColumn);
+    this->rightValue = this->right->getColumn(this->rightColumns[0]);
     return true;
 }
 bool MergeSortJoiner::checkJoins()
 {
     for (int i = 1; i < joinSize; i++)
     {
-        if (this->left->getValue(this->join[i].selections[this->leftIndex]) !=
-            this->right->getValue(this->join[i].selections[this->rightIndex]))
+        if (this->left->getColumn(this->leftColumns[i]) !=
+            this->right->getColumn(this->rightColumns[i]))
         {
             return false;
         }
@@ -95,55 +95,12 @@ bool MergeSortJoiner::getNext()
     }
 }
 
-uint64_t MergeSortJoiner::getValue(const Selection& selection)
-{
-    uint64_t value;
-    if (this->left->getValueMaybe(selection, value)) return value;
-    return this->right->getValue(selection);
-}
-
-uint64_t MergeSortJoiner::getColumn(uint32_t column)
-{
-    if (column < static_cast<uint32_t>(this->leftColSize))
-    {
-        return this->left->getColumn(column);
-    }
-    return this->right->getColumn(column - this->leftColSize);
-}
-
-bool MergeSortJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
-{
-    if (this->left->getValueMaybe(selection, value)) return true;
-    return this->right->getValueMaybe(selection, value);
-}
-
-uint32_t MergeSortJoiner::getColumnForSelection(const Selection& selection)
-{
-    if (this->left->hasSelection(selection))
-    {
-        return this->left->getColumnForSelection(selection);
-    }
-    return this->right->getColumnForSelection(selection) + this->leftColSize;
-}
-
 void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
-    for (auto& j: this->join)
-    {
-        selections[j.selections[0].getId()] = j.selections[0];
-        selections[j.selections[1].getId()] = j.selections[1];
-    }
-
-    this->left->requireSelections(selections);
-    this->right->requireSelections(selections);
+    this->initializeSelections(selections);
 
     this->left->prepareSortedAccess(this->join[0].selections[this->leftIndex]);
     this->right->prepareSortedAccess(this->join[0].selections[this->rightIndex]);
-
-    this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
-
-    this->leftColumn = this->left->getColumnForSelection(this->join[0].selections[this->leftIndex]);
-    this->rightColumn = this->right->getColumnForSelection(this->join[0].selections[this->rightIndex]);
 }
 
 void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
@@ -184,11 +141,6 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
 #endif
         }
     }
-}
-
-bool MergeSortJoiner::hasSelection(const Selection& selection)
-{
-    return this->left->hasSelection(selection) || this->right->hasSelection(selection);
 }
 
 bool MergeSortJoiner::isSortedOn(const Selection& selection)

@@ -30,6 +30,10 @@ public:
     uint64_t getValue(const Selection& selection) final;
     uint64_t getColumn(uint32_t column) final;
 
+    uint32_t getColumnForSelection(const Selection& selection) override;
+    void setColumn(SelectionId selectionId, uint32_t column);
+    bool hasSelection(const Selection& selection) override;
+
     bool getValueMaybe(const Selection& selection, uint64_t& value) final;
 
     void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
@@ -80,12 +84,12 @@ private:
     const std::vector<uint64_t>* activeRow = nullptr;
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
-    uint32_t rightColumn;
 
     HashMap<uint64_t, std::vector<uint64_t>> hashTable;
     std::vector<uint64_t> rightValues;
 
-    Selection rightSelection;
+    std::vector<SelectionId> columnMap;
+    int32_t columnMapCols = 0;
 
     BloomFilter<BLOOM_FILTER_SIZE> bloomFilter;
 };

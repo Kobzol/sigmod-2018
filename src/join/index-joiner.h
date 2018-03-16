@@ -12,18 +12,8 @@ public:
 
     bool getNext() final;
 
-    uint64_t getValue(const Selection& selection) final;
-    uint64_t getColumn(uint32_t column) final;
-
-    bool getValueMaybe(const Selection& selection, uint64_t& value) final;
-    bool hasSelection(const Selection& selection) final;
-
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
-
-    uint32_t getColumnForSelection(const Selection& selection) final;
-
     void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
-
     void aggregateDirect(std::vector<uint64_t>& results,
                          const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                          const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
@@ -34,10 +24,4 @@ public:
     {
         return "NL";
     }
-
-    Selection leftSel;
-    Selection rightSel;
-
-    uint32_t leftColSize;
-    uint32_t leftColumn;
 };

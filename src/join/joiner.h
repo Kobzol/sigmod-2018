@@ -16,6 +16,8 @@ public:
             : left(left), right(right),
               join(join), leftIndex(leftIndex),
               rightIndex(1 - leftIndex),
+              leftSelection(this->join[0].selections[this->leftIndex]),
+              rightSelection(this->join[0].selections[this->rightIndex]),
               joinSize(static_cast<int32_t>(this->join.size()))
     {
 
@@ -31,21 +33,6 @@ public:
         return true;
     }
 
-    uint32_t getColumnForSelection(const Selection& selection) override
-    {
-        auto id = selection.getId();
-        for (int i = 0; i < this->columnMapCols; i++)
-        {
-            if (this->columnMap[i] == id) return static_cast<uint32_t>(i);
-        }
-
-        return this->right->getColumnForSelection(selection) + this->columnMapCols;
-    }
-
-    void setColumn(SelectionId selectionId, uint32_t column);
-
-    bool hasSelection(const Selection& selection) override;
-
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
@@ -57,6 +44,15 @@ public:
         this->left->fillBindings(bindings);
         this->right->fillBindings(bindings);
     }
+
+    void initializeSelections(std::unordered_map<SelectionId, Selection>& selections);
+
+    uint64_t getValue(const Selection& selection) override;
+    uint64_t getColumn(uint32_t column) override;
+    uint32_t getColumnForSelection(const Selection& selection) override;
+
+    bool getValueMaybe(const Selection& selection, uint64_t& value) override;
+    bool hasSelection(const Selection& selection) override;
 
     int64_t predictSize() override;
 
@@ -83,8 +79,14 @@ public:
     uint32_t leftIndex;
     uint32_t rightIndex;
 
-    std::vector<SelectionId> columnMap;
-    int32_t columnMapCols = 0;
+    uint32_t leftColSize;
+
+    Selection leftSelection;
+    Selection rightSelection;
+
+    std::vector<uint32_t> leftColumns;
+    std::vector<uint32_t> rightColumns;
+
     int32_t joinSize;
 
     size_t rowCount = 0;

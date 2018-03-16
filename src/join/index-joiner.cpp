@@ -3,9 +3,7 @@
 #include "index-joiner.h"
 
 IndexJoiner::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
-        : Joiner(left, right, leftIndex, join),
-          leftSel(this->join[0].selections[this->leftIndex]),
-          rightSel(this->join[0].selections[this->rightIndex])
+        : Joiner(left, right, leftIndex, join)
 {
 
 }
@@ -20,16 +18,16 @@ bool IndexJoiner::getNext()
             {
                 return false;
             }
-            uint64_t value = this->left->getValue(this->leftSel);
-            this->right->iterateValue(this->rightSel, value);
+            uint64_t value = this->left->getColumn(this->leftColumns[0]);
+            this->right->iterateValue(this->rightSelection, value);
             continue;
         }
 
         bool ok = true;
         for (int i = 1; i < joinSize; i++)
         {
-            if (this->left->getValue(this->join[i].selections[this->leftIndex]) !=
-                this->right->getValue(this->join[i].selections[this->rightIndex]))
+            if (this->left->getColumn(this->leftColumns[i]) !=
+                this->right->getColumn(this->rightColumns[i]))
             {
                 ok = false;
                 break;
@@ -45,44 +43,12 @@ bool IndexJoiner::getNext()
     }
 }
 
-uint64_t IndexJoiner::getValue(const Selection& selection)
-{
-    uint64_t value;
-    if (this->left->getValueMaybe(selection, value)) return value;
-    return this->right->getValue(selection);
-}
-
-uint64_t IndexJoiner::getColumn(uint32_t column)
-{
-    if (column < this->leftColSize)
-    {
-        return this->left->getColumn(column);
-    }
-    return this->right->getColumn(column - this->leftColSize);
-}
-
-bool IndexJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
-{
-    if (this->left->getValueMaybe(selection, value)) return true;
-    return this->right->getValueMaybe(selection, value);
-}
-
 void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
-    for (auto& j: this->join)
-    {
-        selections[j.selections[0].getId()] = j.selections[0];
-        selections[j.selections[1].getId()] = j.selections[1];
-    }
+    this->initializeSelections(selections);
 
-    this->left->requireSelections(selections);
-    this->right->requireSelections(selections);
-
-    this->left->prepareSortedAccess(this->leftSel);
+    this->left->prepareSortedAccess(this->leftSelection);
     this->right->prepareIndexedAccess();
-
-    this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
-    this->leftColumn = this->left->getColumnForSelection(this->leftSel);
 }
 
 void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
@@ -125,20 +91,6 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
     }
 }
 
-uint32_t IndexJoiner::getColumnForSelection(const Selection& selection)
-{
-    if (this->left->hasSelection(selection))
-    {
-        return this->left->getColumnForSelection(selection);
-    }
-    return this->right->getColumnForSelection(selection) + this->leftColSize;
-}
-
-bool IndexJoiner::hasSelection(const Selection& selection)
-{
-    return this->left->hasSelection(selection) || this->right->hasSelection(selection);
-}
-
 void IndexJoiner::aggregateDirect(std::vector<uint64_t>& results,
                                   const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                                   const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns, size_t& count)
@@ -148,8 +100,8 @@ void IndexJoiner::aggregateDirect(std::vector<uint64_t>& results,
     std::vector<uint64_t> rightResults(results.size());
     while (true)
     {
-        uint64_t leftValue = this->left->getColumn(this->leftColumn);
-        this->right->iterateValue(this->rightSel, leftValue);
+        uint64_t leftValue = this->left->getColumn(this->leftColumns[0]);
+        this->right->iterateValue(this->rightSelection, leftValue);
 
         std::memset(rightResults.data(), 0, sizeof(uint64_t) * rightResults.size());
         size_t rightCount = 0;
@@ -181,7 +133,7 @@ void IndexJoiner::aggregateDirect(std::vector<uint64_t>& results,
                     break;
                 }
 
-                value = this->left->getColumn(this->leftColumn);
+                value = this->left->getColumn(this->leftColumns[0]);
             }
             while (value == leftValue);
         }

@@ -1,26 +1,7 @@
+#include "merge-sort-joiner.h"
+#include <iostream>
 #include "joiner.h"
 #include "../database.h"
-
-void Joiner::setColumn(SelectionId selectionId, uint32_t column)
-{
-    this->columnMap[column] = selectionId;
-}
-
-bool Joiner::hasSelection(const Selection& selection)
-{
-    if (this->right->hasSelection(selection)) return true;
-
-    auto id = selection.getId();
-    for (int i = 0; i < this->columnMapCols; i++)
-    {
-        if (this->columnMap[i] == id)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 std::unique_ptr<Iterator> Joiner::createIndexedIterator()
 {
@@ -89,4 +70,60 @@ void Joiner::assignJoinSize(Database& database)
     {
         database.addJoinSize(this->join, this->rowCount);
     }
+}
+
+bool Joiner::getValueMaybe(const Selection& selection, uint64_t& value)
+{
+    if (this->left->getValueMaybe(selection, value)) return true;
+    return this->right->getValueMaybe(selection, value);
+}
+
+uint64_t Joiner::getValue(const Selection& selection)
+{
+    uint64_t value;
+    if (this->left->getValueMaybe(selection, value)) return value;
+    return this->right->getValue(selection);
+}
+
+bool Joiner::hasSelection(const Selection& selection)
+{
+    return this->left->hasSelection(selection) || this->right->hasSelection(selection);
+}
+
+void Joiner::initializeSelections(std::unordered_map<SelectionId, Selection>& selections)
+{
+    for (auto& j: this->join)
+    {
+        selections[j.selections[0].getId()] = j.selections[0];
+        selections[j.selections[1].getId()] = j.selections[1];
+    }
+
+    this->left->requireSelections(selections);
+    this->right->requireSelections(selections);
+
+    for (auto& j : this->join)
+    {
+        this->leftColumns.push_back(this->left->getColumnForSelection(j.selections[this->leftIndex]));
+        this->rightColumns.push_back(this->right->getColumnForSelection(j.selections[this->rightIndex]));
+    }
+
+    this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
+}
+
+uint64_t Joiner::getColumn(uint32_t column)
+{
+    if (column < static_cast<uint32_t>(this->leftColSize))
+    {
+        return this->left->getColumn(column);
+    }
+    return this->right->getColumn(column - this->leftColSize);
+}
+
+uint32_t Joiner::getColumnForSelection(const Selection& selection)
+{
+    if (this->left->hasSelection(selection))
+    {
+        return this->left->getColumnForSelection(selection);
+    }
+    return this->right->getColumnForSelection(selection) + this->leftColSize;
 }
