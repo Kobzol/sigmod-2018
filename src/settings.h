@@ -16,18 +16,29 @@
 
 //#define USE_HASH_INDEX
 #define USE_SORT_INDEX
+//#define USE_PRIMARY_INDEX
 #define USE_SELF_JOIN
 
 //#define USE_HISTOGRAM
 #define BUCKET_N 50
 
+#if defined(USE_SORT_INDEX) || defined(USE_PRIMARY_INDEX)
+    #define INDEX_AVAILABLE
+#endif
+
 #ifdef USE_SORT_INDEX
-    #define FILTER_ITERATOR SortFilterIterator
+    #define FILTER_ITERATOR SortIndexIterator
+#elif defined(USE_PRIMARY_INDEX)
+    #define FILTER_ITERATOR PrimaryIndexIterator
 #else
     #define FILTER_ITERATOR FilterIterator
 #endif
 
-#define INDEXED_FILTER SortFilterIterator
+#ifdef USE_PRIMARY_INDEX
+    #define INDEXED_FILTER PrimaryIndexIterator
+#else
+    #define INDEXED_FILTER SortIndexIterator
+#endif
 
 #define USE_BLOOM_FILTER
 #ifdef USE_BLOOM_FILTER

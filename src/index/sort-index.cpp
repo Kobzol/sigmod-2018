@@ -5,7 +5,7 @@
 #include <algorithm>
 
 SortIndex::SortIndex(ColumnRelation& relation, uint32_t column)
-        : relation(relation), column(column), data(static_cast<size_t>(relation.getRowCount()))
+        : Index(relation, column), data(static_cast<size_t>(relation.getRowCount()))
 {
 
 }

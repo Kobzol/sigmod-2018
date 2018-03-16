@@ -10,7 +10,8 @@
 #include "settings.h"
 #include "join/nested-joiner.h"
 #include "relation/hash-filter-iterator.h"
-#include "relation/sort-filter-iterator.h"
+#include "relation/sort-index-iterator.h"
+#include "relation/primary-index-iterator.h"
 #include "join/self-join.h"
 #include "timer.h"
 #include "join/index-joiner.h"
@@ -190,7 +191,7 @@ static void createJoin(Iterator* left,
                 bool first,
                 bool last)
 {
-#ifndef USE_SORT_INDEX
+#ifndef INDEX_AVAILABLE
     createHashJoin(left, right, leftIndex, container, join, false);
     return;
 #endif
@@ -215,7 +216,7 @@ static void createJoin(Iterator* left,
     }
     else
     {
-        // TODO: left now thinks it's empty when it's a SortFilterIterator without filters
+        // TODO: left now thinks it's empty when it's a SortIndexIterator without filters
         if (left->predictSize() < 20000)
         {
             createIndexJoin(left, right, leftIndex, container, join);

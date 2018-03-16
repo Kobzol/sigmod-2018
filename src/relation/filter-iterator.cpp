@@ -1,22 +1,10 @@
 #include "filter-iterator.h"
 #include "hash-filter-iterator.h"
-#include "sort-filter-iterator.h"
+#include "sort-index-iterator.h"
 #include "../database.h"
+#include "primary-index-iterator.h"
 
 #include <cassert>
-
-static bool passesFilter(const Filter& filter, uint64_t value)
-{
-    switch (filter.oper)
-    {
-        case '=': return value == filter.value;
-        case '<': return value < filter.value;
-        case '>': return value > filter.value;
-        default: assert(false);
-    }
-
-    return false;
-}
 
 FilterIterator::FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters)
         : ColumnRelationIterator(relation, binding), filters(std::move(filters))

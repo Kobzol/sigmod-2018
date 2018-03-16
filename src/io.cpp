@@ -86,6 +86,29 @@ void loadDatabase(Database& database)
 #endif
     }
 
+#ifdef USE_PRIMARY_INDEX
+    std::vector<std::vector<PrimaryRowEntry>> relationData(database.relations.size());
+
+#ifdef USE_THREADS
+#pragma omp parallel for
+    for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
+#else
+    for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
+#endif
+    {
+        auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
+        relationData[i].resize(static_cast<size_t>(rows));
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+            {
+                relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
+                                                                           static_cast<size_t>(c));
+            }
+        }
+    }
+#endif
+
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
@@ -96,7 +119,17 @@ void loadDatabase(Database& database)
 #ifdef USE_SORT_INDEX
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
 #endif
+#ifdef USE_PRIMARY_INDEX
+            database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
+                                                                             relationData[r]));
+#endif
         }
+
+#ifdef USE_PRIMARY_INDEX
+        // free memory
+        relationData[r].resize(0);
+        relationData[r].shrink_to_fit();
+#endif
 
 #ifdef USE_HISTOGRAM
         database.histograms.emplace_back();
@@ -115,6 +148,9 @@ void loadDatabase(Database& database)
 #endif
 #ifdef USE_SORT_INDEX
         database.sortIndices[i]->build();
+#endif
+#ifdef USE_PRIMARY_INDEX
+        database.primaryIndices[i]->build();
 #endif
     }
 

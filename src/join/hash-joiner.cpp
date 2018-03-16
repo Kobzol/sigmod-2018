@@ -205,7 +205,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
 
     _mm_prefetch(results.data(), _MM_HINT_T0);
 
-#if defined USE_SORT_INDEX
+#ifdef INDEX_AVAILABLE
     if (!HAS_MULTIPLE_JOINS)
     {
         this->aggregateDirect(results, leftColumns, rightColumns, count);

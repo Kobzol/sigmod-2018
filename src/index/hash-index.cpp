@@ -1,7 +1,7 @@
 #include "hash-index.h"
 #include "../relation/column-relation.h"
 
-HashIndex::HashIndex(ColumnRelation& relation, uint32_t column): relation(relation), column(column)
+HashIndex::HashIndex(ColumnRelation& relation, uint32_t column): Index(relation, column)
 {
 
 }

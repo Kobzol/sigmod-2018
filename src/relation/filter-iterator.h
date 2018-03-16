@@ -40,7 +40,7 @@ public:
         return "FI";
     }
 
-    bool passesFilters();
+    virtual bool passesFilters();
 
     std::vector<Filter> filters;
     int startFilterIndex = 0;
@@ -48,3 +48,16 @@ public:
 
     size_t rowCount = 0;
 };
+
+inline bool passesFilter(const Filter& filter, uint64_t value)
+{
+    switch (filter.oper)
+    {
+        case '=': return value == filter.value;
+        case '<': return value < filter.value;
+        case '>': return value > filter.value;
+        default: assert(false);
+    }
+
+    return false;
+}
