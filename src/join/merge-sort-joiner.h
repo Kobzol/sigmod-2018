@@ -6,6 +6,7 @@
  * Joins two iterators using merge sort join.
  * Requires both iterators to be sorted, so they have to either be sorted joins or SortFilterIterator.
  */
+template <bool HAS_MULTIPLE_JOINS>
 class MergeSortJoiner: public Joiner
 {
 public:
@@ -39,3 +40,6 @@ public:
     bool hasRight = false;
     bool hasItems = false;
 };
+
+template class MergeSortJoiner<false>;
+template class MergeSortJoiner<true>;

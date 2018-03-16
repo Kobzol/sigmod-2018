@@ -144,12 +144,15 @@ static void createHashJoin(Iterator* left,
                 *join
         ));
     }
-    else container.push_back(std::make_unique<HashJoiner<false>>(
+    else
+    {
+        container.push_back(std::make_unique<HashJoiner<false>>(
                 left,
                 right,
                 leftIndex,
                 *join
         ));
+    }
 }
 static void createIndexJoin(Iterator* left,
                     Iterator* right,
@@ -158,12 +161,25 @@ static void createIndexJoin(Iterator* left,
                     Join* join)
 {
     container.push_back(right->createIndexedIterator());
-    container.push_back(std::make_unique<IndexJoiner>(
-            left,
-            container.back().get(),
-            leftIndex,
-            *join
-    ));
+
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<IndexJoiner<true>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
+    else
+    {
+        container.push_back(std::make_unique<IndexJoiner<false>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
 }
 static void createMergesortJoin(Iterator* left,
                          Iterator* right,
@@ -178,12 +194,25 @@ static void createMergesortJoin(Iterator* left,
     }
 
     container.push_back(right->createIndexedIterator());
-    container.push_back(std::make_unique<MergeSortJoiner>(
-            left,
-            container.back().get(),
-            leftIndex,
-            *join
-    ));
+
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<MergeSortJoiner<true>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
+    else
+    {
+        container.push_back(std::make_unique<MergeSortJoiner<false>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
 }
 
 static void createJoin(Iterator* left,
@@ -195,6 +224,8 @@ static void createJoin(Iterator* left,
                 bool first,
                 bool last)
 {
+    createHashJoin(left, right, leftIndex, container, join, last);
+    return;
 #ifndef INDEX_AVAILABLE
     createHashJoin(left, right, leftIndex, container, join, false);
     return;

@@ -2,13 +2,15 @@
 #include <cstring>
 #include "index-joiner.h"
 
-IndexJoiner::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+template <bool HAS_MULTIPLE_JOINS>
+IndexJoiner<HAS_MULTIPLE_JOINS>::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join)
 {
 
 }
 
-bool IndexJoiner::getNext()
+template <bool HAS_MULTIPLE_JOINS>
+bool IndexJoiner<HAS_MULTIPLE_JOINS>::getNext()
 {
     while (true)
     {
@@ -23,17 +25,27 @@ bool IndexJoiner::getNext()
             continue;
         }
 
-        bool ok = true;
-        for (int i = 1; i < joinSize; i++)
+        if (HAS_MULTIPLE_JOINS)
         {
-            if (this->left->getColumn(this->leftColumns[i]) !=
-                this->right->getColumn(this->rightColumns[i]))
+            bool ok = true;
+            for (int i = 1; i < joinSize; i++)
             {
-                ok = false;
-                break;
+                if (this->left->getColumn(this->leftColumns[i]) !=
+                    this->right->getColumn(this->rightColumns[i]))
+                {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok)
+            {
+#ifdef COLLECT_JOIN_SIZE
+                this->rowCount++;
+#endif
+                return true;
             }
         }
-        if (ok)
+        else
         {
 #ifdef COLLECT_JOIN_SIZE
             this->rowCount++;
@@ -43,7 +55,8 @@ bool IndexJoiner::getNext()
     }
 }
 
-void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection> selections)
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
     this->initializeSelections(selections);
 
@@ -51,7 +64,8 @@ void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection> s
     this->right->prepareIndexedAccess();
 }
 
-void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -67,7 +81,7 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
         else rightColumns.emplace_back(columnIds[i] - this->leftColSize, i);
     }
 
-    if (this->joinSize == 1)
+    if (!HAS_MULTIPLE_JOINS)
     {
         this->aggregateDirect(results, leftColumns, rightColumns, count);
     }
@@ -91,7 +105,8 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
     }
 }
 
-void IndexJoiner::aggregateDirect(std::vector<uint64_t>& results,
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& results,
                                   const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                                   const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns, size_t& count)
 {

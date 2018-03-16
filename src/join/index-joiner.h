@@ -5,6 +5,7 @@
 /**
  * Joins two iterators using NLJ on the left iterator and indexed access to the right iterator.
  */
+template <bool HAS_MULTIPLE_JOINS>
 class IndexJoiner: public Joiner
 {
 public:
@@ -25,3 +26,6 @@ public:
         return "NL";
     }
 };
+
+template class IndexJoiner<false>;
+template class IndexJoiner<true>;

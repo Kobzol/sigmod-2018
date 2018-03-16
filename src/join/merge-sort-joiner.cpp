@@ -1,25 +1,29 @@
 #include <iostream>
 #include "merge-sort-joiner.h"
 
-MergeSortJoiner::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+template <bool HAS_MULTIPLE_JOINS>
+MergeSortJoiner<HAS_MULTIPLE_JOINS>::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join)
 {
 
 }
 
-bool MergeSortJoiner::moveLeft()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::moveLeft()
 {
     if (!this->left->getNext()) return false;
     this->leftValue = this->left->getColumn(this->leftColumns[0]);
     return true;
 }
-bool MergeSortJoiner::moveRight()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::moveRight()
 {
     if (!this->right->getNext()) return false;
     this->rightValue = this->right->getColumn(this->rightColumns[0]);
     return true;
 }
-bool MergeSortJoiner::checkJoins()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::checkJoins()
 {
     for (int i = 1; i < joinSize; i++)
     {
@@ -32,7 +36,8 @@ bool MergeSortJoiner::checkJoins()
     return true;
 }
 
-bool MergeSortJoiner::findSameRow()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::findSameRow()
 {
     if (NOEXPECT(!this->hasItems))
     {
@@ -60,7 +65,8 @@ bool MergeSortJoiner::findSameRow()
     return true;
 }
 
-bool MergeSortJoiner::getNext()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::getNext()
 {
     while (true)
     {
@@ -82,10 +88,13 @@ bool MergeSortJoiner::getNext()
         }
         else if (!this->findSameRow()) return false;
 
-        // row is ready, joins must be checked
-        if (!this->checkJoins())
+        if (HAS_MULTIPLE_JOINS)
         {
-            continue;
+            // row is ready, joins must be checked
+            if (!this->checkJoins())
+            {
+                continue;
+            }
         }
 
 #ifdef COLLECT_JOIN_SIZE
@@ -95,7 +104,8 @@ bool MergeSortJoiner::getNext()
     }
 }
 
-void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selection> selections)
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
     this->initializeSelections(selections);
 
@@ -103,7 +113,8 @@ void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selectio
     this->right->prepareSortedAccess(this->join[0].selections[this->rightIndex]);
 }
 
-void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -119,7 +130,7 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
         else rightColumns.emplace_back(columnIds[i] - this->left->getColumnCount(), i);
     }
 
-    if (this->joinSize == 1)
+    if (!HAS_MULTIPLE_JOINS)
     {
         this->aggregateDirect(results, leftColumns, rightColumns, count);
     }
@@ -143,12 +154,14 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
     }
 }
 
-bool MergeSortJoiner::isSortedOn(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::isSortedOn(const Selection& selection)
 {
     return selection == this->join[0].selections[this->leftIndex];
 }
 
-void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& results,
                                       const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                                       const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
                                       size_t& count)
