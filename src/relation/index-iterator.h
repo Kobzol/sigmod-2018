@@ -14,15 +14,12 @@ public:
     IndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters)
             : FilterIterator(relation, binding, filters)
     {
-        if (!filters.empty())
+        if (!this->filters.empty())
         {
             this->sortFilter = this->filters[0];
             this->startFilterIndex = 1;
             this->sortSelection = this->sortFilter.selection;
         }
-
-        this->start--;
-        this->originalStart = this->start;
     }
     IndexIterator(ColumnRelation* relation, uint32_t binding,
                                            const std::vector<Filter>& filters, Entry* start, Entry* end)
