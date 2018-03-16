@@ -39,8 +39,6 @@ public:
         return "SFI";
     }
 
-    RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator) const;
-
     SortIndex* index;
     Filter sortFilter;
     Selection sortSelection;

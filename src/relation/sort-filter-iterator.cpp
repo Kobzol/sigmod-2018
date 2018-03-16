@@ -5,6 +5,46 @@
 #include <algorithm>
 #include <cmath>
 
+RowEntry* toPtr(SortIndex& index, const std::vector<RowEntry>::iterator& iterator)
+{
+    return index.data.data() + (iterator - index.data.begin());
+}
+
+void createIterators(const Filter& filter, RowEntry** start, RowEntry** end)
+{
+    auto index = &database.getSortIndex(filter.selection.relation, filter.selection.column);
+
+    RowEntry* last = index->data.data() + index->data.size();
+    uint64_t value = filter.value;
+    if (filter.oper == '<')
+    {
+        *start = index->data.data();
+        *end = toPtr(*index, std::lower_bound(index->data.begin(), index->data.end(), value,
+                                              [](const RowEntry& entry, uint64_t val) {
+                                                  return entry.value < val;
+                                              }));
+    }
+    else if (filter.oper == '>')
+    {
+        *start = toPtr(*index, std::upper_bound(index->data.begin(), index->data.end(), value,
+                                                [](uint64_t val, const RowEntry& entry) {
+                                                    return val < entry.value;
+                                                }));
+        *end = last;
+    }
+    else
+    {
+        *start = toPtr(*index, std::lower_bound(index->data.begin(), index->data.end(), value,
+                                                [](const RowEntry& entry, uint64_t val) {
+                                                    return entry.value < val;
+                                                }));
+        *end = toPtr(*index, std::upper_bound(index->data.begin(), index->data.end(), value,
+                                              [](uint64_t val, const RowEntry& entry) {
+                                                  return val < entry.value;
+                                              }));
+    }
+}
+
 SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters)
         : FilterIterator(relation, binding, filters)
 {
@@ -15,35 +55,7 @@ SortFilterIterator::SortFilterIterator(ColumnRelation* relation, uint32_t bindin
         this->sortSelection = this->sortFilter.selection;
         this->index = &database.getSortIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
 
-        RowEntry* last = this->index->data.data() + this->index->data.size();
-        uint64_t value = this->sortFilter.value;
-        if (this->sortFilter.oper == '<')
-        {
-            this->start = this->index->data.data();
-            this->end = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                     [](const RowEntry& entry, uint64_t val) {
-                                                         return entry.value < val;
-                                                     }));
-        }
-        else if (this->sortFilter.oper == '>')
-        {
-            this->start = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                       [](uint64_t val, const RowEntry& entry) {
-                                                           return val < entry.value;
-                                                       }));
-            this->end = last;
-        }
-        else
-        {
-            this->start = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                       [](const RowEntry& entry, uint64_t val) {
-                                                           return entry.value < val;
-                                                       }));
-            this->end = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                     [](uint64_t val, const RowEntry& entry) {
-                                                         return val < entry.value;
-                                                     }));
-        }
+        createIterators(this->sortFilter, &this->start, &this->end);
     }
 
     this->start--;
@@ -64,7 +76,7 @@ bool SortFilterIterator::getNext()
     for (; this->start < this->end; this->start++)
     {
         this->rowIndex = this->start->row;
-        if (passesFilters())
+        if (this->passesFilters())
         {
 #ifdef COLLECT_JOIN_SIZE
             this->rowCount++;
@@ -74,11 +86,6 @@ bool SortFilterIterator::getNext()
     }
 
     return false;
-}
-
-RowEntry* SortFilterIterator::toPtr(const std::vector<RowEntry>::iterator& iterator) const
-{
-    return this->index->data.data() + (iterator - this->index->data.begin());
 }
 
 bool SortFilterIterator::skipSameValue(const Selection& selection)
@@ -112,14 +119,14 @@ void SortFilterIterator::prepareIndexedAccess()
 void SortFilterIterator::iterateValue(const Selection& selection, uint64_t value)
 {
     this->index = &database.getSortIndex(selection.relation, selection.column);
-    this->start = this->toPtr(std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                               [](const RowEntry& entry, uint64_t val) {
-                                                   return entry.value < val;
-                                               }));
-    this->end = this->toPtr(std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                             [](uint64_t val, const RowEntry& entry) {
-                                                 return val < entry.value;
-                                             }));
+    this->start = toPtr(*this->index, std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
+                                                       [](const RowEntry& entry, uint64_t val) {
+                                                           return entry.value < val;
+                                                       }));
+    this->end = toPtr(*this->index, std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
+                                                     [](uint64_t val, const RowEntry& entry) {
+                                                         return val < entry.value;
+                                                     }));
     this->start--;
     this->originalStart = this->start;
 }
@@ -137,18 +144,41 @@ void SortFilterIterator::restore()
 
 void SortFilterIterator::prepareSortedAccess(const Selection& selection)
 {
+    // check if we can sort on a filtered column
+    int i = 0;
+    for (; i < this->filterSize; i++)
+    {
+        auto& filter = this->filters[i];
+        if (filter.selection == selection)
+        {
+            this->index = &database.getSortIndex(selection.relation, selection.column);
+            this->sortFilter = filter;
+            this->sortSelection = selection;
+            createIterators(filter, &this->start, &this->end);
+            this->start--;
+            this->originalStart = this->start;
+            break;
+        }
+    }
+
+    if (i < this->filterSize)
+    {
+        std::swap(this->filters[0], this->filters[i]);
+        this->startFilterIndex = 1;
+        return;
+    }
+
     this->index = &database.getSortIndex(selection.relation, selection.column);
     this->start = this->index->data.data() - 1;
     this->originalStart = this->start;
     this->end = this->index->data.data() + this->index->data.size();
-    this->sortSelection = selection;
 
     this->startFilterIndex = 0;
 }
 
 int64_t SortFilterIterator::predictSize()
 {
-    return (this->end - this->originalStart) - 1; // + 1 because originalStart is one before the first element
+    return (this->end - this->originalStart) - 1; // - 1 because originalStart is one before the first element
 }
 
 std::unique_ptr<Iterator> SortFilterIterator::createIndexedIterator()
@@ -171,11 +201,11 @@ void SortFilterIterator::split(std::vector<std::unique_ptr<Iterator>>& groups, s
         left -= chunk;
 
         groups.push_back(std::make_unique<SortFilterIterator>(
-            this->relation,
-            this->binding,
-            this->filters,
-            iter - 1,
-            iter + chunk
+                this->relation,
+                this->binding,
+                this->filters,
+                iter - 1,
+                iter + chunk
         ));
         iter += chunk;
     }
