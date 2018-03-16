@@ -51,6 +51,7 @@ void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Sel
 
 int64_t Joiner::predictSize()
 {
+#ifdef COLLECT_JOIN_SIZE
     auto it = database.joinSizeMap.find(database.createJoinKey(this->join));
     if (it == database.joinSizeMap.end())
     {
@@ -58,6 +59,10 @@ int64_t Joiner::predictSize()
                 this->right->predictSize();
     }
     return it->second;
+#else
+    return this->left->predictSize() *
+            this->right->predictSize();
+#endif
 }
 
 void Joiner::assignJoinSize(Database& database)

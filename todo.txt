@@ -1,3 +1,6 @@
 - sort joins (self-joins, size, filtered)
+- build indices on request
+- select best join plan, predict join sizes
+- push aggregation down
 
 - dynamic programming

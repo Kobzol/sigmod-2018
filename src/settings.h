@@ -11,10 +11,6 @@
 
 #define MEASURE_REAL_TIME
 
-#ifdef STATISTICS
-    #define COLLECT_JOIN_SIZE
-#endif
-
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
@@ -43,6 +39,8 @@
 #define USE_THREADS
 #define QUERY_NUM_THREADS 20
 #define HASH_AGGREGATE_THREADS 4
+
+//#define COLLECT_JOIN_SIZE
 
 template <typename K, typename V>
 using HashMap = std::unordered_map<K, V>;
