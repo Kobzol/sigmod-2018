@@ -8,9 +8,9 @@ PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t bi
     {
         this->index = this->getIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
         this->createIterators(this->sortFilter, &this->start, &this->end);
-        this->start--;
     }
 
+    this->start--;
     this->originalStart = this->start;
 }
 
