@@ -47,6 +47,7 @@ int main(int argc, char** argv)
     Timer queryLoadTimer;
     std::vector<Query> allQueries;
     std::unordered_map<std::string, uint32_t> cachedJoins;
+    size_t joinsFilteredByMinMax = 0;
 #endif
 
     Executor executor;
@@ -122,6 +123,18 @@ int main(int argc, char** argv)
                             break;
                         }
                     }
+
+#ifdef USE_SORT_INDEX
+                    auto& l = predicate.selections[0];
+                    auto& r = predicate.selections[1];
+                    auto li = &database.getSortIndex(l.relation, l.column);
+                    auto ri = &database.getSortIndex(r.relation, r.column);
+
+                    if (li->maxValue <= ri->minValue || ri->maxValue <= li->minValue)
+                    {
+                        joinsFilteredByMinMax++;
+                    }
+#endif
                 }
 
                 if (cacheable)
@@ -152,7 +165,7 @@ int main(int argc, char** argv)
     }
 
 #ifdef STATISTICS
-    std::cerr << "Filters skipped by histogram: " << filtersSkippedByHistogram << std::endl;
+    std::cerr << "Joins skipped by min/max: " << joinsFilteredByMinMax << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;

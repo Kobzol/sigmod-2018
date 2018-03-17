@@ -6,7 +6,6 @@
 #include "../relation/column-relation.h"
 #include "joiner.h"
 #include "../relation/iterator.h"
-#include "../hash/sparse_map.h"
 #include "../bloom-filter.h"
 
 /**

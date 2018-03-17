@@ -326,7 +326,7 @@ void loadQuery(Query& query, std::string& line)
             predicate.selections[1].column = (uint32_t) readInt(line, index);
 
             // normalize the order of bindings in multiple-column joins
-            if (predicate.selections[0].binding > predicate.selections[1].binding)
+            if (predicate.selections[0].binding < predicate.selections[1].binding)
             {
                 std::swap(predicate.selections[0], predicate.selections[1]);
             }
