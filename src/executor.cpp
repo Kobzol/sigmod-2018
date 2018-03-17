@@ -117,7 +117,7 @@ void Executor::createViews(Database& database,
                 *it->second,
                 kv.second
         ));
-        views[binding] = container.back().get();
+        views[kv.first] = container.back().get();
     }
 #endif
 }
