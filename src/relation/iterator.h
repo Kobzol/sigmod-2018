@@ -102,7 +102,9 @@ public:
         if (!this->getNext()) return;
 
         uint64_t value = this->getValue(hashSelection);
+#ifdef USE_BLOOM_FILTER
         filter.set(value);
+#endif
         auto* vec = &hashTable[value];
 
         while (true)
@@ -116,7 +118,9 @@ public:
             if (current != value)
             {
                 value = current;
+#ifdef USE_BLOOM_FILTER
                 filter.set(value);
+#endif
                 vec = &hashTable[value];
             }
         }
@@ -138,7 +142,7 @@ public:
      */
     virtual void save()
     {
-        assert(false);
+        this->savedRowIndex = this->rowIndex;
     }
 
     /**
@@ -146,7 +150,7 @@ public:
      */
     virtual void restore()
     {
-        assert(false);
+        this->rowIndex = this->savedRowIndex;
     }
 
     virtual void fillBindings(std::vector<uint32_t>& bindings)
@@ -175,4 +179,5 @@ public:
     }
 
     int rowIndex = -1;
+    int savedRowIndex;
 };

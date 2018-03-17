@@ -215,7 +215,7 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
                 {
                     results[c.second] += this->right->getColumn(c.first) * leftCount;
                 }
-                this->moveRight();
+                this->right->getNext();
             }
         }
 

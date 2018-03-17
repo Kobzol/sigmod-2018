@@ -283,56 +283,30 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
         index++;
     }
 
-    if (!leftSelections.empty())
+    while (true)
     {
-        while (true)
+        vec->resize(vec->size() + columnMapCols);
+        auto rowData = &vec->back() - countSub;
+
+        auto data = this->getCurrentRow();
+        for (auto& sel: leftSelections)
         {
-            vec->resize(vec->size() + columnMapCols);
-            auto rowData = &vec->back() - countSub;
-
-            auto data = this->getCurrentRow();
-            for (auto& sel: leftSelections)
-            {
-                rowData[sel.second] = data[sel.first];
-            }
-            for (auto& sel: rightSelections)
-            {
-                rowData[sel.second] = this->right->getColumn(sel.first);
-            }
-
-            if (!this->getNext()) return;
-            uint64_t current = this->getColumn(hashColumn);
-            if (current != value)
-            {
-                value = current;
-#ifdef USE_BLOOM_FILTER
-                filter.set(value);
-#endif
-                vec = &hashTable[value];
-            }
+            rowData[sel.second] = data[sel.first];
         }
-    }
-    else
-    {
-        while (true)
+        for (auto& sel: rightSelections)
         {
-            vec->resize(vec->size() + columnMapCols);
-            auto rowData = &vec->back() - countSub;
-            for (auto& sel: rightSelections)
-            {
-                rowData[sel.second] = this->right->getColumn(sel.first);
-            }
+            rowData[sel.second] = this->right->getColumn(sel.first);
+        }
 
-            if (!this->getNext()) return;
-            uint64_t current = this->getColumn(hashColumn);
-            if (current != value)
-            {
-                value = current;
+        if (!this->getNext()) return;
+        uint64_t current = this->getColumn(hashColumn);
+        if (current != value)
+        {
+            value = current;
 #ifdef USE_BLOOM_FILTER
-                filter.set(value);
+            filter.set(value);
 #endif
-                vec = &hashTable[value];
-            }
+            vec = &hashTable[value];
         }
     }
 }

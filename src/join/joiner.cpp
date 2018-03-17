@@ -33,7 +33,9 @@ void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Sel
     {
         uint64_t value = this->getColumn(hashColumn);
         auto& vec = hashTable[value];
+#ifdef USE_BLOOM_FILTER
         filter.set(value);
+#endif
 
         // materialize rows
         vec.resize(vec.size() + columnMapCols);
