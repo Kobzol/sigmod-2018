@@ -15,8 +15,8 @@
 //#define TRANSPOSE_RELATIONS
 
 //#define USE_HASH_INDEX
-#define USE_SORT_INDEX
-//#define USE_PRIMARY_INDEX
+//#define USE_SORT_INDEX
+#define USE_PRIMARY_INDEX
 #define USE_SELF_JOIN
 
 //#define USE_HISTOGRAM
@@ -50,6 +50,8 @@
 #define USE_THREADS
 #define QUERY_NUM_THREADS 20
 #define HASH_AGGREGATE_THREADS 4
+
+//#define COMPILE_FILTERS
 
 //#define COLLECT_JOIN_SIZE
 

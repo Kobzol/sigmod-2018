@@ -22,6 +22,8 @@ public:
     bool getNext() final;
     bool skipSameValue(const Selection& selection) final;
 
+    bool passesFilters() final;
+
     void restore() final
     {
         this->start = this->startSaved;

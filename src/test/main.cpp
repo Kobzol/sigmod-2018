@@ -4,6 +4,7 @@
 #include "../io.h"
 #include "../join/hash-joiner.h"
 #include "../executor.h"
+#include "../emit/filter-compiler.h"
 
 static ColumnRelation createRelation(int tupleCount, int columnCount, int offset = 0)
 {
@@ -34,6 +35,19 @@ Database database;
 
 int main()
 {
+    std::vector<Filter> filters = {
+        Filter(Selection(0, 0, 0), '>', nullptr, 13),
+        Filter(Selection(0, 0, 0), '<', nullptr, 28)
+    };
+
+    FilterCompiler compiler;
+    auto fn = compiler.compile(filters);
+    std::cerr << fn(25600000000) << std::endl;
+    std::cerr << fn(0) << std::endl;
+    std::cerr << fn(13) << std::endl;
+    std::cerr << fn(28) << std::endl;
+    std::cerr << fn(14) << std::endl;
+
     Query query;
     std::string line = "0 1 2|0.1=1.0&1.1=2.0|0.2 1.1 2.0";
     //std::string line = "2 2|0.0=1.1|1.2";

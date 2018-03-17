@@ -86,3 +86,18 @@ bool SortIndexIterator::skipSameValue(const Selection& selection)
     }
     return this->getNext();
 }
+
+bool SortIndexIterator::passesFilters()
+{
+    for (int i = this->startFilterIndex; i < this->filterSize; i++)
+    {
+        auto& filter = this->filters[i];
+#ifdef COMPILE_FILTERS
+        if (!filter.evaluator(this->relation->getValue(filter.selection, this->rowIndex))) return false;
+#else
+        if (!passesFilter(filter, this->relation->getValue(filter.selection, this->rowIndex))) return false;
+#endif
+    }
+
+    return true;
+}

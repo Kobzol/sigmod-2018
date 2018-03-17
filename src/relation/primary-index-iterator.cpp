@@ -65,7 +65,11 @@ bool PrimaryIndexIterator::passesFilters()
     for (int i = this->startFilterIndex; i < this->filterSize; i++)
     {
         auto& filter = this->filters[i];
+#ifdef COMPILE_FILTERS
+        if (!filter.evaluator(this->start->row[filter.selection.column])) return false;
+#else
         if (!passesFilter(filter, this->start->row[filter.selection.column])) return false;
+#endif
     }
 
     return true;

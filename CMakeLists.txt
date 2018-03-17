@@ -18,8 +18,12 @@ set(SOURCE_FILES
         src/database.cpp
         src/executor.cpp
         src/io.cpp
-        src/index/index.cpp
+        src/stats.cpp
+        src/timer.cpp
+        src/query.cpp
+        src/emit/filter-compiler.cpp
         src/index/hash-index.cpp
+        src/index/index.cpp
         src/index/primary-index.cpp
         src/index/sort-index.cpp
         src/join/hash-joiner.cpp
@@ -35,10 +39,7 @@ set(SOURCE_FILES
         src/relation/maxdiff_histogram.cpp
         src/relation/primary-index-iterator.cpp
         src/relation/sort-index-iterator.cpp
-        src/stats.cpp
-        src/timer.cpp
-        src/query.cpp
 )
 
 add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
-add_executable(tester ${SOURCE_FILES} src/test/main.cpp)
+add_executable(tester src/test/main.cpp ${SOURCE_FILES})

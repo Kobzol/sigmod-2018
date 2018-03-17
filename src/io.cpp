@@ -13,6 +13,7 @@
 #include "settings.h"
 #include "stats.h"
 #include "query.h"
+#include "emit/filter-compiler.h"
 
 void loadDatabase(Database& database)
 {
@@ -332,7 +333,10 @@ void loadQuery(Query& query, std::string& line)
         }
         else // parse filter
         {
-            query.filters.emplace_back(selection, oper, value);
+            query.filters.emplace_back(selection, value, nullptr, oper);
+#ifdef COMPILE_FILTERS
+            query.filters.back().evaluator = FilterCompiler().compile(std::vector<Filter>{ query.filters.back() });
+#endif
         }
 
         if (line[index++] == '|') break;
