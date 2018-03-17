@@ -60,8 +60,7 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::checkRowPredicates()
         bool rowOk = true;
         for (int i = 1; i < this->joinSize; i++)
         {
-            auto& leftSel = this->join[i].selections[this->leftIndex];
-            uint64_t leftVal = data[this->getColumnForSelection(leftSel)];
+            uint64_t leftVal = data[this->hashColumns[i]];
             if (leftVal != rightValues[i])
             {
                 rowOk = false;
@@ -151,6 +150,11 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::prepareColumnMappings(
     {
         this->setColumn(sel.getId(), columnId++);
     }
+
+    for (int i = 0; i < this->joinSize; i++)
+    {
+        this->hashColumns.push_back(this->getColumnForSelection(this->join[i].selections[this->leftIndex]));
+    }
 }
 
 template <bool HAS_MULTIPLE_JOINS>
@@ -203,51 +207,46 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
         else rightColumns.emplace_back(columnIds[i] - this->columnMapCols, i);
     }
 
+#ifdef INDEX_AVAILABLE
+    this->aggregateDirect(results, leftColumns, rightColumns, count);
+#else
     _mm_prefetch(results.data(), _MM_HINT_T0);
 
-#ifdef INDEX_AVAILABLE
-    if (!HAS_MULTIPLE_JOINS)
+    if (!leftColumns.empty())
     {
-        this->aggregateDirect(results, leftColumns, rightColumns, count);
+        while (this->getNext())
+        {
+            auto data = this->getCurrentRow();
+            for (auto& c: leftColumns)
+            {
+                results[c.second] += data[c.first];
+            }
+            for (auto& c: rightColumns)
+            {
+                results[c.second] += this->right->getColumn(c.first);
+            }
+            count++;
+#ifdef COLLECT_JOIN_SIZE
+            this->rowCount++;
+#endif
+        }
     }
     else
-#endif
     {
-        if (!leftColumns.empty())
+        while (this->getNext())
         {
-            while (this->getNext())
+            int index = 0;
+            for (auto& c: rightColumns)
             {
-                auto data = this->getCurrentRow();
-                for (auto& c: leftColumns)
-                {
-                    results[c.second] += data[c.first];
-                }
-                for (auto& c: rightColumns)
-                {
-                    results[c.second] += this->right->getColumn(c.first);
-                }
-                count++;
-#ifdef COLLECT_JOIN_SIZE
-                this->rowCount++;
-#endif
+                results[index++] += this->right->getColumn(c.first);
             }
-        }
-        else
-        {
-            while (this->getNext())
-            {
-                int index = 0;
-                for (auto& c: rightColumns)
-                {
-                    results[index++] += this->right->getColumn(c.first);
-                }
-                count++;
+            count++;
 #ifdef COLLECT_JOIN_SIZE
-                this->rowCount++;
+            this->rowCount++;
 #endif
-            }
         }
     }
+#endif
 }
 
 template<bool HAS_MULTIPLE_JOINS>
@@ -351,8 +350,20 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
 
     size_t localCount = 0;
 
+    std::unordered_map<uint64_t, uint32_t> leftColumnCounts[3];
+    std::unordered_map<uint64_t, uint32_t> rightColumnCounts[3];
+
     while (true)
     {
+        if (HAS_MULTIPLE_JOINS)
+        {
+            for (int j = 1; j < this->joinSize; j++)
+            {
+                leftColumnCounts[j - 1].clear();
+                rightColumnCounts[j - 1].clear();
+            }
+        }
+
         // find value that is on the left
         while (activeRow == nullptr)
         {
@@ -372,17 +383,51 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
             }
         }
 
+        if (HAS_MULTIPLE_JOINS)
+        {
+            for (int row = 0; row < activeRowCount; row++)
+            {
+                for (int j = 1; j < this->joinSize; j++)
+                {
+                    leftColumnCounts[j - 1][(*activeRow)[row * this->columnMapCols + this->hashColumns[j]]]++;
+                }
+            }
+        }
+
         // iterate all on right
         uint64_t value;
         size_t rightCount = 0;
         bool hasNext = true;
         do
         {
-            for (auto& c: rightColumns)
+            auto multiplier = static_cast<uint64_t>(activeRowCount);
+            if (HAS_MULTIPLE_JOINS)
             {
-                results[c.second] += iterator->getColumn(c.first) * activeRowCount;
+                for (int j = 1; j < this->joinSize; j++)
+                {
+                    uint64_t joinValue = iterator->getColumn(this->rightColumns[j]);
+                    multiplier = std::min(static_cast<uint32_t>(multiplier), leftColumnCounts[j - 1][joinValue]);
+                    rightColumnCounts[j - 1][joinValue]++;
+                }
+
+                if (multiplier > 0)
+                {
+                    rightCount++;
+                    for (auto& c: rightColumns)
+                    {
+                        results[c.second] += iterator->getColumn(c.first) * multiplier;
+                    }
+                }
             }
-            rightCount++;
+            else
+            {
+                rightCount++;
+                for (auto& c: rightColumns)
+                {
+                    results[c.second] += iterator->getColumn(c.first) * multiplier;
+                }
+            }
+
             if (!iterator->getNext())
             {
                 hasNext = false;
@@ -392,20 +437,38 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
         }
         while (value == rightValue);
 
+        auto leftCount = static_cast<size_t>(activeRowCount);
         // iterate all on left
         if (!leftColumns.empty() && rightCount > 0)
         {
             for (int row = 0; row < activeRowCount; row++)
             {
                 auto data = &(*activeRow)[row * this->columnMapCols];
+                uint64_t multiplier = rightCount;
+
+                if (HAS_MULTIPLE_JOINS)
+                {
+                    for (int j = 1; j < this->joinSize; j++)
+                    {
+                        uint64_t joinValue = data[this->hashColumns[j]];
+                        multiplier = std::min(static_cast<uint32_t>(multiplier), rightColumnCounts[j - 1][joinValue]);
+                    }
+
+                    if (multiplier == 0)
+                    {
+                        leftCount--;
+                        continue;
+                    }
+                }
+
                 for (auto& c: leftColumns)
                 {
-                    results[c.second] += data[c.first] * rightCount;
+                    results[c.second] += data[c.first] * multiplier;
                 }
             }
         }
 
-        localCount += rightCount * activeRowCount;
+        localCount += rightCount * leftCount;
 
         if (!hasNext) break;
         auto it = this->getFromMap(value);

@@ -130,28 +130,7 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results
         else rightColumns.emplace_back(columnIds[i] - this->left->getColumnCount(), i);
     }
 
-    if (!HAS_MULTIPLE_JOINS)
-    {
-        this->aggregateDirect(results, leftColumns, rightColumns, count);
-    }
-    else
-    {
-        while (this->getNext())
-        {
-            for (auto& c: leftColumns)
-            {
-                results[c.second] += this->left->getColumn(c.first);
-            }
-            for (auto& c: rightColumns)
-            {
-                results[c.second] += this->right->getColumn(c.first);
-            }
-            count++;
-#ifdef COLLECT_JOIN_SIZE
-            this->rowCount++;
-#endif
-        }
-    }
+    this->aggregateDirect(results, leftColumns, rightColumns, count);
 }
 
 template <bool HAS_MULTIPLE_JOINS>
@@ -166,16 +145,33 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
                                       const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
                                       size_t& count)
 {
+    std::unordered_map<uint64_t, uint32_t> leftColumnCounts[3];
+    std::unordered_map<uint64_t, uint32_t> rightColumnCounts[3];
+
     while (true)
     {
         if (NOEXPECT(!this->findSameRow())) return;
+
+        for (int j = 1; j < this->joinSize; j++)
+        {
+            leftColumnCounts[j - 1].clear();
+            rightColumnCounts[j - 1].clear();
+        }
 
         uint64_t value = this->rightValue;
         int32_t rightCount = 0;
         bool hasNext = true;
         do
         {
+            if (HAS_MULTIPLE_JOINS)
+            {
+                for (int j = 1; j < this->joinSize; j++)
+                {
+                    rightColumnCounts[j - 1][this->right->getColumn(this->rightColumns[j])]++;
+                }
+            }
             rightCount++;
+
             if (!this->moveRight())
             {
                 hasNext = false;
@@ -191,11 +187,27 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
         {
             do
             {
-                for (auto& c: leftColumns)
+                auto multiplier = static_cast<uint64_t>(rightCount);
+                if (HAS_MULTIPLE_JOINS)
                 {
-                    results[c.second] += this->left->getColumn(c.first) * rightCount;
+                    for (int j = 1; j < this->joinSize; j++)
+                    {
+                        uint64_t joinValue = this->left->getColumn(this->leftColumns[j]);
+                        multiplier = std::min(static_cast<uint32_t>(multiplier),
+                                              rightColumnCounts[j - 1][joinValue]);
+                        leftColumnCounts[j - 1][joinValue]++;
+                    }
                 }
-                leftCount++;
+
+                if (multiplier > 0)
+                {
+                    for (auto& c: leftColumns)
+                    {
+                        results[c.second] += this->left->getColumn(c.first) * multiplier;
+                    }
+                    leftCount++;
+                }
+
                 if (!this->moveLeft())
                 {
                     hasNext = false;
@@ -209,12 +221,26 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
         {
             this->right->restore();
 
-            for (int i = 0; i < rightCount; i++)
+            auto total = static_cast<int32_t>(rightCount);
+            for (int i = 0; i < total; i++)
             {
-                for (auto& c: rightColumns)
+                auto multiplier = static_cast<uint64_t>(leftCount);
+                for (int j = 1; j < this->joinSize; j++)
                 {
-                    results[c.second] += this->right->getColumn(c.first) * leftCount;
+                    uint64_t joinValue = this->right->getColumn(this->rightColumns[j]);
+                    multiplier = std::min(static_cast<uint32_t>(multiplier),
+                                          leftColumnCounts[j - 1][joinValue]);
                 }
+
+                if (multiplier > 0)
+                {
+                    for (auto& c: rightColumns)
+                    {
+                        results[c.second] += this->right->getColumn(c.first) * multiplier;
+                    }
+                }
+                else rightCount--;
+
                 this->moveRight();
             }
         }

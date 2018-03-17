@@ -85,23 +85,111 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, co
     {
         this->aggregateDirect(results, leftColumns, rightColumns, count);
     }
-    else
+    else this->aggregateDirectMultiple(results, leftColumns, rightColumns, count);
+}
+
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirectMultiple(
+        std::vector<uint64_t>& results,
+        const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+        const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns, size_t& count
+)
+{
+    if (!this->left->getNext()) return;
+
+    std::unordered_map<uint64_t, uint32_t> leftColumnCounts[3];
+    std::unordered_map<uint64_t, uint32_t> rightColumnCounts[3];
+
+    while (true)
     {
-        while (this->getNext())
+        for (int j = 1; j < this->joinSize; j++)
         {
-            for (auto& c: leftColumns)
-            {
-                results[c.second] += this->left->getColumn(c.first);
-            }
-            for (auto& c: rightColumns)
-            {
-                results[c.second] += this->right->getColumn(c.first);
-            }
-            count++;
-#ifdef COLLECT_JOIN_SIZE
-            this->rowCount++;
-#endif
+            leftColumnCounts[j - 1].clear();
+            rightColumnCounts[j - 1].clear();
         }
+
+        uint64_t leftValue = this->left->getColumn(this->leftColumns[0]);
+        this->right->iterateValue(this->rightSelection, leftValue);
+        this->right->save();
+
+        size_t rightCount = 0;
+        while (this->right->getNext())
+        {
+            for (int j = 1; j < this->joinSize; j++)
+            {
+                rightColumnCounts[j - 1][this->right->getColumn(this->rightColumns[j])]++;
+            }
+            rightCount++;
+        }
+
+        bool hasNext = true;
+        int32_t leftCount = 0;
+        if (rightCount > 0)
+        {
+            uint64_t value;
+            do
+            {
+                uint64_t multiplier = rightCount;
+                for (int j = 1; j < this->joinSize; j++)
+                {
+                    uint64_t joinValue = this->left->getColumn(this->leftColumns[j]);
+                    multiplier = std::min(static_cast<uint32_t>(multiplier),
+                                          rightColumnCounts[j - 1][joinValue]);
+                    leftColumnCounts[j - 1][joinValue]++;
+                }
+
+                if (multiplier > 0)
+                {
+                    for (auto& c: leftColumns)
+                    {
+                        results[c.second] += this->left->getColumn(c.first) * multiplier;
+                    }
+                    leftCount++;
+                }
+
+                if (!this->left->getNext())
+                {
+                    hasNext = false;
+                    break;
+                }
+
+                value = this->left->getColumn(this->leftColumns[0]);
+            }
+            while (value == leftValue);
+        }
+        else if (!this->left->getNext()) return;
+
+        if (!rightColumns.empty() && leftCount > 0)
+        {
+            this->right->restore();
+            while (this->right->getNext())
+            {
+                auto multiplier = static_cast<uint64_t>(leftCount);
+                for (int j = 1; j < this->joinSize; j++)
+                {
+                    uint64_t joinValue = this->right->getColumn(this->rightColumns[j]);
+                    multiplier = std::min(static_cast<uint32_t>(multiplier),
+                                          leftColumnCounts[j - 1][joinValue]);
+                }
+
+                if (multiplier == 0)
+                {
+                    rightCount--;
+                    continue;
+                }
+
+                for (auto& c: rightColumns)
+                {
+                    results[c.second] += this->right->getColumn(c.first) * multiplier;
+                }
+            }
+        }
+
+        count += leftCount * rightCount;
+#ifdef COLLECT_JOIN_SIZE
+        this->rowCount += leftCount * rightCount;
+#endif
+        if (!hasNext) return;
     }
 }
 
@@ -120,6 +208,7 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
 
         std::memset(rightResults.data(), 0, sizeof(uint64_t) * rightResults.size());
         size_t rightCount = 0;
+
         while (this->right->getNext())
         {
             for (auto& c: rightColumns)
@@ -131,7 +220,6 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
 
         bool hasNext = true;
         int32_t leftCount = 0;
-
         if (rightCount > 0)
         {
             uint64_t value;

@@ -87,6 +87,7 @@ private:
 
     HashMap<uint64_t, std::vector<uint64_t>> hashTable;
     std::vector<uint64_t> rightValues;
+    std::vector<uint32_t> hashColumns;
 
     std::vector<SelectionId> columnMap;
     int32_t columnMapCols = 0;
