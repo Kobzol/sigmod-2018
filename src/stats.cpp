@@ -24,4 +24,7 @@
     size_t filtersOnFirstColumn = 0;
     size_t selfJoinCount = 0;
     size_t filtersSkippedByHistogram = 0;
+    std::atomic<size_t> averageRowsInHash{0};
+    std::atomic<size_t> averageRowsInHashCount{0};
+    std::atomic<size_t> emptyHashTableCount{0};
 #endif

@@ -40,13 +40,14 @@ void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Sel
         // materialize rows
         vec.resize(vec.size() + columnMapCols);
         auto rowData = &vec.back() - countSub;
+
         for (auto c: leftColumns)
         {
-            rowData[c.second] += this->left->getColumn(c.first);
+            rowData[c.second] = this->left->getColumn(c.first);
         }
         for (auto c: rightColumns)
         {
-            rowData[c.second] += this->right->getColumn(c.first);
+            rowData[c.second] = this->right->getColumn(c.first);
         }
     }
 }

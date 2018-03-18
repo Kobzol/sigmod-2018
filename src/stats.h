@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <atomic>
 
 extern double queryLoadTime;
 extern size_t tupleCount;
@@ -24,3 +25,6 @@ extern size_t joinsOnFirstColumn;
 extern size_t filtersOnFirstColumn;
 extern size_t selfJoinCount;
 extern size_t filtersSkippedByHistogram;
+extern std::atomic<size_t> averageRowsInHash;
+extern std::atomic<size_t> averageRowsInHashCount;
+extern std::atomic<size_t> emptyHashTableCount;

@@ -1,4 +1,5 @@
 #include "hash-joiner.h"
+#include "../stats.h"
 #include <atomic>
 #include <omp.h>
 
@@ -128,6 +129,22 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
 
     this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable, this->bloomFilter);
     this->right->prepareSortedAccess(this->rightSelection);
+
+#ifdef STATISTICS
+    size_t avg = 0;
+    for (auto& kv : this->hashTable)
+    {
+        avg += kv.second.size();
+    }
+    if (!this->hashTable.empty())
+    {
+        avg /= this->hashTable.size();
+        avg /= this->columnMapCols;
+        averageRowsInHash += avg;
+    }
+    else emptyHashTableCount++;
+    averageRowsInHashCount++;
+#endif
 }
 
 template <bool HAS_MULTIPLE_JOINS>

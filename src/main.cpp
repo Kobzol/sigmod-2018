@@ -165,7 +165,9 @@ int main(int argc, char** argv)
     }
 
 #ifdef STATISTICS
-    std::cerr << "Joins skipped by min/max: " << joinsFilteredByMinMax << std::endl;
+    std::cerr << "Empty hash table count: " << emptyHashTableCount << std::endl;
+    std::cerr << "Avg rows in hash: " << averageRowsInHash / (std::max(1UL, averageRowsInHashCount.load()))
+              << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
