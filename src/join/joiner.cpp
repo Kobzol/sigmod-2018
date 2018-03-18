@@ -2,6 +2,7 @@
 #include <iostream>
 #include "joiner.h"
 #include "../database.h"
+#include "../hash-table.h"
 
 std::unique_ptr<Iterator> Joiner::createIndexedIterator()
 {
@@ -10,8 +11,7 @@ std::unique_ptr<Iterator> Joiner::createIndexedIterator()
 }
 
 void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                                    HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-                                    BloomFilter<BLOOM_FILTER_SIZE>& filter)
+                           HashTable& hashTable)
 {
     auto columnMapCols = static_cast<int32_t>(selections.size());
     auto countSub = static_cast<size_t>(selections.size() - 1);
@@ -32,14 +32,11 @@ void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Sel
     while (this->getNext())
     {
         uint64_t value = this->getColumn(hashColumn);
-        auto& vec = hashTable[value];
-#ifdef USE_BLOOM_FILTER
-        filter.set(value);
-#endif
+        auto vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
 
         // materialize rows
-        vec.resize(vec.size() + columnMapCols);
-        auto rowData = &vec.back() - countSub;
+        vec->resize(vec->size() + columnMapCols);
+        auto rowData = &vec->back() - countSub;
 
         for (auto c: leftColumns)
         {

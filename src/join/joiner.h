@@ -8,6 +8,7 @@
 #include "../util.h"
 #include "../relation/iterator.h"
 #include "../relation/column-relation.h"
+#include "../hash-table.h"
 
 class Joiner: public Iterator
 {
@@ -35,9 +36,7 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
-    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-                       BloomFilter<BLOOM_FILTER_SIZE>& filter) override;
+    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections, HashTable& hashTable) override;
 
     void fillBindings(std::vector<uint32_t>& bindings) final
     {

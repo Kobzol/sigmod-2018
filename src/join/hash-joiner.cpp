@@ -23,14 +23,14 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::findRowByHash()
         {
             uint64_t value = iterator->getColumn(this->rightColumns[0]);
             auto it = this->getFromMap(value);
-            if (it == this->hashTable.end())
+            if (it == nullptr)
             {
                 if (!iterator->skipSameValue(this->rightSelection)) return false; // use skipSameValue?
                 continue;
             }
             else
             {
-                this->activeRow = &it->second;
+                this->activeRow = it;
                 this->activeRowCount = static_cast<int32_t>(this->activeRow->size() / this->columnMapCols);
                 break;
             }
@@ -127,18 +127,18 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     std::vector<Selection> leftSelections;
     this->prepareColumnMappings(selections, leftSelections);
 
-    this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable, this->bloomFilter);
+    this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable);
     this->right->prepareSortedAccess(this->rightSelection);
 
 #ifdef STATISTICS
     size_t avg = 0;
-    for (auto& kv : this->hashTable)
+    for (auto& kv : this->hashTable.table)
     {
         avg += kv.second.size();
     }
-    if (!this->hashTable.empty())
+    if (!this->hashTable.table.empty())
     {
-        avg /= this->hashTable.size();
+        avg /= this->hashTable.table.size();
         avg /= this->columnMapCols;
         averageRowsInHash += avg;
     }
@@ -270,8 +270,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
 template<bool HAS_MULTIPLE_JOINS>
 void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelection,
                                                     const std::vector<Selection>& selections,
-                                                    HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-                                                    BloomFilter<BLOOM_FILTER_SIZE>& filter)
+                                                    HashTable& hashTable)
 {
     auto columnMapCols = selections.size();
     auto countSub = static_cast<size_t>(selections.size() - 1);
@@ -280,10 +279,7 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
 
     uint32_t hashColumn = this->getColumnForSelection(hashSelection);
     uint64_t value = this->getColumn(hashColumn);
-#ifdef USE_BLOOM_FILTER
-    filter.set(value);
-#endif
-    auto* vec = &hashTable[value];
+    auto vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
 
     std::vector<std::pair<uint32_t, uint32_t>> leftSelections; // column, index
     std::vector<std::pair<uint32_t, uint32_t>> rightSelections;
@@ -320,10 +316,7 @@ void  HashJoiner<HAS_MULTIPLE_JOINS>::fillHashTable(const Selection& hashSelecti
         if (current != value)
         {
             value = current;
-#ifdef USE_BLOOM_FILTER
-            filter.set(value);
-#endif
-            vec = &hashTable[value];
+            vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
         }
     }
 }
@@ -355,9 +348,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
             rightValue = iterator->getColumn(this->rightColumns[0]);
 
             auto it = this->getFromMap(rightValue);
-            if (it != this->hashTable.end())
+            if (it != nullptr)
             {
-                activeRow = &it->second;
+                activeRow = it;
                 activeRowCount = static_cast<int32_t>(activeRow->size() / this->columnMapCols);
                 break;
             }
@@ -400,9 +393,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::workerAggregate(
 
         if (!hasNext) break;
         auto it = this->getFromMap(value);
-        if (it != this->hashTable.end())
+        if (it != nullptr)
         {
-            activeRow = &it->second;
+            activeRow = it;
             activeRowCount = static_cast<int32_t>(activeRow->size() / this->columnMapCols);
         }
         else activeRow = nullptr;

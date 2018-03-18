@@ -7,6 +7,7 @@
 #include "joiner.h"
 #include "../relation/iterator.h"
 #include "../bloom-filter.h"
+#include "../hash-table.h"
 
 /**
  * Joins two iterators using a hash join.
@@ -40,20 +41,13 @@ public:
                                std::vector<Selection>& leftSelections);
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-                       BloomFilter<BLOOM_FILTER_SIZE>& filter) final;
+                       HashTable& hashTable) final;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
-    HashMap<uint64_t, std::vector<uint64_t>>::iterator getFromMap(uint64_t value)
+    std::vector<uint64_t>* getFromMap(uint64_t value)
     {
-#ifdef USE_BLOOM_FILTER
-        if (!this->bloomFilter.has(value))
-        {
-            return this->hashTable.end();
-        }
-#endif
-        return this->hashTable.find(value);
+        return this->hashTable.getRow(value);
     }
 
     std::string getJoinName() final
@@ -84,13 +78,11 @@ private:
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
 
-    HashMap<uint64_t, std::vector<uint64_t>> hashTable;
+    HashTable hashTable;
     std::vector<uint64_t> rightValues;
 
     std::vector<SelectionId> columnMap;
     int32_t columnMapCols = 0;
-
-    BloomFilter<BLOOM_FILTER_SIZE> bloomFilter;
 };
 
 template class HashJoiner<false>;
