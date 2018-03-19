@@ -13,6 +13,7 @@ public:
     MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
 
     bool getNext() final;
+    bool getBlock(std::vector<uint64_t*>& cols, size_t& rows) final;
 
     void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
@@ -27,18 +28,20 @@ public:
         return "MS";
     }
 
-    bool moveLeft();
-    bool moveRight();
+    bool move(int index);
 
     bool checkJoins();
     bool findSameRow();
 
-    uint64_t leftValue;
-    uint64_t rightValue;
+    uint64_t value[2];
     uint64_t iteratingRight;
 
     bool hasRight = false;
     bool hasItems = false;
+
+    std::vector<uint64_t*> blockData[2];
+    size_t blockRowCount[2] = { 0 };
+    int blockRow[2] = { -1, -1 };
 };
 
 template class MergeSortJoiner<false>;

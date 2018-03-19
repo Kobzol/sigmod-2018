@@ -21,6 +21,7 @@ public:
     HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
 
     bool getNext() final;
+    bool getBlock(std::vector<uint64_t*>& cols, size_t& rows) final;
 
     int32_t getColumnCount() final
     {
@@ -83,6 +84,7 @@ private:
 
     std::vector<SelectionId> columnMap;
     int32_t columnMapCols = 0;
+    bool exhausted = false;
 };
 
 template class HashJoiner<false>;

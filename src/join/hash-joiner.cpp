@@ -473,3 +473,33 @@ uint32_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumnForSelection(const Selection& 
 
     return this->right->getColumnForSelection(selection) + this->columnMapCols;
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+bool HashJoiner<HAS_MULTIPLE_JOINS>::getBlock(std::vector<uint64_t*>& cols, size_t& rows)
+{
+    if (this->exhausted) return false;
+
+    cols.resize(this->blockSelections.size());
+    for (int c = 0; c < static_cast<int32_t>(this->blockSelections.size()); c++)
+    {
+        this->columns[c].clear();
+        cols[c] = this->columns[c].data();
+    }
+
+    for (int i = 0; i < BLOCK_SIZE; i++)
+    {
+        if (!this->getNext())
+        {
+            this->exhausted = true;
+            return rows > 0;
+        }
+        for (int c = 0; c < static_cast<int32_t>(this->blockSelections.size()); c++)
+        {
+            this->columns[c].push_back(this->getValue(this->blockSelections[c]));
+        }
+
+        rows++;
+    }
+
+    return rows > 0;
+}

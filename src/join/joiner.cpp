@@ -132,3 +132,53 @@ uint32_t Joiner::getColumnForSelection(const Selection& selection)
     }
     return this->right->getColumnForSelection(selection) + this->leftColSize;
 }
+
+void Joiner::prepareBlockAccess(const std::vector<Selection>& selections)
+{
+    Iterator::prepareBlockAccess(selections);
+
+    std::vector<Selection> childSelections[2];
+    std::unordered_map<SelectionId, uint32_t> childMappings[2]; // selection to block column id
+
+    for (auto& sel: selections)
+    {
+        uint32_t side = this->left->hasSelection(sel) ? 0 : 1;
+
+        auto it = childMappings[side].find(sel.getId());
+        uint32_t column;
+        if (it == childMappings[side].end())
+        {
+            childSelections[side].push_back(sel);
+            column = static_cast<uint32_t>(childSelections[side].size() - 1);
+            childMappings[side][sel.getId()] = column;
+        }
+        else column = it->second;
+
+        this->topColumnMap.emplace_back(side, column);
+    }
+
+    for (auto& join: this->join)
+    {
+        uint32_t ids[2] = {
+                this->leftIndex,
+                this->rightIndex
+        };
+        this->joinColumnMap.emplace_back();
+
+        for (int i = 0; i < 2; i++)
+        {
+            auto& sel = join.selections[ids[i]];
+            auto it = childMappings[i].find(sel.getId());
+            if (it == childMappings[i].end())
+            {
+                childSelections[i].push_back(sel);
+                this->joinColumnMap.back()[i] = static_cast<uint32_t>(childSelections[i].size() - 1);
+                childMappings[i][sel.getId()] = this->joinColumnMap.back()[i];
+            }
+            else this->joinColumnMap.back()[i] = it->second;
+        }
+    }
+
+    this->left->prepareBlockAccess(childSelections[0]);
+    this->right->prepareBlockAccess(childSelections[1]);
+}

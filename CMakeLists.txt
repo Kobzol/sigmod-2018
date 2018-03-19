@@ -4,7 +4,7 @@ project(sigmod2018)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fsanitize=address")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftree-vectorize -g -march=native")
 
 OPTION(REAL_RUN "Real run" OFF)
 if(NOT REAL_RUN)
@@ -42,4 +42,4 @@ set(SOURCE_FILES
 )
 
 add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
-add_executable(tester src/test/main.cpp ${SOURCE_FILES})
+#add_executable(tester src/test/main.cpp ${SOURCE_FILES})

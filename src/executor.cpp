@@ -224,6 +224,8 @@ static void createJoin(Iterator* left,
                 bool first,
                 bool last)
 {
+    createHashJoin(left, right, leftIndex, container, join, last);
+    return;
 #ifndef INDEX_AVAILABLE
     createHashJoin(left, right, leftIndex, container, join, false);
     return;

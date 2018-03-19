@@ -31,6 +31,11 @@ public:
         return this->getNext();
     }
 
+    virtual bool getBlock(std::vector<uint64_t*>& cols, size_t& rows)
+    {
+        return false;
+    }
+
     virtual int32_t getColumnCount() = 0;
     virtual int32_t getRowCount()
     {
@@ -50,6 +55,16 @@ public:
     virtual bool isSortedOn(const Selection& selection)
     {
         return false;
+    }
+
+    virtual void prepareBlockAccess(const std::vector<Selection>& selections)
+    {
+        this->blockSelections = selections;
+        this->columns.resize(blockSelections.size());
+        for (auto& col : this->columns)
+        {
+            col.reserve(BLOCK_SIZE);
+        }
     }
 
     virtual bool isJoin()
@@ -174,4 +189,7 @@ public:
 
     int rowIndex = -1;
     int savedRowIndex;
+
+    std::vector<std::vector<uint64_t>> columns;
+    std::vector<Selection> blockSelections;
 };

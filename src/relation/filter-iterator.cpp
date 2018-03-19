@@ -57,3 +57,28 @@ int64_t FilterIterator::predictSize()
     return this->relation->getRowCount();
 #endif
 }
+
+bool FilterIterator::getBlock(std::vector<uint64_t*>& cols, size_t& rows)
+{
+    if (this->rowIndex >= this->relation->getRowCount()) return false;
+
+    cols.resize(this->blockSelections.size());
+    for (int i = 0; i < static_cast<int32_t>(this->columns.size()); i++)
+    {
+        this->columns[i].clear();
+        cols[i] = this->columns[i].data();
+    }
+
+    rows = 0;
+    while (rows < BLOCK_SIZE)
+    {
+        if (!this->getNext()) return rows > 0;
+        rows++;
+        for (int i = 0; i < static_cast<int32_t>(this->columns.size()); i++)
+        {
+            this->columns[i].push_back(this->getColumn(this->blockSelections[i].column));
+        }
+    }
+
+    return rows > 0;
+}

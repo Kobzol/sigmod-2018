@@ -10,6 +10,19 @@
 #include "../relation/column-relation.h"
 #include "../hash-table.h"
 
+struct BlockIdentifier
+{
+public:
+    BlockIdentifier() = default;
+    BlockIdentifier(uint32_t side, uint32_t column) : side(side), column(column)
+    {
+
+    }
+
+    uint32_t side;
+    uint32_t column;
+};
+
 class Joiner: public Iterator
 {
 public:
@@ -24,6 +37,8 @@ public:
 
     }
 
+    void prepareBlockAccess(const std::vector<Selection>& selections) override;
+
     int32_t getColumnCount() override
     {
         return this->left->getColumnCount() + this->right->getColumnCount();
@@ -36,7 +51,8 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
-    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections, HashTable& hashTable) override;
+    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+                       HashTable& hashTable) override;
 
     void fillBindings(std::vector<uint32_t>& bindings) final
     {
@@ -83,6 +99,9 @@ public:
 
     std::vector<uint32_t> leftColumns;
     std::vector<uint32_t> rightColumns;
+
+    std::vector<BlockIdentifier> topColumnMap;
+    std::vector<std::array<uint32_t, 2>> joinColumnMap; // <left column, right column>
 
     int32_t joinSize;
 

@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "public.complete"
+#define INPUT_FILE "small.complete"
 
 #ifndef NDEBUG
     #define STATISTICS
@@ -27,7 +27,7 @@
 #endif
 
 #ifdef USE_SORT_INDEX
-    #define FILTER_ITERATOR SortIndexIterator
+    #define FILTER_ITERATOR FilterIterator
 #elif defined(USE_PRIMARY_INDEX)
     #define FILTER_ITERATOR PrimaryIndexIterator
 #else
@@ -50,6 +50,8 @@
 #define USE_THREADS
 #define QUERY_NUM_THREADS 20
 #define HASH_AGGREGATE_THREADS 4
+
+#define BLOCK_SIZE 256
 
 //#define COMPILE_FILTERS
 

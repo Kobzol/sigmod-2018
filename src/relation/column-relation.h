@@ -77,6 +77,8 @@ public:
         return this->rowIndex < this->relation->getRowCount();
     }
 
+    bool getBlock(std::vector<uint64_t*>& cols, size_t& rows) override;
+
     uint64_t getValue(const Selection& selection) override
     {
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), selection.column);

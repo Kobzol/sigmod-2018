@@ -11,6 +11,14 @@
 #include "database.h"
 #include "settings.h"
 
+static void sum(uint64_t* __restrict__ target, const uint64_t* __restrict__ column, int rows)
+{
+    for (int i = 0; i < rows; i++)
+    {
+        *target += column[i];
+    }
+}
+
 class Aggregator
 {
 public:
@@ -24,19 +32,31 @@ public:
 
         root->requireSelections(selectionMap);
 
-        std::vector<uint32_t> columnIds;
+        std::vector<Selection> selections;
         std::unordered_map<uint32_t, uint32_t> backMap;
         for (auto& sel: selectionMap)
         {
-            backMap[sel.second.getId()] = static_cast<unsigned int>(columnIds.size());
-            columnIds.push_back(root->getColumnForSelection(sel.second));
+            backMap[sel.second.getId()] = static_cast<unsigned int>(selections.size());
+            selections.push_back(sel.second);
         }
 
         size_t count = 0;
         std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
-        _mm_prefetch(results.data(), _MM_HINT_T0);
 
-        root->sumRows(results, columnIds, count);
+        size_t rows = 0;
+        auto columnSize = static_cast<int>(selections.size());
+        std::vector<uint64_t*> columns(selections.size());
+
+        root->prepareBlockAccess(selections);
+        while (root->getBlock(columns, rows))
+        {
+            for (int i = 0; i < columnSize; i++)
+            {
+                sum(&results[i], columns[i], static_cast<int32_t>(rows));
+            }
+            count += rows;
+            rows = 0;
+        }
 
 #ifdef STATISTICS
         std::stringstream planStream;
