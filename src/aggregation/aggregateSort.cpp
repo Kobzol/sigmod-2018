@@ -1,7 +1,9 @@
-#include "AggregateSort.h"
+#include "aggregateSort.h"
+#include <cstring>
 
-AggregateSort::AggregateSort(ColumnRelation* relation, Selection groupBy, const std::vector<Selection>& sum, uint32_t binding)
-	: relation(relation), groupBy(groupBy), sum(std::move(sum)), binding(binding)
+AggregateSort::AggregateSort(ColumnRelation* relation, Selection groupBy, const std::vector<Selection>& sum,
+                             uint32_t binding)
+	: binding(binding), groupBy(groupBy), sum(sum), relation(relation)
 {
 	firstIt = true;
 	
@@ -17,7 +19,7 @@ bool AggregateSort::getNext()
 		return false;
 	}
 	
-	memset(currentRow, 0, sizeof(uint64_t) * MAX_ROW_SIZE);
+	std::memset(currentRow, 0, sizeof(uint64_t) * MAX_ROW_SIZE);
 
 	uint64_t value = this->start->value;
 	currentRow[0] = value;

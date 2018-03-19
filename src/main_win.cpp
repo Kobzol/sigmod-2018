@@ -43,6 +43,7 @@ int main(int argc, char** argv)
 #ifndef REAL_RUN
 	std::cout << "Ready" << std::endl;
 #endif
+    std::cout << "Ready" << std::endl;
 
 #ifdef STATISTICS
 	Timer queryLoadTimer;

@@ -34,7 +34,10 @@ set(SOURCE_FILES
         src/relation/sort-filter-iterator.cpp
         src/stats.cpp
         src/timer.cpp
+        src/aggregation/aggregate.cpp
+        src/aggregation/aggregateSort.cpp
+        src/aggregation/compute.cpp
 )
 
-add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
-add_executable(tester ${SOURCE_FILES} src/test/main.cpp)
+add_executable(sigmod-2018 src/main_win.cpp ${SOURCE_FILES})
+#add_executable(tester ${SOURCE_FILES} src/test/main.cpp)

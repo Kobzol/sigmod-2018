@@ -52,7 +52,8 @@ public:
 #endif
 
         std::stringstream ss;
-        for (auto& sel: query.selections)
+        //for (auto& sel: query.selections)
+        for (int i = query.selections.size() -1; i >= 0; i--)
         {
             if (count == 0)
             {
@@ -60,7 +61,7 @@ public:
             }
             else
             {
-                uint64_t result = results[backMap[sel.getId()]];
+                uint64_t result = results[backMap[query.selections[i].getId()]];
                 ss << std::to_string(result) << ' ';
             }
         }

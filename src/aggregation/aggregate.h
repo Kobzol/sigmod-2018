@@ -1,6 +1,6 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 #include <array>
 #include <cstdint>
 
@@ -9,16 +9,10 @@
 
 namespace std
 {
-	template array<uint64_t, 1>;
-	template array<uint64_t, 2>;
-	template array<uint64_t, 3>;
-	template array<uint64_t, 4>;
-	template array<uint64_t, 5>;
-
 	template<typename T, size_t N>
-	struct hash<array<T, N> >
+	struct hash<std::array<T, N> >
 	{
-		typedef array<T, N> argument_type;
+		typedef std::array<T, N> argument_type;
 		typedef size_t result_type;
 
 		result_type operator()(const argument_type& a) const
@@ -127,4 +121,3 @@ template class Aggregate<2>;
 template class Aggregate<3>;
 template class Aggregate<4>;
 template class Aggregate<5>;
-

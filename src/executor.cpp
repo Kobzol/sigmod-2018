@@ -314,7 +314,7 @@ void Executor::executeNew(Database & database, Query & query)
 		// Pokud existuje filtr, vytvorime FilterIterator.
 		if (filters.size() > 0)
 		{
-			container.push_back(std::make_unique<FilterIterator>(&database.relations[relation], binding, filters));
+			container.push_back(std::make_unique<SortFilterIterator>(&database.relations[relation], binding, filters));
 			iterator = container.back().get();
 		}
 		// Jinak vytvorim standardni iterator nad tabulkou.
@@ -545,7 +545,7 @@ void Executor::executeNew(Database & database, Query & query)
 
 	root = container.back().get();
 
-	root->printPlan(0);
+	//root->printPlan(0);
 
 
 	query.selections = newQuerySelections;
@@ -561,5 +561,7 @@ void Executor::executeNew(Database & database, Query & query)
 	//timer.Print("\n");
 
 	//exit(0);
+#ifdef STATISTICS
 	query.time = timer.get();
+#endif
 }

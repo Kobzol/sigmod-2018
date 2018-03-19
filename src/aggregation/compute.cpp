@@ -3,8 +3,9 @@
 #include "compute.h"
 
 Compute::Compute(Iterator * input, std::vector<std::vector<Selection>>& exprs, uint32_t binding)
-	: input(input), exprs(std::move(exprs)), binding(binding)
+	: input(input), binding(binding), exprs(exprs)
 {
+
 }
 
 bool Compute::getNext()
@@ -75,9 +76,9 @@ void Compute::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t
 {
 	while (this->getNext())
 	{
-		for (unsigned int index = 0; index < getColumnCount(); index++)
+		for (int index = 0; index < getColumnCount(); index++)
 		{
-			results[index] += this->getColumn(index);
+			results[index] += this->getColumn(static_cast<uint32_t>(index));
 		}
 		count++;
 	}

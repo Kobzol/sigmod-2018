@@ -2,14 +2,16 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "small.complete"
+#define INPUT_FILE "public.complete"
 
 #ifndef NDEBUG
     #define STATISTICS
     #define LOAD_FROM_FILE INPUT_FILE
 #endif
 
-#define STATISTICS
+#define REAL_RUN
+
+//#define STATISTICS
 //#define MEASURE_REAL_TIME
 
 //#define SORT_JOINS_BY_SIZE

@@ -31,13 +31,13 @@ void Aggregate<GROUP_SIZE>::buildHashTable()
 		auto iter = vec->begin();
 
 		// Navyseni poctu.
-		(*iter._Ptr)++;
+		(*iter)++;
 		iter++;
 		
 		// Pocitani sum.
 		for (uint32_t j = 0; j < sum.size(); j++)
 		{
-			(*iter._Ptr) += input->getValue(sum[j]);
+			(*iter) += input->getValue(sum[j]);
 			iter++;
 		}
 	}
