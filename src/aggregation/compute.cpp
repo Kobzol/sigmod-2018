@@ -16,8 +16,9 @@ bool Compute::getNext()
 		{
 			uint64_t val = 1;
 			for (auto selection : expr)
-			{
-				val *= input->getValue(selection);
+			{ 
+				uint32_t i = input->getValue(selection);
+				val *= i;
 			}
 
 			row[pos] = val;

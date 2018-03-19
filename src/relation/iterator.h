@@ -15,7 +15,7 @@ class Database;
 class Iterator
 {
 public:
-    Iterator() = default;
+    Iterator();
     virtual ~Iterator() = default;
     DISABLE_COPY(Iterator);
 

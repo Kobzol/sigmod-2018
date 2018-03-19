@@ -2,6 +2,11 @@
 
 unsigned int Iterator::operatorIndexCounter = 0;
 
+Iterator::Iterator()
+{
+	operatorIndex = operatorIndexCounter++;
+}
+
 void Iterator::printResult()
 {
 	unsigned int columnCount = getColumnCount();
@@ -19,23 +24,23 @@ void Iterator::printResult()
 
 void Iterator::writeRowToFile()
 {
-	//char fileName[100];
-	//sprintf(fileName, "c:\\users\\petr\\desktop\\X_%d.txt", operatorIndex);
+	char fileName[100];
+	sprintf(fileName, "c:\\users\\petr\\desktop\\X_%d.txt", operatorIndex);
 
-	//FILE* file = fopen(fileName, "a");
+	FILE* file = fopen(fileName, "a");
 
-	//unsigned int columnCount = getColumnCount();
-	//for (unsigned int i = 0; i < columnCount; i++)
-	//{
-	//	if (i > 0)
-	//	{
-	//		fprintf(file, "\t");
-	//	}
+	unsigned int columnCount = getColumnCount();
+	for (unsigned int i = 0; i < columnCount; i++)
+	{
+		if (i > 0)
+		{
+			fprintf(file, "\t");
+		}
 
-	//	int64_t val = getColumn(i);
-	//	fprintf(file, "%d", val);
-	//}
-	//fprintf(file, "\n");
+		int64_t val = getColumn(i);
+		fprintf(file, "%d", val);
+	}
+	fprintf(file, "\n");
 
-	//fclose(file);
+	fclose(file);
 }

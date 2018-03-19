@@ -285,9 +285,14 @@ void Executor::remapJoin(Join* join, std::unordered_map<uint32_t, std::unordered
 
 void Executor::executeNew(Database & database, Query & query)
 {
+#ifdef STATISTICS
+	Timer timer;
+#endif
+
 	std::vector<std::unique_ptr<Iterator>> container;
 	std::unordered_map<uint32_t, AggregateAbstract*> aggregates;
-	std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> columnMapping;
+	std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> columnMappingSum;
+	std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>> columnMappingJoin;
 
 	// Nejprve sestaveni agregatoru.
 	uint32_t binding = 0;
@@ -343,7 +348,7 @@ void Executor::executeNew(Database & database, Query & query)
 						if (!b)
 						{
 							// Premapovani sloupce.
-							columnMapping[binding][predicate.selections[i].column] = groupBy.size();
+							columnMappingJoin[binding][predicate.selections[i].column] = groupBy.size();
 
 							groupBy.push_back(predicate.selections[i]);
 						}
@@ -359,7 +364,7 @@ void Executor::executeNew(Database & database, Query & query)
 			if (selection.binding == binding)
 			{
 				// Premapovani sloupce.
-				columnMapping[binding][selection.column] = groupBy.size() + sum.size() + 1;
+				columnMappingSum[binding][selection.column] = groupBy.size() + sum.size() + 1;
 
 				sum.push_back(selection);
 			}
@@ -397,7 +402,7 @@ void Executor::executeNew(Database & database, Query & query)
 	// Sestaveni planu.
 
 	auto* join = &query.joins[0];
-	remapJoin(join, columnMapping);
+	remapJoin(join, columnMappingJoin);
 
 
 	auto leftBinding = (*join)[0].selections[0].binding;
@@ -431,7 +436,7 @@ void Executor::executeNew(Database & database, Query & query)
 		leftBinding = (*join)[0].selections[0].binding;
 		rightBinding = (*join)[0].selections[1].binding;
 
-		remapJoin(join, columnMapping);
+		remapJoin(join, columnMappingJoin);
 
 		auto usedLeft = usedBindings.find(leftBinding) != usedBindings.end();
 		auto usedRight = usedBindings.find(rightBinding) != usedBindings.end();
@@ -491,7 +496,7 @@ void Executor::executeNew(Database & database, Query & query)
 
 		Selection newSelection;
 		newSelection.binding = selection.binding;
-		newSelection.column = columnMapping[selection.binding][selection.column];
+		newSelection.column = columnMappingSum[selection.binding][selection.column];
 		newSelection.relation = selection.relation;
 
 		expr.push_back(newSelection);
@@ -532,20 +537,21 @@ void Executor::executeNew(Database & database, Query & query)
 
 	root = container.back().get();
 
-	//root->printPlan(0);
+	root->printPlan(0);
 
 
 	query.selections = newQuerySelections;
 
-	common::utils::cTimer timer;
-	timer.Start();
+	//common::utils::cTimer timer;
+	//timer.Start();
 
 	Aggregator aggregator;
 	aggregator.aggregate(database, query, root);
 	query.result[query.result.size() - 1] = '\n';
 
-	timer.Stop();
-	timer.Print("\n");
+	//timer.Stop();
+	//timer.Print("\n");
 
 	//exit(0);
+	query.time = timer.get();
 }

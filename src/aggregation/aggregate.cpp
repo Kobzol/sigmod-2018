@@ -61,9 +61,8 @@ bool Aggregate<GROUP_SIZE>::getNext()
 
 		if (it != hashTable.end())
 		{
-#ifdef WRITE_INTERMEDIATE_RESULTS
-			writeRowToFile();
-#endif
+			//writeRowToFile();
+
 			return true;
 		}
 		else
@@ -78,9 +77,9 @@ bool Aggregate<GROUP_SIZE>::getNext()
 
 		if (it != hashTable.end())
 		{
-#ifdef WRITE_INTERMEDIATE_RESULTS
-			writeRowToFile();
-#endif
+//#ifdef WRITE_INTERMEDIATE_RESULTS
+			//writeRowToFile();
+//#endif
 			return true;
 		}
 		else

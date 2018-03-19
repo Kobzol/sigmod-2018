@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 	std::ios::sync_with_stdio(false);
 
 #ifdef LOAD_FROM_FILE
-	freopen(LOAD_FROM_FILE, "r", stdin);
+	//freopen(LOAD_FROM_FILE, "r", stdin);
 #else
 	if (getenv("VTUNE") != nullptr)
 	{
@@ -147,9 +147,9 @@ int main(int argc, char** argv)
 	}
 
 #ifdef STATISTICS
-	std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
-		return a.time > b.time;
-	});
+	//std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
+	//	return a.time > b.time;
+	//});
 
 	//for (int i = 0; i < 5; i++)
 	//{
@@ -161,19 +161,23 @@ int main(int argc, char** argv)
 	//	std::cerr << std::endl;
 	//}
 
+	double totalTime = 0;
+
 	for (auto q : allQueries)
 	{		
-		std::cout << q.input << std::endl;
+		//std::cout << q.input << std::endl;
 		std::cout << q.time << "ms,  " << q.plan << std::endl;
-		for (auto& r : q.relations)
-		{
-			std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
-		}
-		std::cout << q.filters[0].selection.relation << ": " << database.histograms[q.filters[0].selection.relation].estimateResult(q.filters[0]) << std::endl << std::endl;
+		//for (auto& r : q.relations)
+		//{
+		//	std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
+		//}
+		//std::cout << q.filters[0].selection.relation << ": " << database.histograms[q.filters[0].selection.relation].estimateResult(q.filters[0]) << std::endl << std::endl;
+		totalTime += q.time;
 	}
 
 	size_t relationCount = database.relations.size();
 	std::cerr << "Query load time: " << queryLoadTime << std::endl;
+	std::cerr << "Total query time: " << totalTime << std::endl;
 	std::cerr << "ColumnRelation count: " << relationCount << std::endl;
 	std::cerr << "Min tuple count: " << minTuples << std::endl;
 	std::cerr << "Max tuple count: " << maxTuples << std::endl;

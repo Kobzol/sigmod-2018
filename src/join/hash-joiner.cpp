@@ -100,6 +100,8 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::getNext()
 #ifdef COLLECT_JOIN_SIZE
     this->rowCount++;
 #endif
+	//writeRowToFile();
+
     return true;
 }
 
