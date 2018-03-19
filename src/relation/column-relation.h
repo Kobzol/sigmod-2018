@@ -115,6 +115,11 @@ public:
 
     std::unique_ptr<Iterator> createIndexedIterator() override;
 
+	bool supportsIterateValue() final
+	{
+		return true;
+	}
+
     void fillBindings(std::vector<uint32_t>& bindings) final
     {
         bindings.push_back(this->binding);

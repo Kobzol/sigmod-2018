@@ -145,6 +145,7 @@ int64_t SortFilterIterator::predictSize()
 
 void SortFilterIterator::printPlan(unsigned int level)
 {
+	printIndent(level);
 	std::cout << "SortFilter <" << operatorIndex << "> [";
 	relation->printName();
 	std::cout << " AS \"" << this->binding << "\"";

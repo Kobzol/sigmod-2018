@@ -284,6 +284,43 @@ void Executor::remapJoin(Join* join, std::unordered_map<uint32_t, std::unordered
 	}
 }
 
+void createJoinNew(Iterator* left,
+	Iterator* right,
+	uint32_t leftIndex,
+	std::vector<std::unique_ptr<Iterator>>& container,
+	Join* join)
+{
+	if (right->supportsIterateValue())
+	{
+		container.push_back(std::make_unique<IndexJoiner>(
+			left,
+			right,
+			leftIndex,
+			*join));
+
+		right->prepareIterateValue();
+	}
+	else
+	{
+		if (join->size() > 1)
+		{
+			container.push_back(std::make_unique<HashJoiner<true>>(
+				left,
+				right,
+				leftIndex,
+				*join));
+		}
+		else
+		{
+			container.push_back(std::make_unique<HashJoiner<false>>(
+				left,
+				right,
+				leftIndex,
+				*join));
+		}
+	}
+}
+
 void Executor::executeNew(Database & database, Query & query)
 {
 #ifdef STATISTICS
@@ -314,8 +351,11 @@ void Executor::executeNew(Database & database, Query & query)
 		// Pokud existuje filtr, vytvorime FilterIterator.
 		if (filters.size() > 0)
 		{
+			//container.push_back(std::make_unique<FilterIterator>(&database.relations[relation], binding, filters));
+			//iterator = container.back().get();
 			container.push_back(std::make_unique<SortFilterIterator>(&database.relations[relation], binding, filters));
 			iterator = container.back().get();
+
 		}
 		// Jinak vytvorim standardni iterator nad tabulkou.
 		else
@@ -417,24 +457,25 @@ void Executor::executeNew(Database & database, Query & query)
 	auto rightBinding = (*join)[0].selections[1].binding;
 	assert(leftBinding <= rightBinding);
 
-	if (join->size() > 1)
-	{
-		container.push_back(std::make_unique<HashJoiner<true>>(
-			aggregates[leftBinding],
-			aggregates[rightBinding],
-			0,
-			*join
-			));
-	}
-	else
-	{
-		container.push_back(std::make_unique<HashJoiner<false>>(
-			aggregates[leftBinding],
-			aggregates[rightBinding],
-			0,
-			*join
-			));
-	}
+	//if (join->size() > 1)
+	//{
+	//	container.push_back(std::make_unique<HashJoiner<true>>(
+	//		aggregates[leftBinding],
+	//		aggregates[rightBinding],
+	//		0,
+	//		*join
+	//		));
+	//}
+	//else
+	//{
+	//	container.push_back(std::make_unique<HashJoiner<false>>(
+	//		aggregates[leftBinding],
+	//		aggregates[rightBinding],
+	//		0,
+	//		*join
+	//		));
+	//}
+	createJoinNew(aggregates[leftBinding], aggregates[rightBinding], 0, container, join);
 
 	std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
 	Iterator* root = container.back().get();
@@ -469,24 +510,27 @@ void Executor::executeNew(Database & database, Query & query)
 			continue;
 		}
 
-		if (join->size() > 1)
-		{
-			container.push_back(std::make_unique<HashJoiner<true>>(
-				left,
-				right,
-				leftIndex,
-				*join
-				));
-		}
-		else
-		{
-			container.push_back(std::make_unique<HashJoiner<false>>(
-				left,
-				right,
-				leftIndex,
-				*join
-				));
-		}
+		//if (join->size() > 1)
+		//{
+		//	container.push_back(std::make_unique<HashJoiner<true>>(
+		//		left,
+		//		right,
+		//		leftIndex,
+		//		*join
+		//		));
+		//}
+		//else
+		//{
+		//	container.push_back(std::make_unique<HashJoiner<false>>(
+		//		left,
+		//		right,
+		//		leftIndex,
+		//		*join
+		//		));
+		//}
+
+		createJoinNew(left, right, leftIndex, container, join);
+
 		root = container.back().get();
 	}
 

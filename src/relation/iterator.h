@@ -50,6 +50,10 @@ public:
     {
         return false;
     }
+	virtual void prepareIterateValue()
+	{
+
+	}
 
     virtual bool isJoin()
     {
@@ -132,6 +136,11 @@ public:
      * It must support iterateValue.
      */
     virtual std::unique_ptr<Iterator> createIndexedIterator() = 0;
+
+	virtual bool supportsIterateValue()
+	{
+		return false;
+	}
 
     /**
      * Saves the state of the iterator.
