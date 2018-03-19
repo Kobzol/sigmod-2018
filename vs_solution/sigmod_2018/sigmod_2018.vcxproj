@@ -20,12 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\aggregation\aggregate.cpp" />
+    <ClCompile Include="..\..\src\aggregation\aggregateSort.cpp" />
     <ClCompile Include="..\..\src\aggregation\compute.cpp" />
     <ClCompile Include="..\..\src\aggregator.cpp" />
     <ClCompile Include="..\..\src\common\cCommon.cpp" />
     <ClCompile Include="..\..\src\common\cTimer.cpp" />
     <ClCompile Include="..\..\src\database.cpp" />
     <ClCompile Include="..\..\src\executor.cpp" />
+    <ClCompile Include="..\..\src\index\hash-index-ext.cpp" />
     <ClCompile Include="..\..\src\index\hash-index.cpp" />
     <ClCompile Include="..\..\src\index\sort-index.cpp" />
     <ClCompile Include="..\..\src\io.cpp" />
@@ -47,12 +49,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\aggregation\aggregate.h" />
+    <ClInclude Include="..\..\src\aggregation\aggregateAbstract.h" />
+    <ClInclude Include="..\..\src\aggregation\aggregateSort.h" />
     <ClInclude Include="..\..\src\aggregation\compute.h" />
     <ClInclude Include="..\..\src\aggregator.h" />
     <ClInclude Include="..\..\src\common\cCommon.h" />
     <ClInclude Include="..\..\src\common\cTimer.h" />
     <ClInclude Include="..\..\src\database.h" />
     <ClInclude Include="..\..\src\executor.h" />
+    <ClInclude Include="..\..\src\index\hash-index-ext.h" />
     <ClInclude Include="..\..\src\index\hash-index.h" />
     <ClInclude Include="..\..\src\index\sort-index.h" />
     <ClInclude Include="..\..\src\io.h" />

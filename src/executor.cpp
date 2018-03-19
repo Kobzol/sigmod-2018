@@ -12,6 +12,7 @@
 #include "relation/hash-filter-iterator.h"
 #include "relation/sort-filter-iterator.h"
 #include "aggregation/aggregate.h"
+#include "aggregation/aggregateSort.h"
 #include "aggregation/compute.h"
 #include "join/self-join.h"
 #include "timer.h"
@@ -370,28 +371,35 @@ void Executor::executeNew(Database & database, Query & query)
 			}
 		}
 
-		// Podpora max. 5 sloupcu pro groupovani.
-		switch (groupBy.size())
+		if (groupBy.size() == 1 && filters.size() == 0)
 		{
-		case 1:
-			container.push_back(std::make_unique<Aggregate<1>>(iterator, groupBy, sum, binding));
-			break;
-		case 2:
-			container.push_back(std::make_unique<Aggregate<2>>(iterator, groupBy, sum, binding));
-			break;
-		case 3:
-			container.push_back(std::make_unique<Aggregate<3>>(iterator, groupBy, sum, binding));
-			break;
-		case 4:
-			container.push_back(std::make_unique<Aggregate<4>>(iterator, groupBy, sum, binding));
-			break;
-		case 5:
-			container.push_back(std::make_unique<Aggregate<5>>(iterator, groupBy, sum, binding));
-			break;
-		default:
-			// TODO.
-			assert(false);
-			break;
+			container.push_back(std::make_unique<AggregateSort>(&database.relations[relation], groupBy[0], sum, binding));
+		}
+		else
+		{
+			// Podpora max. 5 sloupcu pro groupovani.
+			switch (groupBy.size())
+			{
+			case 1:
+				container.push_back(std::make_unique<Aggregate<1>>(iterator, groupBy, sum, binding));
+				break;
+			case 2:
+				container.push_back(std::make_unique<Aggregate<2>>(iterator, groupBy, sum, binding));
+				break;
+			case 3:
+				container.push_back(std::make_unique<Aggregate<3>>(iterator, groupBy, sum, binding));
+				break;
+			case 4:
+				container.push_back(std::make_unique<Aggregate<4>>(iterator, groupBy, sum, binding));
+				break;
+			case 5:
+				container.push_back(std::make_unique<Aggregate<5>>(iterator, groupBy, sum, binding));
+				break;
+			default:
+				// TODO.
+				assert(false);
+				break;
+			}
 		}
 
 		aggregates[binding] = (AggregateAbstract*)container.back().get();
@@ -508,7 +516,7 @@ void Executor::executeNew(Database & database, Query & query)
 			{
 				Selection newSelection2;
 				newSelection2.binding = binding;
-				newSelection2.column = aggregates[binding]->groupBy.size();
+				newSelection2.column = aggregates[binding]->getCountColumnIndex();
 				newSelection2.relation = query.relations[binding];
 
 				expr.push_back(newSelection2);

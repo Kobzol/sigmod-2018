@@ -2,8 +2,10 @@
 
 #include <assert.h>
 #include <array>
+#include <cstdint>
 
 #include "../relation/iterator.h"
+#include "aggregateAbstract.h"
 
 namespace std
 {
@@ -32,17 +34,7 @@ namespace std
 	};
 }
 
-class AggregateAbstract : public Iterator
-{
-public:
-	explicit AggregateAbstract(Iterator* input, const std::vector<Selection>& groupBy, const std::vector<Selection>& sum, uint32_t binding);
 
-
-	Iterator * input;
-	std::vector<Selection> groupBy;
-	std::vector<Selection> sum;
-	uint32_t binding;
-};
 
 template <unsigned int GROUP_SIZE>
 class Aggregate: public AggregateAbstract
@@ -53,6 +45,10 @@ public:
 	bool getNext() override;
 
 	void buildHashTable();
+
+	virtual void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+		HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
+		BloomFilter<BLOOM_FILTER_SIZE>& filter);
 
 	uint64_t getValue(const Selection& selection) final
 	{
@@ -111,6 +107,15 @@ public:
 
 	void printPlan(unsigned int level) override;
 	
+	uint32_t getCountColumnIndex() final
+	{
+		return groupBy.size();
+	}
+
+	Iterator * input;
+	std::vector<Selection> groupBy;
+	std::vector<Selection> sum;
+	uint32_t binding;
 
 	std::unordered_map<std::array<uint64_t, GROUP_SIZE>, std::vector<uint64_t>> hashTable;
 	typename std::unordered_map<std::array<uint64_t, GROUP_SIZE>, std::vector<uint64_t>>::iterator it;

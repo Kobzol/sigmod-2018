@@ -84,6 +84,12 @@
     <ClCompile Include="..\..\src\common\cTimer.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\index\hash-index-ext.cpp">
+      <Filter>index</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aggregation\aggregateSort.cpp">
+      <Filter>aggregation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\index\hash-index.h">
@@ -148,6 +154,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\common\cTimer.h">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\index\hash-index-ext.h">
+      <Filter>index</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregation\aggregateSort.h">
+      <Filter>aggregation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregation\aggregateAbstract.h">
+      <Filter>aggregation</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

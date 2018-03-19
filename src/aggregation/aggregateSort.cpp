@@ -1,0 +1,85 @@
+#include "AggregateSort.h"
+
+AggregateSort::AggregateSort(ColumnRelation* relation, Selection groupBy, const std::vector<Selection>& sum, uint32_t binding)
+	: relation(relation), groupBy(groupBy), sum(std::move(sum)), binding(binding)
+{
+	firstIt = true;
+	
+	this->sortIndex = &database.getSortIndex(groupBy.relation, groupBy.column);
+	this->start = this->sortIndex->data.data();
+	this->end = this->sortIndex->data.data() + this->sortIndex->data.size();
+}
+
+bool AggregateSort::getNext()
+{
+	if (this->start >= this->end)
+	{
+		return false;
+	}
+	
+	memset(currentRow, 0, sizeof(uint64_t) * MAX_ROW_SIZE);
+
+	uint64_t value = this->start->value;
+	currentRow[0] = value;
+
+	while (this->start->value == value && this->start <= this->end)
+	{
+		currentRow[1]++;
+		unsigned int j = 2;
+		for (auto & selection : sum)
+		{
+			currentRow[j++] += relation->getValue(selection, this->start->row);
+		}
+		this->start++;
+	}
+
+	return true;
+}
+
+void AggregateSort::fillRow(uint64_t* row, const std::vector<Selection>& selections)
+{
+	for (auto& sel : selections)
+	{
+		*row++ = this->getValue(sel);
+	}
+}
+
+
+bool AggregateSort::getValueMaybe(const Selection & selection, uint64_t & value)
+{
+	if (selection.binding != this->binding) return false;
+	value = this->getValue(selection);
+	return true;
+}
+
+std::unique_ptr<Iterator> AggregateSort::createIndexedIterator()
+{
+	assert(false);
+	return std::unique_ptr<Iterator>();
+}
+
+void AggregateSort::printPlan(unsigned int level)
+{
+	bool b;
+
+	printIndent(level);
+	std::cout << "AggregateSort <" << operatorIndex << "> [";
+	relation->printName();
+	std::cout << " AS \"" << this->binding << "\"";
+	std::cout << " | group by: ";
+	groupBy.print();
+	std::cout << " | sum: ";
+
+	b = false;
+	for (auto& selection : sum)
+	{
+		if (b)
+		{
+			std::cout << ", ";
+		}
+		selection.print();
+		b = true;
+	}
+
+	std::cout << "]";
+}

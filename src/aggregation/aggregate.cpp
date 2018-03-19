@@ -1,14 +1,8 @@
 #include "aggregate.h"
 
-AggregateAbstract::AggregateAbstract(Iterator * input, const std::vector<Selection>& groupBy, const std::vector<Selection>& sum, uint32_t binding)
-	: input(input), groupBy(std::move(groupBy)), sum(std::move(sum)), binding(binding)
-{
-}
-
-
 template <unsigned int GROUP_SIZE>
 Aggregate<GROUP_SIZE>::Aggregate(Iterator * input, const std::vector<Selection>& groupBy, const std::vector<Selection>& sum, uint32_t binding)
-	: AggregateAbstract(input, groupBy, sum, binding)
+	: input(input), groupBy(groupBy), sum(sum), binding(binding)
 {
 	firstIt = true;
 }
@@ -45,6 +39,43 @@ void Aggregate<GROUP_SIZE>::buildHashTable()
 		{
 			(*iter._Ptr) += input->getValue(sum[j]);
 			iter++;
+		}
+	}
+}
+
+template <unsigned int GROUP_SIZE>
+void Aggregate<GROUP_SIZE>::fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+	HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
+	BloomFilter<BLOOM_FILTER_SIZE>& filter)
+{
+	if (GROUP_SIZE != 1)
+	{
+		Iterator::fillHashTable(hashSelection, selections, hashTable, filter);
+		return;
+	}
+
+	auto columnMapCols = selections.size();
+	auto countSub = static_cast<size_t>(selections.size() - 1);
+
+	if (!this->getNext()) return;
+
+	uint64_t value = this->getValue(hashSelection);
+	filter.set(value);
+	auto* vec = &hashTable[value];
+
+	while (true)
+	{
+		vec->resize(vec->size() + columnMapCols);
+		auto rowData = &vec->back() - countSub;
+		this->fillRow(rowData, selections);
+
+		if (!this->getNext()) return;
+		uint64_t current = this->getValue(hashSelection);
+		if (current != value)
+		{
+			value = current;
+			filter.set(value);
+			vec = &hashTable[value];
 		}
 	}
 }
