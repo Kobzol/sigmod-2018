@@ -228,7 +228,8 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
     }
 }
 
-void MergeSortJoiner::printPlan(unsigned int level)
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::printPlan(unsigned int level)
 {
 	printIndent(level);
 	std::cout << "MergeSortJoin <" << operatorIndex << "> [";

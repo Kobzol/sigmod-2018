@@ -47,5 +47,5 @@ set(SOURCE_FILES
         src/aggregation/compute.cpp
 )
 
-add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
+add_executable(sigmod-2018 src/main_win.cpp ${SOURCE_FILES})
 add_executable(tester src/test/main.cpp ${SOURCE_FILES})

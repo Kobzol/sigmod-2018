@@ -40,9 +40,10 @@ public:
 
 	void buildHashTable();
 
-	virtual void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-		HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-		BloomFilter<BLOOM_FILTER_SIZE>& filter);
+	void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+							   HashTable& hashTable) override;
+
+	virtual int64_t predictSize() override;
 
 	uint64_t getValue(const Selection& selection) final
 	{

@@ -59,7 +59,7 @@ std::unique_ptr<Iterator> Compute::createIndexedIterator()
 	return std::unique_ptr<Iterator>();
 }
 
-void Compute::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+void Compute::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
 	for (auto& expr : exprs)
 	{
@@ -120,4 +120,9 @@ void Compute::printPlan(unsigned int level)
 	std::cout << std::endl;
 	printIndent(level);
 	std::cout << ")";
+}
+
+int64_t Compute::predictSize()
+{
+	return this->input->predictSize();
 }

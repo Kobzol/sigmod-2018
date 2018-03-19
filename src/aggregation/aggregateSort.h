@@ -46,6 +46,8 @@ public:
 		return 2 + sum.size();
 	}
 
+	virtual int64_t predictSize() override;
+
 	void fillBindings(std::vector<uint32_t>& ids) final
 	{
 		ids.push_back(this->binding);

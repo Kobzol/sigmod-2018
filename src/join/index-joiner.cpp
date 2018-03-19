@@ -167,7 +167,8 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
     }
 }
 
-void IndexJoiner::printPlan(unsigned int level)
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::printPlan(unsigned int level)
 {
 	printIndent(level);
 	std::cout << "NestedLoop <" << operatorIndex << "> [";

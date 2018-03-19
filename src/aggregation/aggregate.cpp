@@ -45,12 +45,11 @@ void Aggregate<GROUP_SIZE>::buildHashTable()
 
 template <unsigned int GROUP_SIZE>
 void Aggregate<GROUP_SIZE>::fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-	HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-	BloomFilter<BLOOM_FILTER_SIZE>& filter)
+	HashTable& hashTable)
 {
 	if (GROUP_SIZE != 1)
 	{
-		Iterator::fillHashTable(hashSelection, selections, hashTable, filter);
+		Iterator::fillHashTable(hashSelection, selections, hashTable);
 		return;
 	}
 
@@ -60,8 +59,7 @@ void Aggregate<GROUP_SIZE>::fillHashTable(const Selection& hashSelection, const 
 	if (!this->getNext()) return;
 
 	uint64_t value = this->getValue(hashSelection);
-	filter.set(value);
-	auto* vec = &hashTable[value];
+	auto* vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
 
 	while (true)
 	{
@@ -74,8 +72,7 @@ void Aggregate<GROUP_SIZE>::fillHashTable(const Selection& hashSelection, const 
 		if (current != value)
 		{
 			value = current;
-			filter.set(value);
-			vec = &hashTable[value];
+			vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
 		}
 	}
 }
@@ -185,4 +182,10 @@ void Aggregate<GROUP_SIZE>::printPlan(unsigned int level)
 	std::cout << std::endl;
 	printIndent(level);
 	std::cout << ")";
+}
+
+template<unsigned int GROUP_SIZE>
+int64_t Aggregate<GROUP_SIZE>::predictSize()
+{
+    return this->input->predictSize();
 }

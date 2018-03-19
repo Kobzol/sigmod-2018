@@ -25,13 +25,13 @@ public:
     {
         return "NL";
     }
-};
 
-	void printPlan(unsigned int level);
+    void printPlan(unsigned int level);
 
 
     Selection leftSel;
     Selection rightSel;
+};
 
 template class IndexJoiner<false>;
 template class IndexJoiner<true>;

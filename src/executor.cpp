@@ -60,9 +60,11 @@ void Executor::createViews(Database& database,
     // assign a filter iterator for filtered bindings
     for (auto& filterGroup: filtersByBindings)
     {
-        std::sort(filterGroup.second.begin(), filterGroup.second.end(), [](const Filter& lhs, const Filter& rhs) {
+        std::sort(filterGroup.second.begin(), filterGroup.second.end(), [](const Filter& lhs, const Filter& rhs)
+        {
             return lhs.oper == '=';
         });
+    }
 
 	// Pro kazdou dvojici (tabulka -> seznam filtru)
 	for (auto& filterGroup : filtersByBindings)
@@ -363,11 +365,22 @@ void createJoinNew(Iterator* left,
 {
 	if (right->supportsIterateValue())
 	{
-		container.push_back(std::make_unique<IndexJoiner>(
-			left,
-			right,
-			leftIndex,
-			*join));
+        if (join->size() > 1)
+        {
+            container.push_back(std::make_unique<IndexJoiner<true>>(
+                    left,
+                    right,
+                    leftIndex,
+                    *join));
+        }
+        else
+        {
+            container.push_back(std::make_unique<IndexJoiner<false>>(
+                    left,
+                    right,
+                    leftIndex,
+                    *join));
+        }
 
 		right->prepareIterateValue();
 	}
@@ -424,7 +437,7 @@ void Executor::executeNew(Database & database, Query & query)
 		{
 			//container.push_back(std::make_unique<FilterIterator>(&database.relations[relation], binding, filters));
 			//iterator = container.back().get();
-			container.push_back(std::make_unique<SortFilterIterator>(&database.relations[relation], binding, filters));
+			container.push_back(std::make_unique<SortIndexIterator>(&database.relations[relation], binding, filters));
 			iterator = container.back().get();
 
 		}

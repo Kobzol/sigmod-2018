@@ -127,3 +127,8 @@ void AggregateSort::iterateValue(const Selection & selection, uint64_t value)
 
 	iterateInit = true;
 }
+
+int64_t AggregateSort::predictSize()
+{
+    return this->relation->getRowCount();
+}

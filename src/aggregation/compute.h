@@ -21,6 +21,8 @@ public:
 		return row[column];
 	}
 
+	virtual int64_t predictSize() override;
+
 	void fillRow(uint64_t* row, const std::vector<Selection>& selections) final;
 	
 	uint32_t getColumnForSelection(const Selection& selection) final
@@ -47,7 +49,7 @@ public:
 
 	std::unique_ptr<Iterator> createIndexedIterator() override;
 
-	void requireSelections(std::unordered_map<SelectionId, Selection>& selections) override;
+	void requireSelections(std::unordered_map<SelectionId, Selection> selections) override;
 
 	void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
