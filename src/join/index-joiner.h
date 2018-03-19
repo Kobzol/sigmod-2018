@@ -20,6 +20,7 @@ public:
                          const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
                          size_t& count);
 
+    bool isSortedOn(const Selection& selection) final;
 
     std::string getJoinName() final
     {

@@ -166,3 +166,10 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
         if (!hasNext) return;
     }
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+bool IndexJoiner<HAS_MULTIPLE_JOINS>::isSortedOn(const Selection& selection)
+{
+    return this->left->isSortedOn(selection);
+}
+
