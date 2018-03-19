@@ -9,6 +9,7 @@
 #include "../query.h"
 #include "../util.h"
 #include "../bloom-filter.h"
+#include "../hash-table.h"
 
 class Database;
 
@@ -81,7 +82,7 @@ public:
      * Initializes the selection to column mappings and tells the iterator which selections are needed.
      * After this method completes, getColumnForSelection may be called on this iterator.
      */
-    virtual void requireSelections(std::unordered_map<SelectionId, Selection>& selections)
+    virtual void requireSelections(std::unordered_map<SelectionId, Selection> selections)
     {
 
     }
@@ -97,8 +98,7 @@ public:
 
     // assumes sorted rows (has to be used with hash or sort index)
     virtual void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                               HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-                               BloomFilter<BLOOM_FILTER_SIZE>& filter)
+                               HashTable& hashTable)
     {
         auto columnMapCols = selections.size();
         auto countSub = static_cast<size_t>(selections.size() - 1);
@@ -106,8 +106,7 @@ public:
         if (!this->getNext()) return;
 
         uint64_t value = this->getValue(hashSelection);
-        filter.set(value);
-        auto* vec = &hashTable[value];
+        auto vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
 
         while (true)
         {
@@ -120,8 +119,7 @@ public:
             if (current != value)
             {
                 value = current;
-                filter.set(value);
-                vec = &hashTable[value];
+                vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
             }
         }
     }
@@ -147,7 +145,7 @@ public:
      */
     virtual void save()
     {
-        assert(false);
+        this->savedRowIndex = this->rowIndex;
     }
 
     /**
@@ -155,7 +153,7 @@ public:
      */
     virtual void restore()
     {
-        assert(false);
+        this->rowIndex = this->savedRowIndex;
     }
 
     virtual void fillBindings(std::vector<uint32_t>& bindings)
@@ -168,17 +166,23 @@ public:
 
     }
 
-    virtual int64_t predictSize()
-    {
-        return 0;
-    }
+    virtual int64_t predictSize() = 0;
 
     virtual void assignJoinSize(Database& database)
     {
 
     }
 
+    /**
+     * Splits the iterator in up to @p count subiterators and store them into @p groups.
+     */
+    virtual void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count)
+    {
+        assert(false);
+    }
+
     int rowIndex = -1;
+    int savedRowIndex;
 
 
 	void printIndent(unsigned int level)

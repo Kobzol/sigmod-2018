@@ -1,15 +1,16 @@
 #include <iostream>
+#include <cstring>
 #include "index-joiner.h"
 
-IndexJoiner::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
-        : Joiner(left, right, leftIndex, join),
-          leftSel(this->join[0].selections[this->leftIndex]),
-          rightSel(this->join[0].selections[this->rightIndex])
+template <bool HAS_MULTIPLE_JOINS>
+IndexJoiner<HAS_MULTIPLE_JOINS>::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+        : Joiner(left, right, leftIndex, join)
 {
 
 }
 
-bool IndexJoiner::getNext()
+template <bool HAS_MULTIPLE_JOINS>
+bool IndexJoiner<HAS_MULTIPLE_JOINS>::getNext()
 {
     while (true)
     {
@@ -19,22 +20,32 @@ bool IndexJoiner::getNext()
             {
                 return false;
             }
-            uint64_t value = this->left->getValue(this->leftSel);
-            this->right->iterateValue(this->rightSel, value);
+            uint64_t value = this->left->getColumn(this->leftColumns[0]);
+            this->right->iterateValue(this->rightSelection, value);
             continue;
         }
 
-        bool ok = true;
-        for (int i = 1; i < joinSize; i++)
+        if (HAS_MULTIPLE_JOINS)
         {
-            if (this->left->getValue(this->join[i].selections[this->leftIndex]) !=
-                this->right->getValue(this->join[i].selections[this->rightIndex]))
+            bool ok = true;
+            for (int i = 1; i < joinSize; i++)
             {
-                ok = false;
-                break;
+                if (this->left->getColumn(this->leftColumns[i]) !=
+                    this->right->getColumn(this->rightColumns[i]))
+                {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok)
+            {
+#ifdef COLLECT_JOIN_SIZE
+                this->rowCount++;
+#endif
+                return true;
             }
         }
-        if (ok)
+        else
         {
 #ifdef COLLECT_JOIN_SIZE
             this->rowCount++;
@@ -44,43 +55,17 @@ bool IndexJoiner::getNext()
     }
 }
 
-uint64_t IndexJoiner::getValue(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
-    uint64_t value;
-    if (this->left->getValueMaybe(selection, value)) return value;
-    return this->right->getValue(selection);
-}
+    this->initializeSelections(selections);
 
-uint64_t IndexJoiner::getColumn(uint32_t column)
-{
-    if (column < this->leftColSize)
-    {
-        return this->left->getColumn(column);
-    }
-    return this->right->getColumn(column - this->leftColSize);
-}
-
-bool IndexJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
-{
-    if (this->left->getValueMaybe(selection, value)) return true;
-    return this->right->getValueMaybe(selection, value);
-}
-
-void IndexJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
-{
-    for (auto& j: this->join)
-    {
-        selections[j.selections[0].getId()] = j.selections[0];
-        selections[j.selections[1].getId()] = j.selections[1];
-    }
-
-    this->left->requireSelections(selections);
+    this->left->prepareSortedAccess(this->leftSelection);
     this->right->prepareIndexedAccess();
-
-    this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
 }
 
-void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -96,35 +81,90 @@ void IndexJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint
         else rightColumns.emplace_back(columnIds[i] - this->leftColSize, i);
     }
 
-    while (this->getNext())
+    if (!HAS_MULTIPLE_JOINS)
     {
-        for (auto& c: leftColumns)
+        this->aggregateDirect(results, leftColumns, rightColumns, count);
+    }
+    else
+    {
+        while (this->getNext())
         {
-            results[c.second] += this->left->getColumn(c.first);
-        }
-        for (auto& c: rightColumns)
-        {
-            results[c.second] += this->right->getColumn(c.first);
-        }
-        count++;
+            for (auto& c: leftColumns)
+            {
+                results[c.second] += this->left->getColumn(c.first);
+            }
+            for (auto& c: rightColumns)
+            {
+                results[c.second] += this->right->getColumn(c.first);
+            }
+            count++;
 #ifdef COLLECT_JOIN_SIZE
-        this->rowCount++;
+            this->rowCount++;
 #endif
+        }
     }
 }
 
-uint32_t IndexJoiner::getColumnForSelection(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& results,
+                                  const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                                  const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns, size_t& count)
 {
-    if (this->left->hasSelection(selection))
+    if (!this->left->getNext()) return;
+
+    std::vector<uint64_t> rightResults(results.size());
+    while (true)
     {
-        return this->left->getColumnForSelection(selection);
-    }
-    return this->right->getColumnForSelection(selection) + this->leftColSize;
-}
+        uint64_t leftValue = this->left->getColumn(this->leftColumns[0]);
+        this->right->iterateValue(this->rightSelection, leftValue);
 
-bool IndexJoiner::hasSelection(const Selection& selection)
-{
-    return this->left->hasSelection(selection) || this->right->hasSelection(selection);
+        std::memset(rightResults.data(), 0, sizeof(uint64_t) * rightResults.size());
+        size_t rightCount = 0;
+        while (this->right->getNext())
+        {
+            for (auto& c: rightColumns)
+            {
+                rightResults[c.second] += this->right->getColumn(c.first);
+            }
+            rightCount++;
+        }
+
+        bool hasNext = true;
+        int32_t leftCount = 0;
+
+        if (rightCount > 0)
+        {
+            uint64_t value;
+            do
+            {
+                for (auto& c: leftColumns)
+                {
+                    results[c.second] += this->left->getColumn(c.first) * rightCount;
+                }
+                leftCount++;
+                if (!this->left->getNext())
+                {
+                    hasNext = false;
+                    break;
+                }
+
+                value = this->left->getColumn(this->leftColumns[0]);
+            }
+            while (value == leftValue);
+        }
+        else if (!this->left->getNext()) return;
+
+        for (int i = 0; i < static_cast<int32_t>(rightResults.size()); i++)
+        {
+            results[i] += rightResults[i] * leftCount;
+        }
+
+        count += leftCount * rightCount;
+#ifdef COLLECT_JOIN_SIZE
+        this->rowCount += leftCount * rightCount;
+#endif
+        if (!hasNext) return;
+    }
 }
 
 void IndexJoiner::printPlan(unsigned int level)

@@ -22,12 +22,11 @@ public:
             selectionMap[sel.getId()] = sel;
         }
 
-        auto map = selectionMap;
         root->requireSelections(selectionMap);
 
         std::vector<uint32_t> columnIds;
         std::unordered_map<uint32_t, uint32_t> backMap;
-        for (auto& sel: map)
+        for (auto& sel: selectionMap)
         {
             backMap[sel.second.getId()] = static_cast<unsigned int>(columnIds.size());
             columnIds.push_back(root->getColumnForSelection(sel.second));

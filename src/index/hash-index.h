@@ -6,25 +6,18 @@
 
 #include "../util.h"
 #include "../settings.h"
-
-class ColumnRelation;
+#include "index.h"
 
 /**
  * Index for a given relation and column.
  * Maps value to a list of row ids.
  */
-class HashIndex
+class HashIndex: public Index
 {
 public:
     HashIndex(ColumnRelation& relation, uint32_t column);
-    DISABLE_COPY(HashIndex);
 
-    void build();
+    void build() final;
 
     std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable; // value to rowid
-    ColumnRelation& relation;
-    uint32_t column;
-
-    std::atomic_flag buildStarted = ATOMIC_FLAG_INIT;
-    std::atomic<bool> buildCompleted { false };
 };

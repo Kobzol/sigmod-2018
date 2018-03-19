@@ -5,6 +5,7 @@
 /**
  * Joins two iterators using NLJ on the left iterator and indexed access to the right iterator.
  */
+template <bool HAS_MULTIPLE_JOINS>
 class IndexJoiner: public Joiner
 {
 public:
@@ -12,22 +13,19 @@ public:
 
     bool getNext() final;
 
-    uint64_t getValue(const Selection& selection) final;
-    uint64_t getColumn(uint32_t column) final;
-
-    bool getValueMaybe(const Selection& selection, uint64_t& value) final;
-    bool hasSelection(const Selection& selection) final;
-
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
+    void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
+    void aggregateDirect(std::vector<uint64_t>& results,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                         size_t& count);
 
-    uint32_t getColumnForSelection(const Selection& selection) final;
-
-    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
 
     std::string getJoinName() final
     {
         return "NL";
     }
+};
 
 	void printPlan(unsigned int level);
 
@@ -35,5 +33,5 @@ public:
     Selection leftSel;
     Selection rightSel;
 
-    uint32_t leftColSize;
-};
+template class IndexJoiner<false>;
+template class IndexJoiner<true>;

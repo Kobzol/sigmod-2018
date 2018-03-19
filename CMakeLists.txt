@@ -17,9 +17,15 @@ set(SOURCE_FILES
         src/aggregator.cpp
         src/database.cpp
         src/executor.cpp
-        src/index/sort-index.cpp
-        src/index/hash-index.cpp
         src/io.cpp
+        src/stats.cpp
+        src/timer.cpp
+        src/query.cpp
+        src/emit/filter-compiler.cpp
+        src/index/hash-index.cpp
+        src/index/index.cpp
+        src/index/primary-index.cpp
+        src/index/sort-index.cpp
         src/join/hash-joiner.cpp
         src/join/index-joiner.cpp
         src/join/joiner.cpp
@@ -31,6 +37,8 @@ set(SOURCE_FILES
         src/relation/hash-filter-iterator.cpp
         src/relation/iterator.cpp
         src/relation/maxdiff_histogram.cpp
+        src/relation/primary-index-iterator.cpp
+        src/relation/sort-index-iterator.cpp
         src/relation/sort-filter-iterator.cpp
         src/stats.cpp
         src/timer.cpp
@@ -39,5 +47,5 @@ set(SOURCE_FILES
         src/aggregation/compute.cpp
 )
 
-add_executable(sigmod-2018 src/main_win.cpp ${SOURCE_FILES})
-#add_executable(tester ${SOURCE_FILES} src/test/main.cpp)
+add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
+add_executable(tester src/test/main.cpp ${SOURCE_FILES})

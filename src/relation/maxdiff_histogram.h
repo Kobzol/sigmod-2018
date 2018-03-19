@@ -34,14 +34,18 @@ class MaxdiffHistogram
 
 	std::vector<HashMap<uint64_t, uint32_t>> fullhistograms;
 public:
-	
+
 	std::vector<column_statistics> columnStats;
 
 	void loadRelation(ColumnRelation& relation);
 
 	uint32_t estimateResult(const Filter& filter);
+	uint64_t maxValue(uint32_t colId)
+    {
+        return histogram[colId][histogramCount[colId] - 1].max_value;
+    }
 	uint64_t maxValue(uint32_t colId) { return histogram[colId][histogramCount[colId] - 1].max_value; }
 
 	void print();
-	
+
 };

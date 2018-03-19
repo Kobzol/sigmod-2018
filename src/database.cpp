@@ -15,6 +15,11 @@ SortIndex& Database::getSortIndex(uint32_t relation, uint32_t column)
     return *this->sortIndices[this->getGlobalColumnId(relation, column)];
 }
 
+PrimaryIndex& Database::getPrimaryIndex(uint32_t relation, uint32_t column)
+{
+    return *this->primaryIndices[this->getGlobalColumnId(relation, column)];
+}
+
 void Database::addJoinSize(const Join& join, int64_t size)
 {
     auto key = this->createJoinKey(join);

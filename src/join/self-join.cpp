@@ -1,11 +1,10 @@
-#include <cassert>
 #include "self-join.h"
 
 SelfJoin::SelfJoin(Iterator& inner, std::vector<Selection> selections):
     inner(inner), selections(std::move(selections))
 {
-    assert(selections.size() > 1);
-    this->selectionSize = static_cast<int32_t>(selections.size() - 1);
+    assert(this->selections.size() > 1);
+    this->selectionSize = static_cast<int32_t>(this->selections.size() - 1);
 }
 
 bool SelfJoin::getNext()
@@ -66,6 +65,18 @@ bool SelfJoin::hasSelection(const Selection& selection)
 std::unique_ptr<Iterator> SelfJoin::createIndexedIterator()
 {
     return this->inner.createIndexedIterator();
+}
+
+void SelfJoin::dumpPlan(std::stringstream& ss)
+{
+    ss << "SJ(";
+    this->inner.dumpPlan(ss);
+    ss << ")";
+}
+
+int64_t SelfJoin::predictSize()
+{
+    return this->inner.predictSize();
 }
 
 void SelfJoin::printPlan(unsigned int level)

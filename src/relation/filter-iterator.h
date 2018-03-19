@@ -26,7 +26,7 @@ public:
         return filterReduction;
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator() final;
+    std::unique_ptr<Iterator> createIndexedIterator() override;
 
     int64_t predictSize() override;
 
@@ -40,7 +40,7 @@ public:
         return "FI";
     }
 
-    bool passesFilters();
+    virtual bool passesFilters();
 
 	void printPlan(unsigned int level);
 
@@ -51,3 +51,16 @@ public:
 
     size_t rowCount = 0;
 };
+
+inline bool passesFilter(const Filter& filter, uint64_t value)
+{
+    switch (filter.oper)
+    {
+        case '=': return value == filter.value;
+        case '<': return value < filter.value;
+        case '>': return value > filter.value;
+        default: assert(false);
+    }
+
+    return false;
+}

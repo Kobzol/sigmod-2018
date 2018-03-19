@@ -128,14 +128,18 @@ class Filter
 {
 public:
     Filter() = default;
-    Filter(const Selection& selection, char oper, uint64_t value) : selection(selection), oper(oper), value(value)
+    Filter(const Selection& selection, uint64_t value, bool(*evaluator)(uint64_t), char oper)
+            : selection(selection), value(value), evaluator(evaluator), oper(oper)
     {
 
     }
 
+    bool isSkippable() const;
+
     Selection selection;
-    char oper;
     uint64_t value;
+    bool(*evaluator)(uint64_t);
+    char oper;
 
 	void print()
 	{

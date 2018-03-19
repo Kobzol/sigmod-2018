@@ -83,11 +83,11 @@ public:
         return this->rowIndex < this->relation->getRowCount();
     }
 
-    uint64_t getValue(const Selection& selection) final
+    uint64_t getValue(const Selection& selection) override
     {
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), selection.column);
     }
-    uint64_t getColumn(uint32_t column) final
+    uint64_t getColumn(uint32_t column) override
     {
         return this->relation->getValue(static_cast<size_t>(this->rowIndex), column);
     }
@@ -106,7 +106,7 @@ public:
         return this->binding == selection.binding;
     }
 
-    bool getValueMaybe(const Selection& selection, uint64_t& value) final;
+    bool getValueMaybe(const Selection& selection, uint64_t& value) override;
 
     int32_t getColumnCount() final
     {

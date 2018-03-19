@@ -47,6 +47,7 @@ int main(int argc, char** argv)
     Timer queryLoadTimer;
     std::vector<Query> allQueries;
     std::unordered_map<std::string, uint32_t> cachedJoins;
+    size_t joinsFilteredByMinMax = 0;
 #endif
 
     Executor executor;
@@ -59,7 +60,7 @@ int main(int argc, char** argv)
             auto queryCount = static_cast<int32_t>(queries.size());
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
-#ifdef REAL_RUN
+#ifdef USE_THREADS
             #pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
 #else
@@ -122,6 +123,18 @@ int main(int argc, char** argv)
                             break;
                         }
                     }
+
+#ifdef USE_SORT_INDEX
+                    auto& l = predicate.selections[0];
+                    auto& r = predicate.selections[1];
+                    auto li = &database.getSortIndex(l.relation, l.column);
+                    auto ri = &database.getSortIndex(r.relation, r.column);
+
+                    if (li->maxValue <= ri->minValue || ri->maxValue <= li->minValue)
+                    {
+                        joinsFilteredByMinMax++;
+                    }
+#endif
                 }
 
                 if (cacheable)
@@ -142,24 +155,27 @@ int main(int argc, char** argv)
                 {
                     filterEqualsCount++;
                 }
+                if (filter.isSkippable())
+                {
+                    filtersSkippedByHistogram++;
+                }
             }
 #endif
         }
     }
 
 #ifdef STATISTICS
+    std::cerr << "Empty hash table count: " << emptyHashTableCount << std::endl;
+    std::cerr << "Avg rows in hash: " << averageRowsInHash / (std::max(1UL, averageRowsInHashCount.load()))
+              << std::endl;
+
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
     });
 
-    for (int i = 0; i < 15; i++)
+    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 5); i++)
     {
-        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << ' ';
-        for (auto& r: allQueries[i].relations)
-        {
-            std::cerr << r << " (" << database.relations[r].getRowCount() << ") ";
-        }
-        std::cerr << std::endl;
+        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;
@@ -205,6 +221,8 @@ int main(int argc, char** argv)
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
     std::cerr << "Self-join count: " << selfJoinCount << std::endl;
     std::cerr << std::endl;*/
+
+    std::cerr << std::flush;
 #endif
 
     std::quick_exit(0);

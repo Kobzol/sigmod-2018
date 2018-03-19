@@ -14,6 +14,8 @@
 #include "aggregation/aggregate.h"
 #include "aggregation/aggregateSort.h"
 #include "aggregation/compute.h"
+#include "relation/sort-index-iterator.h"
+#include "relation/primary-index-iterator.h"
 #include "join/self-join.h"
 #include "timer.h"
 #include "join/index-joiner.h"
@@ -54,6 +56,13 @@ void Executor::createViews(Database& database,
 	{
 		filtersByBindings[filter.selection.binding].push_back(filter);
 	}
+
+    // assign a filter iterator for filtered bindings
+    for (auto& filterGroup: filtersByBindings)
+    {
+        std::sort(filterGroup.second.begin(), filterGroup.second.end(), [](const Filter& lhs, const Filter& rhs) {
+            return lhs.oper == '=';
+        });
 
 	// Pro kazdou dvojici (tabulka -> seznam filtru)
 	for (auto& filterGroup : filtersByBindings)
@@ -126,10 +135,20 @@ void Executor::createViews(Database& database,
 			));
 		views[binding] = container.back().get();
 	}
+    // assign self-joins
+    for (auto& kv: query.selfJoins)
+    {
+        auto it = views.find(kv.first);
+        container.push_back(std::make_unique<SelfJoin>(
+                *it->second,
+                kv.second
+        ));
+        views[kv.first] = container.back().get();
+    }
 #endif
 }
 
-void createHashJoin(Iterator* left,
+static void createHashJoin(Iterator* left,
                     Iterator* right,
                     uint32_t leftIndex,
                     std::vector<std::unique_ptr<Iterator>>& container,
@@ -151,28 +170,44 @@ void createHashJoin(Iterator* left,
                 *join
         ));
     }
-    else container.push_back(std::make_unique<HashJoiner<false>>(
+    else
+    {
+        container.push_back(std::make_unique<HashJoiner<false>>(
                 left,
                 right,
                 leftIndex,
                 *join
         ));
+    }
 }
-void createIndexJoin(Iterator* left,
+static void createIndexJoin(Iterator* left,
                     Iterator* right,
                     uint32_t leftIndex,
                     std::vector<std::unique_ptr<Iterator>>& container,
                     Join* join)
 {
     container.push_back(right->createIndexedIterator());
-    container.push_back(std::make_unique<IndexJoiner>(
-            left,
-            container.back().get(),
-            leftIndex,
-            *join
-    ));
+
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<IndexJoiner<true>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
+    else
+    {
+        container.push_back(std::make_unique<IndexJoiner<false>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
 }
-void createMergesortJoin(Iterator* left,
+static void createMergesortJoin(Iterator* left,
                          Iterator* right,
                          uint32_t leftIndex,
                          std::vector<std::unique_ptr<Iterator>>& container,
@@ -185,29 +220,63 @@ void createMergesortJoin(Iterator* left,
     }
 
     container.push_back(right->createIndexedIterator());
-    container.push_back(std::make_unique<MergeSortJoiner>(
-            left,
-            container.back().get(),
-            leftIndex,
-            *join
-    ));
+
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<MergeSortJoiner<true>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
+    else
+    {
+        container.push_back(std::make_unique<MergeSortJoiner<false>>(
+                left,
+                container.back().get(),
+                leftIndex,
+                *join
+        ));
+    }
 }
 
-void createJoin(Iterator* left,
+static void createJoin(Iterator* left,
                 Iterator* right,
                 uint32_t leftIndex,
                 std::vector<std::unique_ptr<Iterator>>& container,
                 Join* join,
+                const Query& query,
                 bool first,
                 bool last)
 {
+#ifndef INDEX_AVAILABLE
+    createHashJoin(left, right, leftIndex, container, join, false);
+    return;
+#endif
+
+    int index = 0;
+    for (; index < static_cast<int32_t>(join->size()); index++)
+    {
+        if (left->isSortedOn((*join)[index].selections[leftIndex]))
+        {
+            break;
+        }
+    }
+
+    if (index < static_cast<int32_t>(join->size()))
+    {
+        std::swap((*join)[0], (*join)[index]);
+    }
+
     if (first || left->isSortedOn((*join)[0].selections[leftIndex]))
     {
         createMergesortJoin(left, right, leftIndex, container, join);
     }
     else
     {
-        if (right->getFilterReduction() > 1)
+        // TODO: left now thinks it's empty when it's a SortIndexIterator without filters
+        if (left->predictSize() < 20000)
         {
             createIndexJoin(left, right, leftIndex, container, join);
         }
@@ -234,7 +303,8 @@ Iterator* Executor::createRootView(Database& database, Query& query,
     auto leftBinding = (*join)[0].selections[0].binding;
     auto rightBinding = (*join)[0].selections[1].binding;
 
-    createJoin(views[leftBinding], views[rightBinding], 0, container, join, true, query.joins.size() == 1);
+    createJoin(views[leftBinding], views[rightBinding], 0, container, join,
+               query, true, query.joins.size() == 1);
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -267,7 +337,8 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             continue;
         }
 
-        createJoin(left, right, leftIndex, container, join, false, i == (static_cast<int32_t>(query.joins.size()) - 1));
+        createJoin(left, right, leftIndex, container, join, query,
+                   false, i == (static_cast<int32_t>(query.joins.size()) - 1));
         root = container.back().get();
     }
 

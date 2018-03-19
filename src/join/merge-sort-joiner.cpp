@@ -1,30 +1,34 @@
 #include <iostream>
 #include "merge-sort-joiner.h"
 
-MergeSortJoiner::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+template <bool HAS_MULTIPLE_JOINS>
+MergeSortJoiner<HAS_MULTIPLE_JOINS>::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
         : Joiner(left, right, leftIndex, join)
 {
 
 }
 
-bool MergeSortJoiner::moveLeft()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::moveLeft()
 {
     if (!this->left->getNext()) return false;
-    this->leftValue = this->left->getColumn(this->leftColumn);
+    this->leftValue = this->left->getColumn(this->leftColumns[0]);
     return true;
 }
-bool MergeSortJoiner::moveRight()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::moveRight()
 {
     if (!this->right->getNext()) return false;
-    this->rightValue = this->right->getColumn(this->rightColumn);
+    this->rightValue = this->right->getColumn(this->rightColumns[0]);
     return true;
 }
-bool MergeSortJoiner::checkJoins()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::checkJoins()
 {
     for (int i = 1; i < joinSize; i++)
     {
-        if (this->left->getValue(this->join[i].selections[this->leftIndex]) !=
-            this->right->getValue(this->join[i].selections[this->rightIndex]))
+        if (this->left->getColumn(this->leftColumns[i]) !=
+            this->right->getColumn(this->rightColumns[i]))
         {
             return false;
         }
@@ -32,7 +36,8 @@ bool MergeSortJoiner::checkJoins()
     return true;
 }
 
-bool MergeSortJoiner::findSameRow()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::findSameRow()
 {
     if (NOEXPECT(!this->hasItems))
     {
@@ -60,7 +65,8 @@ bool MergeSortJoiner::findSameRow()
     return true;
 }
 
-bool MergeSortJoiner::getNext()
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::getNext()
 {
     while (true)
     {
@@ -82,10 +88,13 @@ bool MergeSortJoiner::getNext()
         }
         else if (!this->findSameRow()) return false;
 
-        // row is ready, joins must be checked
-        if (!this->checkJoins())
+        if (HAS_MULTIPLE_JOINS)
         {
-            continue;
+            // row is ready, joins must be checked
+            if (!this->checkJoins())
+            {
+                continue;
+            }
         }
 
 #ifdef COLLECT_JOIN_SIZE
@@ -95,57 +104,17 @@ bool MergeSortJoiner::getNext()
     }
 }
 
-uint64_t MergeSortJoiner::getValue(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<SelectionId, Selection> selections)
 {
-    uint64_t value;
-    if (this->left->getValueMaybe(selection, value)) return value;
-    return this->right->getValue(selection);
-}
-
-uint64_t MergeSortJoiner::getColumn(uint32_t column)
-{
-    if (column < static_cast<uint32_t>(this->leftColSize))
-    {
-        return this->left->getColumn(column);
-    }
-    return this->right->getColumn(column - this->leftColSize);
-}
-
-bool MergeSortJoiner::getValueMaybe(const Selection& selection, uint64_t& value)
-{
-    if (this->left->getValueMaybe(selection, value)) return true;
-    return this->right->getValueMaybe(selection, value);
-}
-
-uint32_t MergeSortJoiner::getColumnForSelection(const Selection& selection)
-{
-    if (this->left->hasSelection(selection))
-    {
-        return this->left->getColumnForSelection(selection);
-    }
-    return this->right->getColumnForSelection(selection) + this->leftColSize;
-}
-
-void MergeSortJoiner::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
-{
-    for (auto& j: this->join)
-    {
-        selections[j.selections[0].getId()] = j.selections[0];
-        selections[j.selections[1].getId()] = j.selections[1];
-    }
-
-    this->left->requireSelections(selections);
+    this->initializeSelections(selections);
 
     this->left->prepareSortedAccess(this->join[0].selections[this->leftIndex]);
     this->right->prepareSortedAccess(this->join[0].selections[this->rightIndex]);
-
-    this->leftColSize = static_cast<uint32_t>(this->left->getColumnCount());
-
-    this->leftColumn = this->left->getColumnForSelection(this->join[0].selections[this->leftIndex]);
-    this->rightColumn = this->right->getColumnForSelection(this->join[0].selections[this->rightIndex]);
 }
 
-void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -161,7 +130,7 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
         else rightColumns.emplace_back(columnIds[i] - this->left->getColumnCount(), i);
     }
 
-    if (this->joinSize == 1)
+    if (!HAS_MULTIPLE_JOINS)
     {
         this->aggregateDirect(results, leftColumns, rightColumns, count);
     }
@@ -185,17 +154,14 @@ void MergeSortJoiner::sumRows(std::vector<uint64_t>& results, const std::vector<
     }
 }
 
-bool MergeSortJoiner::hasSelection(const Selection& selection)
-{
-    return this->left->hasSelection(selection) || this->right->hasSelection(selection);
-}
-
-bool MergeSortJoiner::isSortedOn(const Selection& selection)
+template <bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::isSortedOn(const Selection& selection)
 {
     return selection == this->join[0].selections[this->leftIndex];
 }
 
-void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
+template <bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& results,
                                       const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                                       const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
                                       size_t& count)
@@ -220,22 +186,26 @@ void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
 
         value = this->leftValue;
         int32_t leftCount = 0;
-        do
-        {
-            for (auto& c: leftColumns)
-            {
-                results[c.second] += this->left->getColumn(c.first) * rightCount;
-            }
-            leftCount++;
-            if (!this->moveLeft())
-            {
-                hasNext = false;
-                break;
-            }
-        }
-        while (value == this->leftValue);
 
-        if (!rightColumns.empty())
+        if (EXPECT(rightCount > 0))
+        {
+            do
+            {
+                for (auto& c: leftColumns)
+                {
+                    results[c.second] += this->left->getColumn(c.first) * rightCount;
+                }
+                leftCount++;
+                if (!this->moveLeft())
+                {
+                    hasNext = false;
+                    break;
+                }
+            }
+            while (value == this->leftValue);
+        }
+
+        if (!rightColumns.empty() && leftCount > 0)
         {
             this->right->restore();
 
@@ -245,7 +215,7 @@ void MergeSortJoiner::aggregateDirect(std::vector<uint64_t>& results,
                 {
                     results[c.second] += this->right->getColumn(c.first) * leftCount;
                 }
-                this->moveRight();
+                this->right->getNext();
             }
         }
 

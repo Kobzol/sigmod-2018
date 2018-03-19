@@ -13,9 +13,6 @@
     size_t minTuples = std::numeric_limits<size_t>::max();
     size_t maxTuples = 0;
     size_t queryCount = 0;
-    size_t queryRowsMax = 0;
-    size_t queryRowsCount = 0;
-    std::string queryMaxRowsString;
     size_t joinCount = 0;
     size_t filterCount = 0;
     size_t filterEqualsCount = 0;
@@ -26,4 +23,8 @@
     size_t joinsOnFirstColumn = 0;
     size_t filtersOnFirstColumn = 0;
     size_t selfJoinCount = 0;
+    size_t filtersSkippedByHistogram = 0;
+    std::atomic<size_t> averageRowsInHash{0};
+    std::atomic<size_t> averageRowsInHashCount{0};
+    std::atomic<size_t> emptyHashTableCount{0};
 #endif

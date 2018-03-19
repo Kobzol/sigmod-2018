@@ -22,6 +22,7 @@
 #include "settings.h"
 #include "stats.h"
 #include "query.h"
+#include "emit/filter-compiler.h"
 
 #ifdef USE_HASH_INDEX
 #include "relation/maxdiff_histogram.h"
@@ -146,6 +147,29 @@ void loadDatabase(Database& database)
 		name++;
     }
 
+#ifdef USE_PRIMARY_INDEX
+    std::vector<std::vector<PrimaryRowEntry>> relationData(database.relations.size());
+
+#ifdef USE_THREADS
+#pragma omp parallel for
+    for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
+#else
+    for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
+#endif
+    {
+        auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
+        relationData[i].resize(static_cast<size_t>(rows));
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+            {
+                relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
+                                                                           static_cast<size_t>(c));
+            }
+        }
+    }
+#endif
+
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
@@ -156,12 +180,24 @@ void loadDatabase(Database& database)
 #ifdef USE_SORT_INDEX
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
 #endif
+#ifdef USE_PRIMARY_INDEX
+            database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
+                                                                             relationData[r]));
+#endif
         }
 
+#ifdef USE_PRIMARY_INDEX
+        // free memory
+        relationData[r].resize(0);
+        relationData[r].shrink_to_fit();
+#endif
+
+#ifdef USE_HISTOGRAM
         database.histograms.emplace_back();
+#endif
     }
 
-#ifdef REAL_RUN
+#ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #else
@@ -174,10 +210,13 @@ void loadDatabase(Database& database)
 #ifdef USE_SORT_INDEX
         database.sortIndices[i]->build();
 #endif
+#ifdef USE_PRIMARY_INDEX
+        database.primaryIndices[i]->build();
+#endif
     }
 
 #ifdef USE_HISTOGRAM
-#ifdef REAL_RUN
+#ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
 #else
@@ -352,14 +391,17 @@ void loadQuery(Query& query, std::string& line)
             predicate.selections[1].column = (uint32_t) readInt(line, index);
 
             // normalize the order of bindings in multiple-column joins
-            if (predicate.selections[0].binding > predicate.selections[1].binding)
+            if (predicate.selections[0].binding < predicate.selections[1].binding)
             {
                 std::swap(predicate.selections[0], predicate.selections[1]);
             }
         }
         else // parse filter
         {
-            query.filters.emplace_back(selection, oper, value);
+            query.filters.emplace_back(selection, value, nullptr, oper);
+#ifdef COMPILE_FILTERS
+            query.filters.back().evaluator = FilterCompiler().compile(std::vector<Filter>{ query.filters.back() });
+#endif
         }
 
         if (line[index++] == '|') break;

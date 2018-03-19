@@ -7,6 +7,7 @@
 #include "joiner.h"
 #include "../relation/iterator.h"
 #include "../bloom-filter.h"
+#include "../hash-table.h"
 
 /**
  * Joins two iterators using a hash join.
@@ -29,27 +30,24 @@ public:
     uint64_t getValue(const Selection& selection) final;
     uint64_t getColumn(uint32_t column) final;
 
+    uint32_t getColumnForSelection(const Selection& selection) override;
+    void setColumn(SelectionId selectionId, uint32_t column);
+    bool hasSelection(const Selection& selection) override;
+
     bool getValueMaybe(const Selection& selection, uint64_t& value) final;
 
-    void requireSelections(std::unordered_map<SelectionId, Selection>& selections) final;
+    void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
     void prepareColumnMappings(const std::unordered_map<SelectionId, Selection>& selections,
                                std::vector<Selection>& leftSelections);
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
-                       HashMap<uint64_t, std::vector<uint64_t>>& hashTable,
-                       BloomFilter<BLOOM_FILTER_SIZE>& filter) final;
+                       HashTable& hashTable) final;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
 
-    HashMap<uint64_t, std::vector<uint64_t>>::iterator getFromMap(uint64_t value)
+    std::vector<uint64_t>* getFromMap(uint64_t value)
     {
-#ifdef USE_BLOOM_FILTER
-        if (!this->bloomFilter.has(value))
-        {
-            return this->hashTable.end();
-        }
-#endif
-        return this->hashTable.find(value);
+        return this->hashTable.getRow(value);
     }
 
     std::string getJoinName() final
@@ -69,6 +67,11 @@ private:
         return &(*this->activeRow)[this->activeRowIndex * this->columnMapCols];
     }
 
+    void workerAggregate(Iterator* iterator, std::vector<uint64_t>& results,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
+                         const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
+                         std::atomic<size_t>& count);
+
     void aggregateDirect(std::vector<uint64_t>& results,
                          const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,
                          const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
@@ -77,14 +80,12 @@ private:
     const std::vector<uint64_t>* activeRow = nullptr;
     int32_t activeRowCount = 0;
     int activeRowIndex = -1;
-    uint32_t rightColumn;
 
-    HashMap<uint64_t, std::vector<uint64_t>> hashTable;
+    HashTable hashTable;
     std::vector<uint64_t> rightValues;
 
-    Selection rightSelection;
-
-    BloomFilter<BLOOM_FILTER_SIZE> bloomFilter;
+    std::vector<SelectionId> columnMap;
+    int32_t columnMapCols = 0;
 };
 
 template class HashJoiner<false>;

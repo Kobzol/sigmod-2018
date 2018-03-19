@@ -22,12 +22,16 @@ public:
 
     uint32_t getColumnForSelection(const Selection& selection) final;
 
+    int64_t predictSize() final;
+
     bool hasSelection(const Selection& selection) final;
 
     std::unique_ptr<Iterator> createIndexedIterator() final;
 
 	void printPlan(unsigned int level);
 
+
+    void dumpPlan(std::stringstream& ss) final;
 
     Iterator& inner;
     std::vector<Selection> selections;
