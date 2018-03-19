@@ -13,10 +13,10 @@ bool Compute::getNext()
 	if (input->getNext())
 	{
 		unsigned int pos = 0;
-		for (auto expr : exprs)
+		for (auto& expr : exprs)
 		{
 			uint64_t val = 1;
-			for (auto selection : expr)
+			for (auto& selection : expr)
 			{ 
 				uint32_t i = input->getValue(selection);
 				val *= i;
@@ -61,9 +61,9 @@ std::unique_ptr<Iterator> Compute::createIndexedIterator()
 
 void Compute::requireSelections(std::unordered_map<SelectionId, Selection>& selections)
 {
-	for (auto expr : exprs)
+	for (auto& expr : exprs)
 	{
-		for (auto selection : expr)
+		for (auto& selection : expr)
 		{
 			selections[selection.getId()] = selection;
 		}

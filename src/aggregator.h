@@ -34,7 +34,7 @@ public:
         }
 
         size_t count = 0;
-        std::vector<uint64_t> results(static_cast<size_t>(selectionMap.size()));
+        std::vector<uint64_t> results(static_cast<size_t>(query.selections.size()));
 #ifdef __linux__
         _mm_prefetch(results.data(), _MM_HINT_T0);
 #endif
@@ -53,7 +53,7 @@ public:
 
         std::stringstream ss;
         //for (auto& sel: query.selections)
-        for (int i = query.selections.size() -1; i >= 0; i--)
+        for (int i = 0; i < query.selections.size(); i++)
         {
             if (count == 0)
             {
@@ -61,7 +61,7 @@ public:
             }
             else
             {
-                uint64_t result = results[backMap[query.selections[i].getId()]];
+                uint64_t result = results[i];
                 ss << std::to_string(result) << ' ';
             }
         }

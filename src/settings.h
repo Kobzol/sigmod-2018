@@ -9,8 +9,6 @@
     #define LOAD_FROM_FILE INPUT_FILE
 #endif
 
-#define REAL_RUN
-
 //#define STATISTICS
 //#define MEASURE_REAL_TIME
 
