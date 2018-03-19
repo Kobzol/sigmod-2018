@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\aggregation\aggregate.cpp" />
+    <ClCompile Include="..\..\src\aggregation\compute.cpp" />
     <ClCompile Include="..\..\src\aggregator.cpp" />
     <ClCompile Include="..\..\src\common\cTimer.cpp" />
     <ClCompile Include="..\..\src\database.cpp" />
@@ -43,6 +45,8 @@
     <ClCompile Include="..\..\src\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\aggregation\aggregate.h" />
+    <ClInclude Include="..\..\src\aggregation\compute.h" />
     <ClInclude Include="..\..\src\aggregator.h" />
     <ClInclude Include="..\..\src\common\cTimer.h" />
     <ClInclude Include="..\..\src\database.h" />

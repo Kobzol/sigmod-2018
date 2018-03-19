@@ -16,6 +16,10 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 	{
 		fullhistograms.emplace_back();
+		columnStats.emplace_back();
+		columnStats[i].cardinality = 0;
+		columnStats[i].min = -1;
+		columnStats[i].max = 0;
 	}
 
 #ifdef TRANSPOSE_RELATIONS
@@ -27,15 +31,22 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 		for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 		{
 #endif
-			fullhistograms[i][relation.getValue(j, i)]++;
+			auto value = relation.getValue(j, i);
+			fullhistograms[i][value]++;
+			columnStats[i].min = value < columnStats[i].min ? value : columnStats[i].min;
+			columnStats[i].max = value > columnStats[i].max ? value : columnStats[i].max;
 		}
+
+
 
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
     {
+		columnStats[i].cardinality = fullhistograms[i].size();
+
         sorted_values.clear();
         bool unique = true;
 
-        for (auto element : fullhistograms[i])
+        for (auto& element : fullhistograms[i])
         {
             sorted_values[element.first] = element.second;
             unique &= element.second == 1;
@@ -50,7 +61,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             // computing the diffs between neighbors and searching for the greatest BUCKET_N diffs
             int c = 0;
             auto last = sorted_values.begin()->second;
-            for (auto element : sorted_values)
+            for (auto& element : sorted_values)
             {
                 int diff = (int) last - element.second;
                 last = element.second;
@@ -77,7 +88,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             }
 
             // marking the border values
-            for (auto it : buckets_order)
+            for (auto& it : buckets_order)
             {
                 isBorder[it] = true;
             }
@@ -92,7 +103,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             c = 0;
             int distinct_values = 0;
             uint64_t frequency = 0;
-            for (auto element : sorted_values)
+            for (auto& element : sorted_values)
             {
                 if (isBorder[c])
                 {
@@ -121,7 +132,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             histogram.push_back(hist);
             int step_count = fullhistograms[i].size() / BUCKET_N;
             int c = 0, bucket_c = 0;
-            for (auto element : sorted_values)
+            for (auto& element : sorted_values)
             {
                 // TODO: rewrite with direct access to sorted_values
                 if (c == step_count)
@@ -226,4 +237,14 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 		return sum;
 	}
 	return 0;
+}
+
+
+void MaxdiffHistogram::print()
+{
+	int i = 0;
+	for (auto s : columnStats)
+	{
+		std::cout << i++ << ": " << s.cardinality << ", (" << s.min << ", " << s.max << ");  ";
+	}
 }

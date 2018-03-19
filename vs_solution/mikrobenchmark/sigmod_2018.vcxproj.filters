@@ -16,6 +16,9 @@
     <Filter Include="common">
       <UniqueIdentifier>{662c4953-d104-46cf-9e35-0b66e81f88ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="aggregate">
+      <UniqueIdentifier>{3361599b-b51c-45f9-a85b-71c7e9f2af44}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\index\hash-index.cpp">
@@ -72,6 +75,12 @@
     <ClCompile Include="..\..\src\join\merge-sort-joiner.cpp">
       <Filter>join</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\aggregation\aggregate.cpp">
+      <Filter>aggregate</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\aggregation\compute.cpp">
+      <Filter>aggregate</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\index\hash-index.h">
@@ -127,6 +136,12 @@
     </ClInclude>
     <ClInclude Include="..\..\src\join\merge-sort-joiner.h">
       <Filter>join</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregation\aggregate.h">
+      <Filter>aggregate</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\aggregation\compute.h">
+      <Filter>aggregate</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
