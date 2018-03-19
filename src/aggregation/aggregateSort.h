@@ -60,6 +60,26 @@ public:
 
 	void printPlan(unsigned int level) override;
 
+	bool isSortedOn(const Selection& selection) override
+	{
+		return selection == groupBy;
+	}
+
+	bool supportsIterateValue() override
+	{
+		return true;
+	}
+
+	void prepareIterateValue() override
+	{
+		iterateInit = false;
+	}
+
+	RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator) const;
+
+	void iterateValue(const Selection& selection, uint64_t value) final;
+
+	bool iterateInit;
 
 	bool firstIt;
 	uint32_t binding;
@@ -68,6 +88,12 @@ public:
 	
 	static const unsigned int MAX_ROW_SIZE = 64;
 	uint64_t currentRow[MAX_ROW_SIZE];
+
+	std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable;
+	HashMap<uint64_t, std::vector<uint64_t>>::iterator htIterator;
+	bool getFromHashTable;
+	bool gotFromHashTable;
+	bool find;
 
 	ColumnRelation* relation;
 	SortIndex* sortIndex;

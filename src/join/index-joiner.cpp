@@ -130,7 +130,7 @@ bool IndexJoiner::hasSelection(const Selection& selection)
 void IndexJoiner::printPlan(unsigned int level)
 {
 	printIndent(level);
-	std::cout << "IndexJoin <" << operatorIndex << "> [";
+	std::cout << "NestedLoop <" << operatorIndex << "> [";
 
 	bool b = false;
 	for (auto &predicate : this->join)
