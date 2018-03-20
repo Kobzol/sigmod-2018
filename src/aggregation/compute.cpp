@@ -17,10 +17,10 @@ bool Compute::getNext()
 		{
 			uint64_t val = 1;
 			for (auto& selection : expr)
-			{ 
-				uint32_t i = input->getValue(selection);
-				val *= i;
+			{
+				val *= input->getValue(selection);
 			}
+            assert(!expr.empty());
 
 			row[pos] = val;
 
