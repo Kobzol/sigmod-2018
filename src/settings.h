@@ -10,14 +10,13 @@
 #endif
 
 #define MEASURE_REAL_TIME
-#define STATISTICS
 
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
 //#define USE_HASH_INDEX
-#define USE_SORT_INDEX
-#define USE_PRIMARY_INDEX
+//#define USE_SORT_INDEX
+//#define USE_PRIMARY_INDEX
 //#define USE_SELF_JOIN
 //#define USE_SEQUENTIAL_FILTER
 
@@ -38,7 +37,11 @@
     #define BLOOM_FILTER_SIZE (2 << 3)
 #endif
 
-#define USE_THREADS
+#ifndef INDEX_AVAILABLE
+    #define USE_SEQUENTIAL_FILTER
+#endif
+
+//#define USE_THREADS
 #define QUERY_NUM_THREADS 20
 #define HASH_AGGREGATE_THREADS 4
 
