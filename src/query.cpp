@@ -4,7 +4,7 @@
 bool Filter::isSkippable() const
 {
 #ifdef USE_SORT_INDEX
-    auto index = &database.getSortIndex(this->selection.relation, this->selection.column);
+    auto index = database.getSortIndex(this->selection.relation, this->selection.column);
     uint64_t minValue = index->minValue;
     uint64_t maxValue = index->maxValue;
 

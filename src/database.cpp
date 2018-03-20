@@ -1,23 +1,36 @@
 #include "database.h"
+#include "relation/primary-index-iterator.h"
+#include "relation/sort-index-iterator.h"
+
+template <typename T>
+T* Database::getIndex(const std::vector<std::unique_ptr<T>>& indices, uint32_t relation, uint32_t column)
+{
+    auto& index = indices[this->getGlobalColumnId(relation, column)];
+    if (index->buildCompleted)
+    {
+        return index.get();
+    }
+    return nullptr;
+}
 
 uint32_t Database::getGlobalColumnId(uint32_t relation, uint32_t column)
 {
     return this->relations[relation].cumulativeColumnId + column;
 }
 
-HashIndex& Database::getHashIndex(uint32_t relation, uint32_t column)
+HashIndex* Database::getHashIndex(uint32_t relation, uint32_t column)
 {
-    return *this->hashIndices[this->getGlobalColumnId(relation, column)];
+    return this->getIndex(this->hashIndices, relation, column);
 }
 
-SortIndex& Database::getSortIndex(uint32_t relation, uint32_t column)
+SortIndex* Database::getSortIndex(uint32_t relation, uint32_t column)
 {
-    return *this->sortIndices[this->getGlobalColumnId(relation, column)];
+    return this->getIndex(this->sortIndices, relation, column);
 }
 
-PrimaryIndex& Database::getPrimaryIndex(uint32_t relation, uint32_t column)
+PrimaryIndex* Database::getPrimaryIndex(uint32_t relation, uint32_t column)
 {
-    return *this->primaryIndices[this->getGlobalColumnId(relation, column)];
+    return this->getIndex(this->primaryIndices, relation, column);
 }
 
 void Database::addJoinSize(const Join& join, int64_t size)
@@ -41,4 +54,21 @@ std::string Database::createJoinKey(const Join& join)
         key << predicate.selections[second].relation << '.' << predicate.selections[second].column;
     }
     return key.str();
+}
+
+std::unique_ptr<Iterator> Database::createIndexedIterator(ColumnRelation& relation, uint32_t binding,
+                                                          const std::vector<Filter>& filters)
+{
+    auto primary = this->getPrimaryIndex(relation.id, 0);
+    if (primary != nullptr) return std::make_unique<PrimaryIndexIterator>(&relation, binding, filters);
+    return std::make_unique<SortIndexIterator>(&relation, binding, filters);
+}
+
+std::unique_ptr<Iterator> Database::createFilteredIterator(ColumnRelation& relation, uint32_t binding,
+                                                           const std::vector<Filter>& filters)
+{
+#ifdef USE_SEQUENTIAL_FILTER
+    return std::make_unique<FilterIterator>(&relation, binding, filters);
+#endif
+    return this->createIndexedIterator(relation, binding, filters);
 }

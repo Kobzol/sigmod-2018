@@ -80,13 +80,9 @@ void Executor::createViews(Database& database,
                                                           filterGroup.second,
                                                           equalsIndex);
         }
-        else filter = std::make_unique<FILTER_ITERATOR>(relation,
-                                                        binding,
-                                                        filterGroup.second);
+        else filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
 #else
-        auto filter = std::make_unique<FILTER_ITERATOR>(relation,
-                                                        binding,
-                                                        filterGroup.second);
+        auto filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
 #endif
         views.insert({ binding, filter.get() });
         container.push_back(std::move(filter));

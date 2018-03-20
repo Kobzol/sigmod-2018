@@ -11,7 +11,7 @@ HashFilterIterator::HashFilterIterator(ColumnRelation* relation, uint32_t bindin
         this->hashFilter = this->filters[equalsIndex];
         std::swap(this->filters[0], this->filters[equalsIndex]);
         this->startFilterIndex = 1;
-        this->index = &database.getHashIndex(this->hashFilter.selection.relation, this->hashFilter.selection.column);
+        this->index = database.getHashIndex(this->hashFilter.selection.relation, this->hashFilter.selection.column);
 
         auto it = this->index->hashTable.find(this->hashFilter.value);
         if (it != this->index->hashTable.end())
@@ -55,7 +55,7 @@ bool HashFilterIterator::skipSameValue(const Selection& selection)
 
 void HashFilterIterator::iterateValue(const Selection& selection, uint64_t value)
 {
-    this->index = &database.getHashIndex(selection.relation, selection.column);
+    this->index = database.getHashIndex(selection.relation, selection.column);
     auto it = this->index->hashTable.find(value);
     if (it != this->index->hashTable.end())
     {

@@ -62,7 +62,7 @@ bool SortIndexIterator::getNext()
 
 SortIndex* SortIndexIterator::getIndex(uint32_t relation, uint32_t column)
 {
-    return &database.getSortIndex(relation, column);
+    return database.getSortIndex(relation, column);
 }
 
 bool SortIndexIterator::skipSameValue(const Selection& selection)

@@ -21,6 +21,7 @@ public:
     uint32_t cumulativeColumnId;
     uint64_t tupleCount;
     uint64_t* data;
+    uint32_t id;
 
     uint64_t getValue(size_t row, size_t column)
     {

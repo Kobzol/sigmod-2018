@@ -28,6 +28,7 @@ void loadDatabase(Database& database)
         rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
         rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
+        rel.id = static_cast<uint32_t>(database.relations.size() - 1);
         columnId += rel.columnCount;
 
 #ifdef TRANSPOSE_RELATIONS
@@ -117,9 +118,9 @@ void loadDatabase(Database& database)
 #endif
     }
 
-#ifdef USE_PRIMARY_INDEX
     std::vector<std::vector<PrimaryRowEntry>> relationData(database.relations.size());
 
+#ifdef USE_PRIMARY_INDEX
 #ifdef USE_THREADS
 #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
@@ -127,14 +128,17 @@ void loadDatabase(Database& database)
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
 #endif
     {
-        auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
-        relationData[i].resize(static_cast<size_t>(rows));
-        for (int r = 0; r < rows; r++)
+        if (PrimaryIndex::canBuild(database.relations[i]))
         {
-            for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+            auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
+            relationData[i].resize(static_cast<size_t>(rows));
+            for (int r = 0; r < rows; r++)
             {
-                relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
-                                                                           static_cast<size_t>(c));
+                for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+                {
+                    relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
+                                                                               static_cast<size_t>(c));
+                }
             }
         }
     }
@@ -144,16 +148,10 @@ void loadDatabase(Database& database)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
         {
-#ifdef USE_HASH_INDEX
             database.hashIndices.push_back(std::make_unique<HashIndex>(database.relations[r], i));
-#endif
-#ifdef USE_SORT_INDEX
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
-#endif
-#ifdef USE_PRIMARY_INDEX
             database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
                                                                              relationData[r]));
-#endif
         }
 
 #ifdef USE_PRIMARY_INDEX
