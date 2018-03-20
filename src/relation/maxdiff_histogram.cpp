@@ -1,11 +1,8 @@
 #include "maxdiff_histogram.h"
 
-#include <map>
-#include <algorithm>
 
 void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 {
-	std::vector<HashMap<uint64_t, uint32_t>> fullhistograms;
 	std::map<uint64_t, uint32_t> sorted_values;
 
 	std::vector<uint32_t> diffs(static_cast<size_t>(relation.getRowCount()));
@@ -17,6 +14,10 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 	{
 		fullhistograms.emplace_back();
+		columnStats.emplace_back();
+		columnStats[i].cardinality = 0;
+		columnStats[i].min = -1;
+		columnStats[i].max = 0;
 	}
 
 #ifdef TRANSPOSE_RELATIONS
@@ -28,15 +29,22 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 		for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 		{
 #endif
-			fullhistograms[i][relation.getValue(j, i)]++;
+			auto value = relation.getValue(j, i);
+			fullhistograms[i][value]++;
+			columnStats[i].min = value < columnStats[i].min ? value : columnStats[i].min;
+			columnStats[i].max = value > columnStats[i].max ? value : columnStats[i].max;
 		}
+
+
 
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
     {
+		columnStats[i].cardinality = fullhistograms[i].size();
+
         sorted_values.clear();
         bool unique = true;
 
-        for (auto element : fullhistograms[i])
+        for (auto& element : fullhistograms[i])
         {
             sorted_values[element.first] = element.second;
             unique &= element.second == 1;
@@ -51,17 +59,17 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             // computing the diffs between neighbors and searching for the greatest BUCKET_N diffs
             int c = 0;
             auto last = sorted_values.begin()->second;
-            for (auto element : sorted_values)
+            for (auto& element : sorted_values)
             {
                 int diff = (int) last - element.second;
                 last = element.second;
-                diffs[c] = diff = (diff < 0 ? -diff : diff);
+				diffs[c] = diff;
                 isBorder[c] = false;
 
                 if (buckets_diff.size() == 0 || diff >= (int) buckets_diff.back())
                 {
                     auto it = std::lower_bound(buckets_diff.cbegin(), buckets_diff.cend(), diff,
-                                          std::greater<uint32_t>()); //< choosing '5' will return end()
+                                          std::greater<uint32_t>());
                     int pos = it - buckets_diff.cbegin();
 
                     buckets_diff.insert(it, diff);
@@ -78,7 +86,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             }
 
             // marking the border values
-            for (auto it : buckets_order)
+            for (auto& it : buckets_order)
             {
                 isBorder[it] = true;
             }
@@ -93,7 +101,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             c = 0;
             int distinct_values = 0;
             uint64_t frequency = 0;
-            for (auto element : sorted_values)
+            for (auto& element : sorted_values)
             {
                 if (isBorder[c])
                 {
@@ -122,7 +130,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
             histogram.push_back(hist);
             int step_count = fullhistograms[i].size() / BUCKET_N;
             int c = 0, bucket_c = 0;
-            for (auto element : sorted_values)
+            for (auto& element : sorted_values)
             {
                 // TODO: rewrite with direct access to sorted_values
                 if (c == step_count)
@@ -188,13 +196,14 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 		{
 			if (value < histogram[colId][i].max_value)
 			{
-				return sum + histogram[colId][0].frequency;
+				return sum +  (float)(value - last) / (histogram[colId][i].max_value - last) * histogram[colId][0].frequency;
 			}
 			if (value == histogram[colId][i].max_value)
 			{
 				return sum + histogram[colId][i].max_value_frequency;
 			}
 			sum += histogram[colId][i].max_value_frequency + histogram[colId][i].frequency;
+			last = histogram[colId][i].max_value;
 		}
 		return sum;
 	}
@@ -202,6 +211,7 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 	{
 		int pos = histogramCount[colId] - 1;
 		auto last = histogram[colId][pos].max_value;
+		auto lastfrequency = histogram[colId][pos].frequency;
 		uint32_t sum = 0;
 		if (value >= last)
 		{
@@ -212,15 +222,27 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 		{
 			if (value > histogram[colId][pos].max_value)
 			{
-				return sum;
+				return sum - (float)(value - histogram[colId][pos].max_value) / (last - histogram[colId][pos].max_value) * lastfrequency;
 			}
 			if (value == histogram[colId][pos].max_value)
 			{
 				return sum + histogram[colId][pos].max_value_frequency;
 			}
 			sum += histogram[colId][pos].max_value_frequency + histogram[colId][pos].frequency;
+			last = histogram[colId][pos].max_value;
+			lastfrequency = histogram[colId][pos].frequency;
 		}
 		return sum;
 	}
 	return 0;
 }
+
+
+//void MaxdiffHistogram::print()
+//{
+//	int i = 0;
+//	for (auto s : columnStats)
+//	{
+//		std::cout << i++ << ": " << s.cardinality << ", (" << s.min << ", " << s.max << ");  ";
+//	}
+//}

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <atomic>
 
 #include "../relation/column-relation.h"
 #include "joiner.h"
