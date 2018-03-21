@@ -19,7 +19,7 @@ class HashJoiner: public Joiner
 {
 public:
     // leftIndex - index of join selection that is on the left side
-    HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
+    HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join, bool last);
 
     bool getNext() final;
 
@@ -85,6 +85,7 @@ private:
 
     std::vector<SelectionId> columnMap;
     int32_t columnMapCols = 0;
+    bool last;
 };
 
 template class HashJoiner<false>;

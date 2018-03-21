@@ -7,7 +7,7 @@ AggregateIndex::AggregateIndex(ColumnRelation& relation, uint32_t column, SortIn
 
 }
 
-void AggregateIndex::build()
+bool AggregateIndex::build()
 {
     this->data.emplace_back(this->index.data[0].value);
     AggregateRow* row = &this->data.back();
@@ -34,4 +34,5 @@ void AggregateIndex::build()
     }
 
     this->buildCompleted = true;
+    return true;
 }

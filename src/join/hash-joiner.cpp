@@ -6,9 +6,10 @@
 #include <iostream>
 
 template <bool HAS_MULTIPLE_JOINS>
-HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
+HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join, bool last)
         : Joiner(left, right, leftIndex, join),
-          rightValues(join.size())
+          rightValues(join.size()),
+          last(last)
 {
 
 }
@@ -131,7 +132,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
 
     this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable);
 
-    if (database.hasIndexedIterator(this->rightSelection))
+    if (this->last && database.hasIndexedIterator(this->rightSelection))
     {
         this->right->prepareSortedAccess(this->rightSelection);
     }

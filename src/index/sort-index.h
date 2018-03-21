@@ -33,7 +33,7 @@ class SortIndex: public Index
 public:
     SortIndex(ColumnRelation& relation, uint32_t column);
 
-    void build() final;
+    bool build() final;
 
     std::vector<RowEntry> data;
     uint64_t minValue = (std::numeric_limits<uint64_t>::max)();

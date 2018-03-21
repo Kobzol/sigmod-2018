@@ -17,36 +17,46 @@ public:
         }
     }
 
-    bool doWork()
+    bool buildPrimaryIndices()
     {
-        for (int i = 0; i < static_cast<int32_t>(database.sortIndices.size()); i++)
+        for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
         {
-            bool found = false;
-#ifdef USE_PRIMARY_INDEX
-            auto& primary = database.primaryIndices[i];
+            auto& primary = database.primaryIndices[database.getGlobalColumnId(static_cast<uint32_t>(i), 0)];
             if (primary->take())
             {
                 primary->build();
-                found = true;
+                return true;
             }
-#endif
-#ifdef USE_SORT_INDEX
-            auto& sort = database.sortIndices[i];
-            if (sort->take())
+        }
+
+        return false;
+    }
+
+    bool buildSecondaryIndices()
+    {
+        for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
+        {
+            for (int c = 1; c < static_cast<int32_t>(database.relations[r].columnCount); c++)
             {
-                sort->build();
-                found = true;
+#ifdef USE_SORT_INDEX
+                auto& sort = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
+                                                                             static_cast<uint32_t>(c))];
+                if (sort->take())
+                {
+                    sort->build();
 
 #ifdef USE_AGGREGATE_INDEX
-                auto& aggregate = database.aggregateIndices[i];
-                if (aggregate->take())
-                {
-                    aggregate->build();
+                    auto& aggregate = database.aggregateIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
+                    static_cast<uint32_t>(c))];
+                    if (aggregate->take())
+                    {
+                        aggregate->build();
+                    }
+#endif
+                    return true;
                 }
-#endif
+                #endif
             }
-#endif
-            if (found) return true;
         }
 
         return false;
@@ -54,7 +64,11 @@ public:
 
     void work()
     {
-        while (!this->stopped && this->doWork());
+#ifdef USE_PRIMARY_INDEX
+        while (!this->stopped && this->buildPrimaryIndices());
+#endif
+
+        while (!this->stopped && this->buildSecondaryIndices());
     }
 
     void stop()

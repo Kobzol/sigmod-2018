@@ -23,9 +23,10 @@ class PrimaryIndex: public Index
 public:
     static bool canBuild(ColumnRelation& relation);
 
-    PrimaryIndex(ColumnRelation& relation, uint32_t column, std::vector<PrimaryRowEntry> data);
+    PrimaryIndex(ColumnRelation& relation, uint32_t column, std::vector<PrimaryRowEntry>* init);
 
-    void build() final;
+    bool build() final;
 
+    std::vector<PrimaryRowEntry>* init;
     std::vector<PrimaryRowEntry> data;
 };

@@ -6,6 +6,11 @@
 
 #ifdef STATISTICS
     double queryLoadTime = 0.0;
+    double relationLoadTime = 0.0;
+    double transposeTime = 0.0;
+    double indicesInitTime = 0.0;
+    double startIndexTime = 0.0;
+    double histogramTime = 0.0;
     size_t tupleCount = 0;
     size_t columnCount = 0;
     uint32_t minColumns = std::numeric_limits<uint32_t>::max();

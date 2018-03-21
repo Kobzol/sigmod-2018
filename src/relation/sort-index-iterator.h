@@ -30,6 +30,9 @@ public:
         this->rowIndex = this->start->row;
     }
 
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) final;
+
     std::string getFilterName() final
     {
         return "SFI";

@@ -37,7 +37,12 @@ int main(int argc, char** argv)
 #endif
     loadDatabase(database);
 #ifdef STATISTICS
-    std::cerr << "Relation load time: " << loadTimer.get() << std::endl;
+    std::cerr << "Relation load time: " << relationLoadTime << std::endl;
+    std::cerr << "Transpose time: " << transposeTime << std::endl;
+    std::cerr << "Indices init time: " << indicesInitTime << std::endl;
+    std::cerr << "Start index time: " << startIndexTime << std::endl;
+    std::cerr << "Histogram time: " << histogramTime << std::endl;
+    std::cerr << "Relation load total time: " << loadTimer.get() << std::endl;
 #endif
 
 #ifndef REAL_RUN

@@ -83,7 +83,7 @@ int main()
         for (int j = 0; j < static_cast<int32_t>(database.relations[i].columnCount); j++)
         {
             database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[i], j,
-                                                                             std::vector<PrimaryRowEntry>()));
+                                                                             nullptr));
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[i], j));
             database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[i], j,
                                                                                  *database.sortIndices.back()));

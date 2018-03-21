@@ -7,6 +7,7 @@ void loadDatabase(Database& database)
     std::string line;
     struct stat stats{};
 
+    Timer loadTimer;
     uint32_t columnId = 0;
     while (std::getline(std::cin, line))
     {
@@ -27,7 +28,7 @@ void loadDatabase(Database& database)
         addr += sizeof(uint64_t);
         rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
-        rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
+        rel.data = reinterpret_cast<uint64_t*>(addr);//new uint64_t[rel.tupleCount * rel.columnCount];
         rel.id = static_cast<uint32_t>(database.relations.size() - 1);
         columnId += rel.columnCount;
 
@@ -45,10 +46,10 @@ void loadDatabase(Database& database)
 
         delete[] data;
 #else
-        std::memcpy(rel.data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
+        //std::memcpy(rel.data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
 #endif
 
-        munmap(addr, length);
+        //munmap(addr, length);
         close(fd);
 
 #else
@@ -118,7 +119,16 @@ void loadDatabase(Database& database)
 #endif
     }
 
-    std::vector<std::vector<PrimaryRowEntry>> relationData(database.relations.size());
+#ifdef STATISTICS
+    relationLoadTime = loadTimer.get();
+#endif
+
+    Timer transposeTimer;
+    std::vector<std::vector<PrimaryRowEntry>*> relationData(database.relations.size());
+    for (auto& vec: relationData)
+    {
+        vec = new std::vector<PrimaryRowEntry>();
+    }
 
 #ifdef USE_PRIMARY_INDEX
 #ifdef USE_THREADS
@@ -131,19 +141,25 @@ void loadDatabase(Database& database)
         if (PrimaryIndex::canBuild(database.relations[i]))
         {
             auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
-            relationData[i].resize(static_cast<size_t>(rows));
+            relationData[i]->resize(static_cast<size_t>(rows));
             for (int r = 0; r < rows; r++)
             {
                 for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
                 {
-                    relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
-                                                                               static_cast<size_t>(c));
+                    (*relationData[i])[r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
+                                                                                  static_cast<size_t>(c));
                 }
             }
         }
     }
 #endif
 
+#ifdef STATISTICS
+    transposeTime = transposeTimer.get();
+    Timer indicesInitTimer;
+#endif
+
+    std::cerr << columnId << std::endl;
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
@@ -152,14 +168,20 @@ void loadDatabase(Database& database)
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
             database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[r], i,
                                                                                  *database.sortIndices.back()));
-            database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
-                                                                             relationData[r]));
+
+            if (i == 0)
+            {
+                database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
+                                                                                 relationData[r]));
+            }
+            else database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
+                                                                                  nullptr));
         }
 
 #ifdef USE_PRIMARY_INDEX
         // free memory
-        relationData[r].resize(0);
-        relationData[r].shrink_to_fit();
+        //relationData[r]->resize(0);
+        //relationData[r]->shrink_to_fit();
 #endif
 
 #ifdef USE_HISTOGRAM
@@ -167,7 +189,47 @@ void loadDatabase(Database& database)
 #endif
     }
 
+#ifdef STATISTICS
+    indicesInitTime = indicesInitTimer.get();
+#endif
+
+    Timer startIndexTimer;
+#ifdef USE_INDEX_THREADPOOL
     Timer timer;
+
+#ifdef USE_SORT_INDEX
+#pragma omp parallel for
+    for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
+    {
+        if (timer.get() > INDEX_THREAD_BAILOUT) continue;
+        bool ok = true;
+        for (int c = 0; r < static_cast<int32_t>(database.relations[r].columnCount); c++)
+        {
+            if (timer.get() > INDEX_THREAD_BAILOUT)
+            {
+                ok = false;
+                break;
+            }
+            auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r), 0)];
+            if (index->take())
+            {
+                index->build();
+
+#ifdef USE_AGGREGATE_INDEX
+                auto& aggregated = database.aggregateIndices[database.getGlobalColumnId(static_cast<uint32_t>(r), 0)];
+                if (aggregated->take())
+                {
+                    aggregated->build();
+                }
+#endif
+            }
+        }
+
+        if (!ok) continue;
+    }
+#endif
+    threadIndexPool.start();
+#else
 #ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
@@ -175,42 +237,41 @@ void loadDatabase(Database& database)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #endif
     {
-#ifdef USE_INDEX_THREADPOOL
-        if (timer.get() > INDEX_THREAD_BAILOUT) continue;
-#endif
-
 #ifdef USE_HASH_INDEX
         if (database.hashIndices[i]->take())
         {
             database.hashIndices[i]->build();
         }
 #endif
+        bool built = false;
+#ifdef USE_PRIMARY_INDEX
+        if (database.primaryIndices[i]->column == 0 && database.primaryIndices[i]->take())
+        {
+            built = database.primaryIndices[i]->build();
+        }
+#endif
 #ifdef USE_SORT_INDEX
-        if (database.sortIndices[i]->take())
+        if (!built && database.sortIndices[i]->take())
         {
             database.sortIndices[i]->build();
-        }
 
 #ifdef USE_AGGREGATE_INDEX
-        if (database.aggregateIndices[i]->take())
-        {
-            database.aggregateIndices[i]->build();
-        }
+            if (database.aggregateIndices[i]->take())
+            {
+                database.aggregateIndices[i]->build();
+            }
 #endif
-#endif
-#ifdef USE_PRIMARY_INDEX
-        if (database.primaryIndices[i]->take())
-        {
-            database.primaryIndices[i]->build();
         }
 #endif
     }
-
-#ifdef USE_INDEX_THREADPOOL
-    threadIndexPool.start();
 #endif
 
+#ifdef STATISTICS
+    startIndexTime = startIndexTimer.get();
+#endif
 #ifdef USE_HISTOGRAM
+    Timer histogramTimer;
+
 #ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
@@ -220,6 +281,9 @@ void loadDatabase(Database& database)
     {
         database.histograms[i].loadRelation(database.relations[i]);
     }
+#ifdef STATISTICS
+    histogramTime = histogramTimer.get();
+#endif
 #endif
 }
 uint64_t readInt(std::string& str, int& index)

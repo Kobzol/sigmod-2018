@@ -28,6 +28,8 @@ public:
     PrimaryRowEntry* lowerBound(uint64_t value) final;
     PrimaryRowEntry* upperBound(uint64_t value) final;
 
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) final;
 
     std::string getFilterName() final
     {

@@ -1,7 +1,6 @@
 - sort joins (self-joins, size, filtered)
 - select best join plan, predict join sizes
-- recreate index pointers on filtered join columns
 - crack aggregate index
-- prioritize indices
+- scale primary index to number of rows
 
 - dynamic programming

@@ -165,7 +165,26 @@ static void createHashJoin(Iterator* left,
         right = container.back().get();
     }
 
-    createTemplatedJoin<HashJoiner>(left, right, leftIndex, join, container);
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<HashJoiner<true>>(
+                left,
+                right,
+                leftIndex,
+                *join,
+                last
+        ));
+    }
+    else
+    {
+        container.push_back(std::make_unique<HashJoiner<false>>(
+                left,
+                right,
+                leftIndex,
+                *join,
+                last
+        ));
+    }
 }
 static void createIndexJoin(Iterator* left,
                     Iterator* right,
@@ -203,10 +222,6 @@ static void createJoin(Iterator* left,
                        bool last,
                        bool aggregable)
 {
-    bool hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
-    bool hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
-    bool bothIndices = hasLeftIndex && hasRightIndex;
-
     int index = 0;
     for (; index < static_cast<int32_t>(join->size()); index++)
     {
@@ -220,6 +235,10 @@ static void createJoin(Iterator* left,
     {
         std::swap((*join)[0], (*join)[index]);
     }
+
+    bool hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
+    bool hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
+    bool bothIndices = hasLeftIndex && hasRightIndex;
 
     if (bothIndices && (first || left->isSortedOn((*join)[0].selections[leftIndex])))
     {

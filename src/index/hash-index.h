@@ -17,7 +17,7 @@ class HashIndex: public Index
 public:
     HashIndex(ColumnRelation& relation, uint32_t column);
 
-    void build() final;
+    bool build() final;
 
     std::unordered_map<uint64_t, std::vector<uint64_t>> hashTable; // value to rowid
 };

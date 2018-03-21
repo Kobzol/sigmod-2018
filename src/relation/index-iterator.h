@@ -113,13 +113,17 @@ public:
             auto& filter = this->filters[i];
             if (filter.selection == selection)
             {
-                this->index = this->getIndex(selection.relation, selection.column);
-                this->sortFilter = filter;
-                this->iteratedSelection = selection;
-                this->createIterators(filter, &this->start, &this->end);
-                this->start--;
-                this->originalStart = this->start;
-                break;
+                auto index = this->getIndex(selection.relation, selection.column);
+                if (index != nullptr)
+                {
+                    this->index = index;
+                    this->sortFilter = filter;
+                    this->iteratedSelection = selection;
+                    this->createIterators(filter, &this->start, &this->end);
+                    this->start--;
+                    this->originalStart = this->start;
+                    break;
+                }
             }
         }
 
@@ -131,6 +135,7 @@ public:
         }
 
         this->index = this->getIndex(selection.relation, selection.column);
+        assert(this->index != nullptr);
         this->start = this->index->data.data() - 1;
         this->originalStart = this->start;
         this->end = this->index->data.data() + this->index->data.size();
@@ -166,14 +171,6 @@ public:
         }
 
         assert(iter == this->end);
-    }
-
-    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
-                                                    const Selection& selection) final
-    {
-        return std::make_unique<Child>(this->relation, this->binding, this->filters,
-                                       this->originalStart,
-                                       this->end);
     }
 
     Index* index;

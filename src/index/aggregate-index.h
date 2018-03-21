@@ -23,7 +23,7 @@ class AggregateIndex: public Index
 public:
     AggregateIndex(ColumnRelation& relation, uint32_t column, SortIndex& index);
 
-    void build() final;
+    bool build() final;
 
     std::vector<AggregateRow> data;
     SortIndex& index;

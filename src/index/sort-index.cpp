@@ -18,13 +18,14 @@ struct RadixTraitsRowEntry
 };
 
 SortIndex::SortIndex(ColumnRelation& relation, uint32_t column)
-        : Index(relation, column), data(static_cast<size_t>(relation.getRowCount()))
+        : Index(relation, column)
 {
 
 }
 
-void SortIndex::build()
+bool SortIndex::build()
 {
+    this->data.resize(static_cast<size_t>(relation.getRowCount()));
     auto rows = static_cast<int32_t>(this->data.size());
     for (int i = 0; i < rows; i++)
     {
@@ -38,4 +39,5 @@ void SortIndex::build()
     this->maxValue = this->data.back().value;
 
     this->buildCompleted = true;
+    return true;
 }

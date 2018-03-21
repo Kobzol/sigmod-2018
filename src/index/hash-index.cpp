@@ -6,10 +6,8 @@ HashIndex::HashIndex(ColumnRelation& relation, uint32_t column): Index(relation,
 
 }
 
-void HashIndex::build()
+bool HashIndex::build()
 {
-    if (this->buildStarted.test_and_set()) return;
-
     auto count = static_cast<int32_t>(this->relation.tupleCount);
     for (int i = 0; i < count; i++)
     {
@@ -18,4 +16,5 @@ void HashIndex::build()
     }
 
     this->buildCompleted = true;
+    return true;
 }

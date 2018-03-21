@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "public.complete"
+#define INPUT_FILE "small.complete"
 
 #ifndef NDEBUG
     #define STATISTICS
@@ -23,7 +23,7 @@
 //#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
 //#define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
-//#define COMPILE_FILTERS               // compile filters to x64 assembly
+#define COMPILE_FILTERS               // compile filters to x64 assembly
 //#define AGGREGATE_PUSH                  // use direct aggregation
 
 //#define USE_HISTOGRAM
@@ -61,7 +61,7 @@
 #define HASH_AGGREGATE_THREADS 4        // number of threads to aggregate results in top-level hash join
 
 //#define USE_INDEX_THREADPOOL
-#define INDEX_THREADS 8
+#define INDEX_THREADS 30
 #define INDEX_THREAD_BAILOUT 800
 
 //#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results

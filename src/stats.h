@@ -7,6 +7,11 @@
 #include <atomic>
 
 extern double queryLoadTime;
+extern double relationLoadTime;
+extern double transposeTime;
+extern double indicesInitTime;
+extern double startIndexTime;
+extern double histogramTime;
 extern size_t tupleCount;
 extern size_t columnCount;
 extern uint32_t minColumns;

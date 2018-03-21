@@ -1,6 +1,7 @@
 #include "sort-index-iterator.h"
 #include "../database.h"
 #include "../index/sort-index.h"
+#include "primary-index-iterator.h"
 
 #include <algorithm>
 #include <cmath>
@@ -103,4 +104,16 @@ bool SortIndexIterator::passesFilters()
     }
 
     return true;
+}
+
+std::unique_ptr<Iterator> SortIndexIterator::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                                      const Selection& selection)
+{
+    if (database.getPrimaryIndex(selection.relation, selection.column) != nullptr)
+    {
+        return std::make_unique<PrimaryIndexIterator>(this->relation, this->binding, this->filters);
+    }
+    else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters,
+                                                    this->originalStart,
+                                                    this->end);
 }

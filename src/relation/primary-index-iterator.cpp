@@ -1,4 +1,5 @@
 #include "primary-index-iterator.h"
+#include "sort-index-iterator.h"
 
 PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t binding,
                                            const std::vector<Filter>& filters)
@@ -118,4 +119,16 @@ bool PrimaryIndexIterator::skipSameValue(const Selection& selection)
         return false;
     }
     return this->getNext();
+}
+
+std::unique_ptr<Iterator> PrimaryIndexIterator::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                                      const Selection& selection)
+{
+    if (database.getPrimaryIndex(selection.relation, selection.column) != nullptr)
+    {
+        return std::make_unique<PrimaryIndexIterator>(this->relation, this->binding, this->filters,
+                                                      this->originalStart,
+                                                      this->end);
+    }
+    else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters);
 }
