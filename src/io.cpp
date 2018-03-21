@@ -125,12 +125,13 @@ void loadDatabase(Database& database)
 
     Timer transposeTimer;
     std::vector<std::vector<PrimaryRowEntry>*> relationData(database.relations.size());
+
+#ifdef USE_PRIMARY_INDEX
     for (auto& vec: relationData)
     {
         vec = new std::vector<PrimaryRowEntry>();
     }
 
-#ifdef USE_PRIMARY_INDEX
 #ifdef USE_THREADS
 #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
@@ -159,7 +160,6 @@ void loadDatabase(Database& database)
     Timer indicesInitTimer;
 #endif
 
-    std::cerr << columnId << std::endl;
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
@@ -195,28 +195,31 @@ void loadDatabase(Database& database)
 
     Timer startIndexTimer;
 #ifdef USE_INDEX_THREADPOOL
-    Timer timer;
-
 #ifdef USE_SORT_INDEX
+    int start = 0;
+#ifdef USE_PRIMARY_INDEX
+    start = 1;
+#endif
+
 #pragma omp parallel for
     for (int r = 0; r < static_cast<int32_t>(database.relations.size()); r++)
     {
-        if (timer.get() > INDEX_THREAD_BAILOUT) continue;
-        bool ok = true;
-        for (int c = 0; r < static_cast<int32_t>(database.relations[r].columnCount); c++)
+        if (startIndexTimer.get() > INDEX_THREAD_BAILOUT) continue;
+        for (int c = start; c < static_cast<int32_t>(database.relations[r].columnCount); c++)
         {
-            if (timer.get() > INDEX_THREAD_BAILOUT)
+            if (startIndexTimer.get() > INDEX_THREAD_BAILOUT)
             {
-                ok = false;
                 break;
             }
-            auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r), 0)];
+            auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
+                                                                          static_cast<uint32_t>(c))];
             if (index->take())
             {
                 index->build();
 
 #ifdef USE_AGGREGATE_INDEX
-                auto& aggregated = database.aggregateIndices[database.getGlobalColumnId(static_cast<uint32_t>(r), 0)];
+                auto& aggregated = database.aggregateIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
+                                                                                        static_cast<uint32_t>(c))];
                 if (aggregated->take())
                 {
                     aggregated->build();
@@ -224,8 +227,6 @@ void loadDatabase(Database& database)
 #endif
             }
         }
-
-        if (!ok) continue;
     }
 #endif
     threadIndexPool.start();
@@ -581,6 +582,7 @@ void loadQuery(Query& query, std::string& line)
         if (line[index++] == '|') break;
     }
 
+#ifdef STATISTICS
     for (auto& join: query.joins)
     {
         for (auto& j: join)
@@ -597,6 +599,7 @@ void loadQuery(Query& query, std::string& line)
             }
         }
     }
+#endif
 
     // load selections
     while (true)

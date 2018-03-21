@@ -3,10 +3,6 @@
 #include <cstdint>
 #include <vector>
 
-#include <iostream>
-#include <cassert>
-#include <algorithm>
-
 #include "../query.h"
 
 using FilterFn = bool(*)(uint64_t);

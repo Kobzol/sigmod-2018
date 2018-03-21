@@ -17,10 +17,10 @@
 
 //#define USE_HASH_INDEX
 #define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
-//#define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
+#define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
 //#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 
-//#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
+#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
 //#define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
@@ -61,9 +61,9 @@
 #define QUERY_NUM_THREADS 20            // number of threads to execute queries
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 
-//#define USE_INDEX_THREADPOOL
+#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30
-#define INDEX_THREAD_BAILOUT 800
+#define INDEX_THREAD_BAILOUT 1200       // how many milliseconds should the index be precalculated
 
 //#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results
 

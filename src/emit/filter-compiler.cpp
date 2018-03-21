@@ -1,5 +1,9 @@
 #include "filter-compiler.h"
 
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
@@ -66,7 +70,7 @@ FilterFn FilterCompiler::compile(std::vector<Filter> filters)
     // RET
     *eip++ = 0xC3;
 
-    assert(eip - reinterpret_cast<unsigned char*>(mem) <= allocSize);
+    assert(eip - reinterpret_cast<unsigned char*>(mem) <= static_cast<ptrdiff_t>(allocSize));
     return reinterpret_cast<FilterFn>(mem);
 }
 
