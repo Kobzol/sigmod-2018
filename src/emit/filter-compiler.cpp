@@ -1,7 +1,8 @@
 #include "filter-compiler.h"
 
-#include <algorithm>
-#include <cstddef>
+#ifdef __linux__
+#include <sys/mman.h>
+#endif
 
 static unsigned char getCmpOpcode(char oper)
 {
@@ -25,7 +26,11 @@ FilterFn FilterCompiler::compile(std::vector<Filter> filters)
     const size_t allocSize = 4096;
     const size_t predicateSize = 15; // MOVABS + CMP + Jcc
 
+#ifdef __linux__
     void* mem = mmap(nullptr, allocSize, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, 0, 0);
+#else
+	void* mem = nullptr;
+#endif
     auto* eip = reinterpret_cast<unsigned char*>(mem);
 
     // MOV al, 0x1
@@ -61,7 +66,7 @@ FilterFn FilterCompiler::compile(std::vector<Filter> filters)
     // RET
     *eip++ = 0xC3;
 
-    assert(eip - reinterpret_cast<unsigned char*>(mem) <= static_cast<ptrdiff_t>(allocSize));
+    assert(eip - reinterpret_cast<unsigned char*>(mem) <= allocSize);
     return reinterpret_cast<FilterFn>(mem);
 }
 

@@ -3,8 +3,7 @@
 #include <functional>   // std::greater
 #include <algorithm>
 #include <map>
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
 
 #include "../settings.h"
 #include "iterator.h"
@@ -32,18 +31,26 @@ struct column_statistics
 class MaxdiffHistogram
 {
 	std::vector<bool> isUnique;
+	std::vector<hist_bucket*> histogram_old;
+	std::vector<uint32_t> histogramCount_old;
+
+	
 	std::vector<hist_bucket*> histogram;
 	std::vector<uint32_t> histogramCount;
 
-	std::vector<HashMap<uint64_t, uint32_t>> fullhistograms;
+
 public:
 	
 	std::vector<column_statistics> columnStats;
+	std::vector<column_statistics> columnStats2;
 
 	void loadRelation(ColumnRelation& relation);
 
+	void loadRelation_old(ColumnRelation& relation);
+	bool compareBuckets();
+
 	uint32_t estimateResult(const Filter& filter);
-	uint64_t maxValue(uint32_t colId) { return histogram[colId][histogramCount[colId] - 1].max_value; }
+	uint64_t maxValue(uint32_t colId) { return histogram_old[colId][histogramCount_old[colId] - 1].max_value; }
 
 	//void print();
 	

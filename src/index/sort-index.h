@@ -36,6 +36,6 @@ public:
     void build() final;
 
     std::vector<RowEntry> data;
-    uint64_t minValue = std::numeric_limits<uint64_t>::max();
+    uint64_t minValue = (std::numeric_limits<uint64_t>::max)();
     uint64_t maxValue = 0;
 };
