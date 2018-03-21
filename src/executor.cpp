@@ -389,17 +389,17 @@ void createJoinNew(Iterator* left,
 		if (join->size() > 1)
 		{
 			container.push_back(std::make_unique<HashJoiner<true>>(
-				left,
 				right,
-				leftIndex,
+				left,
+				1 - leftIndex,
 				*join));
 		}
 		else
 		{
 			container.push_back(std::make_unique<HashJoiner<false>>(
-				left,
 				right,
-				leftIndex,
+				left,
+				1 - leftIndex,
 				*join));
 		}
 	}

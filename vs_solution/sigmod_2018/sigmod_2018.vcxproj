@@ -29,6 +29,7 @@
     <ClCompile Include="..\..\src\executor.cpp" />
     <ClCompile Include="..\..\src\index\hash-index-ext.cpp" />
     <ClCompile Include="..\..\src\index\hash-index.cpp" />
+    <ClCompile Include="..\..\src\index\index.cpp" />
     <ClCompile Include="..\..\src\index\sort-index.cpp" />
     <ClCompile Include="..\..\src\io.cpp" />
     <ClCompile Include="..\..\src\join\hash-joiner.cpp" />
@@ -43,7 +44,9 @@
     <ClCompile Include="..\..\src\relation\hash-filter-iterator.cpp" />
     <ClCompile Include="..\..\src\relation\iterator.cpp" />
     <ClCompile Include="..\..\src\relation\maxdiff_histogram.cpp" />
+    <ClCompile Include="..\..\src\relation\primary-index-iterator.cpp" />
     <ClCompile Include="..\..\src\relation\sort-filter-iterator.cpp" />
+    <ClCompile Include="..\..\src\relation\sort-index-iterator.cpp" />
     <ClCompile Include="..\..\src\stats.cpp" />
     <ClCompile Include="..\..\src\timer.cpp" />
   </ItemGroup>
@@ -59,6 +62,7 @@
     <ClInclude Include="..\..\src\executor.h" />
     <ClInclude Include="..\..\src\index\hash-index-ext.h" />
     <ClInclude Include="..\..\src\index\hash-index.h" />
+    <ClInclude Include="..\..\src\index\index.h" />
     <ClInclude Include="..\..\src\index\sort-index.h" />
     <ClInclude Include="..\..\src\io.h" />
     <ClInclude Include="..\..\src\join\hash-joiner.h" />
@@ -73,7 +77,9 @@
     <ClInclude Include="..\..\src\relation\hash-filter-iterator.h" />
     <ClInclude Include="..\..\src\relation\iterator.h" />
     <ClInclude Include="..\..\src\relation\maxdiff_histogram.h" />
+    <ClInclude Include="..\..\src\relation\primary-index-iterator.h" />
     <ClInclude Include="..\..\src\relation\sort-filter-iterator.h" />
+    <ClInclude Include="..\..\src\relation\sort-index-iterator.h" />
     <ClInclude Include="..\..\src\settings.h" />
     <ClInclude Include="..\..\src\stats.h" />
     <ClInclude Include="..\..\src\timer.h" />
