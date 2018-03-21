@@ -2,6 +2,7 @@
 #include "../stats.h"
 #include <atomic>
 #include <omp.h>
+#include <iostream>
 
 template <bool HAS_MULTIPLE_JOINS>
 HashJoiner<HAS_MULTIPLE_JOINS>::HashJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -131,7 +132,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     this->right->prepareSortedAccess(this->rightSelection);
 
 #ifdef STATISTICS
-    size_t avg = 0;
+    /*size_t avg = 0;
     for (auto& kv : this->hashTable.table)
     {
         avg += kv.second.size();
@@ -143,7 +144,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
         averageRowsInHash += avg;
     }
     else emptyHashTableCount++;
-    averageRowsInHashCount++;
+    averageRowsInHashCount++;*/
 #endif
 }
 
@@ -205,7 +206,7 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 
 template <bool HAS_MULTIPLE_JOINS>
 void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                                             size_t& count)
+                                             const std::vector<Selection>& selections, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;

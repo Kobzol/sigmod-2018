@@ -14,13 +14,13 @@ else()
 endif()
 
 set(SOURCE_FILES
-        src/aggregator.cpp
         src/database.cpp
         src/executor.cpp
         src/io.cpp
+        src/query.cpp
         src/stats.cpp
         src/timer.cpp
-        src/query.cpp
+        src/aggregation/aggregator.cpp
         src/emit/filter-compiler.cpp
         src/index/hash-index.cpp
         src/index/index.cpp
@@ -39,7 +39,7 @@ set(SOURCE_FILES
         src/relation/maxdiff_histogram.cpp
         src/relation/primary-index-iterator.cpp
         src/relation/sort-index-iterator.cpp
-)
+        src/aggregation/aggregated-iterator.cpp src/aggregation/aggregated-iterator.h src/index/aggregate-index.cpp src/index/aggregate-index.h src/aggregation/indexed-aggregated-iterator.cpp src/aggregation/indexed-aggregated-iterator.h)
 
 add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
 add_executable(tester src/test/main.cpp ${SOURCE_FILES})

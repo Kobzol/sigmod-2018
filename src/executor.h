@@ -23,9 +23,17 @@ private:
                      std::vector<std::unique_ptr<Iterator>>& container);
 
     /**
+     * Creates AggregatedIterators for all bindings.
+     */
+    void createAggregatedViews(const Query& query, std::unordered_map<uint32_t, Iterator*>& views,
+                               std::vector<std::unique_ptr<Iterator>>& container);
+
+    /**
      * Combines all joins in a query to create a single root iterator.
      */
     Iterator* createRootView(Database& database, Query& query,
                              std::unordered_map<uint32_t, Iterator*>& views,
                              std::vector<std::unique_ptr<Iterator>>& container);
+
+    void sum(Database& database, Query& query, Iterator* root);
 };

@@ -4,7 +4,7 @@
 #include "../database.h"
 #include "../hash-table.h"
 
-std::unique_ptr<Iterator> Joiner::createIndexedIterator()
+std::unique_ptr<Iterator> Joiner::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container)
 {
     assert(false);
     return std::unique_ptr<Iterator>();
@@ -33,6 +33,7 @@ void Joiner::fillHashTable(const Selection& hashSelection, const std::vector<Sel
     {
         uint64_t value = this->getColumn(hashColumn);
         auto vec = hashTable.insertRow(value, static_cast<uint32_t>(columnMapCols));
+        // TODO: check current value before reinserting row
 
         // materialize rows
         vec->resize(vec->size() + columnMapCols);
@@ -131,4 +132,9 @@ uint32_t Joiner::getColumnForSelection(const Selection& selection)
         return this->left->getColumnForSelection(selection);
     }
     return this->right->getColumnForSelection(selection) + this->leftColSize;
+}
+
+bool Joiner::hasBinding(uint32_t binding)
+{
+    return this->left->hasBinding(binding) || this->right->hasBinding(binding);
 }

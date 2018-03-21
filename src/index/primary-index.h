@@ -6,7 +6,7 @@
 
 #include "index.h"
 
-#define PRIMARY_INDEX_COLUMNS 2
+#define PRIMARY_INDEX_COLUMNS 4
 
 struct PrimaryRowEntry
 {

@@ -1,7 +1,5 @@
 #include "io.h"
 
-
-
 void loadDatabase(Database& database)
 {
     std::string line;
@@ -150,6 +148,8 @@ void loadDatabase(Database& database)
         {
             database.hashIndices.push_back(std::make_unique<HashIndex>(database.relations[r], i));
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
+            database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[r], i,
+                                                                                 *database.sortIndices.back()));
             database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
                                                                              relationData[r]));
         }
@@ -177,6 +177,10 @@ void loadDatabase(Database& database)
 #endif
 #ifdef USE_SORT_INDEX
         database.sortIndices[i]->build();
+
+#ifdef USE_AGGREGATE_INDEX
+        database.aggregateIndices[i]->build();
+#endif
 #endif
 #ifdef USE_PRIMARY_INDEX
         database.primaryIndices[i]->build();
@@ -223,7 +227,6 @@ static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
 void createComponents(Query& query)
 {
     std::unordered_map<uint32_t, std::unique_ptr<UnionFind>> components;
-
     for (auto& join: query.joins)
     {
         for (auto& pred: join)

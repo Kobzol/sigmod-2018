@@ -120,7 +120,8 @@ public:
         }
     }
 
-    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+    virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                         const std::vector<Selection>& selections, size_t& count)
     {
 
     }
@@ -129,7 +130,7 @@ public:
      * Creates an indexed version of this iterator.
      * It must support iterateValue.
      */
-    virtual std::unique_ptr<Iterator> createIndexedIterator() = 0;
+    virtual std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) = 0;
 
     /**
      * Saves the state of the iterator.
@@ -152,7 +153,7 @@ public:
 
     }
 
-    virtual void dumpPlan(std::stringstream& ss)
+    virtual void dumpPlan(std::ostream& ss)
     {
 
     }
@@ -170,6 +171,11 @@ public:
     virtual void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count)
     {
         assert(false);
+    }
+
+    virtual bool hasBinding(uint32_t binding)
+    {
+        return false;
     }
 
     int rowIndex = -1;

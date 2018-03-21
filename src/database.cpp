@@ -22,15 +22,17 @@ HashIndex* Database::getHashIndex(uint32_t relation, uint32_t column)
 {
     return this->getIndex(this->hashIndices, relation, column);
 }
-
 SortIndex* Database::getSortIndex(uint32_t relation, uint32_t column)
 {
     return this->getIndex(this->sortIndices, relation, column);
 }
-
 PrimaryIndex* Database::getPrimaryIndex(uint32_t relation, uint32_t column)
 {
     return this->getIndex(this->primaryIndices, relation, column);
+}
+AggregateIndex* Database::getAggregateIndex(uint32_t relation, uint32_t column)
+{
+    return this->getIndex(this->aggregateIndices, relation, column);
 }
 
 void Database::addJoinSize(const Join& join, int64_t size)

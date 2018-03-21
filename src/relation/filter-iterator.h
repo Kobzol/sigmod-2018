@@ -26,11 +26,11 @@ public:
         return filterReduction;
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator() override;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) override;
 
     int64_t predictSize() override;
 
-    void dumpPlan(std::stringstream& ss) final
+    void dumpPlan(std::ostream& ss) final
     {
         ss << this->getFilterName() << "(" << this->rowCount << ")";
     }

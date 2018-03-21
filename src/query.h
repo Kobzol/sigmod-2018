@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 #include "util.h"
 #include "settings.h"
@@ -16,6 +17,10 @@ public:
     static SelectionId getId(uint32_t relation, uint32_t binding, uint32_t column)
     {
         return relation * 1000 + binding * 100 + column;
+    }
+    static Selection aggregatedCount(uint32_t binding)
+    {
+        return {0, binding, 50};
     }
 
     Selection() = default;
@@ -129,6 +134,9 @@ public:
 class Query
 {
 public:
+    bool isAggregable() const;
+    bool isInJoin(const Selection& selection) const;
+
     std::vector<uint32_t> relations; // real ids of relations
     std::vector<Join> joins;
     std::vector<Filter> filters;
@@ -142,4 +150,7 @@ public:
     std::string plan;
     double time;
 #endif
+
+private:
+    mutable bool aggregable = false;
 };

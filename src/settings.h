@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "small.complete"
+#define INPUT_FILE "small.test"
 
 #ifndef NDEBUG
     #define STATISTICS
@@ -15,19 +15,25 @@
 //#define TRANSPOSE_RELATIONS
 
 //#define USE_HASH_INDEX
-//#define USE_SORT_INDEX
-//#define USE_PRIMARY_INDEX
-//#define USE_SELF_JOIN
+#define USE_SORT_INDEX
+#define USE_PRIMARY_INDEX
+#define USE_AGGREGATE_INDEX
+
+#define USE_SELF_JOIN
 //#define USE_SEQUENTIAL_FILTER
 
 //#define COMPILE_FILTERS
-//#define AGGREGATE_PUSH
+#define AGGREGATE_PUSH
 
 //#define USE_HISTOGRAM
 #define BUCKET_N 50
 
 #if defined(USE_SORT_INDEX) || defined(USE_PRIMARY_INDEX)
     #define INDEX_AVAILABLE
+#endif
+
+#ifndef USE_SORT_INDEX
+    #undef USE_AGGREGATE_INDEX
 #endif
 
 #define USE_BLOOM_FILTER
