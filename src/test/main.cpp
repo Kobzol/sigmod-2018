@@ -35,9 +35,9 @@ Database database;
 
 int main()
 {
-    std::vector<Filter> filters = {
-        Filter(Selection(0, 0, 0), '>', nullptr, 13),
-        Filter(Selection(0, 0, 0), '<', nullptr, 28)
+    /*std::vector<Filter> filters = {
+        Filter(Selection(0, 0, 0), 13, nullptr, '>'),
+        Filter(Selection(0, 0, 0), 28, nullptr, '<')
     };
 
     FilterCompiler compiler;
@@ -46,47 +46,53 @@ int main()
     std::cerr << fn(0) << std::endl;
     std::cerr << fn(13) << std::endl;
     std::cerr << fn(28) << std::endl;
-    std::cerr << fn(14) << std::endl;
+    std::cerr << fn(14) << std::endl;*/
 
     Query query;
-    std::string line = "0 1 2|0.1=1.0&1.1=2.0|0.2 1.1 2.0";
-    //std::string line = "2 2|0.0=1.1|1.2";
+    //std::string line = "0 1 2|0.0=1.0&2.0=0.0|0.2 1.1 1.2 2.0";
+    //std::string line = "0 1 2|0.1=1.0&1.0=2.2&0.0>2|1.0 0.0 0.2";
+    std::string line = "0 1|0.2=1.0&0.2=2|1.1 0.2 1.0";
     loadQuery(query, line);
 
-    database.relations.push_back(createRelation(3, 3));
+    database.relations.push_back(createRelation(4, 3));
     database.relations.back().cumulativeColumnId = 0;
+    database.relations.push_back(createRelation(4, 3));
     database.relations.push_back(createRelation(3, 3));
-    database.relations.back().cumulativeColumnId = 3;
-    database.relations.push_back(createRelation(3, 3));
-    database.relations.back().cumulativeColumnId = 6;
 
     setRelation(database.relations[0], {
             1, 2, 3,
+            1, 2, 4,
             4, 2, 6,
             3, 4, 2
     });
     setRelation(database.relations[1], {
-            2, 1, 0,
-            4, 4, 2,
+            1, 1, 4,
+            2, 1, 3,
+            2, 4, 2,
             3, 8, 4
     });
     setRelation(database.relations[2], {
-            1, 2, 1,
+            1, 2, 2,
             4, 4, 8,
-            4, 8, 3
+            4, 8, 2
     });
 
-    database.hashIndices.resize(9);
-    database.sortIndices.resize(9);
-    for (int i = 0; i < 3; i++)
+    int columnId = 0;
+    for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
     {
-        for (int j = 0; j < 3; j++)
+        for (int j = 0; j < static_cast<int32_t>(database.relations[i].columnCount); j++)
         {
-            database.hashIndices[i * 3 + j] = std::make_unique<HashIndex>(database.relations[i], j);
-            database.hashIndices[i * 3 + j]->build();
-            database.sortIndices[i * 3 + j] = std::make_unique<SortIndex>(database.relations[i], j);
-            database.sortIndices[i * 3 + j]->build();
+            database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[i], j,
+                                                                             std::vector<PrimaryRowEntry>()));
+            database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[i], j));
+            database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[i], j,
+                                                                                 *database.sortIndices.back()));
+
+            database.sortIndices.back()->build();
+            database.aggregateIndices.back()->build();
         }
+        database.relations[i].cumulativeColumnId = static_cast<uint32_t>(columnId);
+        columnId += database.relations[i].columnCount;
     }
 
     Executor executor;

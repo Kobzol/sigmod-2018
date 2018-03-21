@@ -1,10 +1,11 @@
+#include <iostream>
 #include "query.h"
 #include "database.h"
 
 bool Filter::isSkippable() const
 {
 #ifdef USE_SORT_INDEX
-    auto index = &database.getSortIndex(this->selection.relation, this->selection.column);
+    auto index = database.getSortIndex(this->selection.relation, this->selection.column);
     uint64_t minValue = index->minValue;
     uint64_t maxValue = index->maxValue;
 
@@ -22,5 +23,45 @@ bool Filter::isSkippable() const
     }
 #endif
 
+    return false;
+}
+
+bool Query::isAggregable() const
+{
+#ifndef INDEX_AVAILABLE
+    return false;
+#endif
+#ifndef AGGREGATE_PUSH
+    return false;
+#endif
+
+    if (this->aggregable) return true;
+
+    std::unordered_map<uint32_t, uint32_t> columnMap;
+    for (auto& join : this->joins)
+    {
+        for (auto& predicate : join)
+        {
+            for (auto selection : predicate.selections)
+            {
+                if (columnMap.find(selection.binding) == columnMap.end())
+                {
+                    columnMap[selection.binding] = selection.column;
+                }
+
+                if (columnMap[selection.binding] != selection.column)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    this->aggregable = true;
+    return true;
+}
+
+bool Query::isInJoin(const Selection& selection) const
+{
     return false;
 }

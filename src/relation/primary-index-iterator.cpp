@@ -77,7 +77,7 @@ bool PrimaryIndexIterator::passesFilters()
 
 PrimaryIndex* PrimaryIndexIterator::getIndex(uint32_t relation, uint32_t column)
 {
-    return &database.getPrimaryIndex(relation, column);
+    return database.getPrimaryIndex(relation, column);
 }
 
 PrimaryRowEntry* PrimaryIndexIterator::lowerBound(uint64_t value)

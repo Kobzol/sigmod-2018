@@ -5,6 +5,7 @@
 
 void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 {
+	std::vector<HashMap<uint64_t, uint32_t>> fullhistograms;
 	std::map<uint64_t, uint32_t> sorted_values;
 
 	std::vector<uint32_t> diffs(static_cast<size_t>(relation.getRowCount()));
@@ -240,11 +241,11 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 }
 
 
-void MaxdiffHistogram::print()
-{
-	int i = 0;
-	for (auto s : columnStats)
-	{
-		std::cout << i++ << ": " << s.cardinality << ", (" << s.min << ", " << s.max << ");  ";
-	}
-}
+//void MaxdiffHistogram::print()
+//{
+//	int i = 0;
+//	for (auto s : columnStats)
+//	{
+//		std::cout << i++ << ": " << s.cardinality << ", (" << s.min << ", " << s.max << ");  ";
+//	}
+//}

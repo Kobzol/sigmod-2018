@@ -44,9 +44,9 @@ bool FilterIterator::passesFilters()
     return true;
 }
 
-std::unique_ptr<Iterator> FilterIterator::createIndexedIterator()
+std::unique_ptr<Iterator> FilterIterator::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container)
 {
-    return std::make_unique<INDEXED_FILTER>(this->relation, this->binding, this->filters);
+    return database.createIndexedIterator(*this->relation, this->binding, this->filters);
 }
 
 int64_t FilterIterator::predictSize()

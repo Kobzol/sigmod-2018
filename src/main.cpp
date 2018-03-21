@@ -48,6 +48,7 @@ int main(int argc, char** argv)
     std::vector<Query> allQueries;
     std::unordered_map<std::string, uint32_t> cachedJoins;
     size_t joinsFilteredByMinMax = 0;
+    size_t aggregatableQueries = 0;
 #endif
 
     Executor executor;
@@ -127,8 +128,8 @@ int main(int argc, char** argv)
 #ifdef USE_SORT_INDEX
                     auto& l = predicate.selections[0];
                     auto& r = predicate.selections[1];
-                    auto li = &database.getSortIndex(l.relation, l.column);
-                    auto ri = &database.getSortIndex(r.relation, r.column);
+                    auto li = database.getSortIndex(l.relation, l.column);
+                    auto ri = database.getSortIndex(r.relation, r.column);
 
                     if (li->maxValue <= ri->minValue || ri->maxValue <= li->minValue)
                     {
@@ -160,14 +161,14 @@ int main(int argc, char** argv)
                     filtersSkippedByHistogram++;
                 }
             }
+
+            if (query.isAggregable()) aggregatableQueries++;
 #endif
         }
     }
 
 #ifdef STATISTICS
-    std::cerr << "Empty hash table count: " << emptyHashTableCount << std::endl;
-    std::cerr << "Avg rows in hash: " << averageRowsInHash / (std::max(1UL, averageRowsInHashCount.load()))
-              << std::endl;
+    std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
@@ -200,7 +201,7 @@ int main(int argc, char** argv)
         std::cerr << std::endl;
     }*/
 
-    /*size_t relationCount = database.relations.size();
+    size_t relationCount = database.relations.size();
     std::cerr << "Query load time: " << queryLoadTime << std::endl;
     std::cerr << "ColumnRelation count: " << relationCount << std::endl;
     std::cerr << "Min tuple count: " << minTuples << std::endl;
@@ -220,7 +221,7 @@ int main(int argc, char** argv)
     std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
     std::cerr << "Self-join count: " << selfJoinCount << std::endl;
-    std::cerr << std::endl;*/
+    std::cerr << std::endl;
 
     std::cerr << std::flush;
 #endif

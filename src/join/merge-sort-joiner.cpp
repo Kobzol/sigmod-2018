@@ -114,7 +114,9 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<S
 }
 
 template <bool HAS_MULTIPLE_JOINS>
-void MergeSortJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results,
+                                                  const std::vector<uint32_t>& columnIds,
+                                                  const std::vector<Selection>& selections, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;

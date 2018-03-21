@@ -23,6 +23,7 @@ public:
     uint32_t cumulativeColumnId;
     uint64_t tupleCount;
     uint64_t* data;
+    uint32_t id;
 
     uint64_t getValue(size_t row, size_t column)
     {
@@ -113,7 +114,7 @@ public:
         return this->relation->getColumnCount();
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator() override;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) override;
 
 	bool supportsIterateValue() final
 	{
@@ -130,7 +131,12 @@ public:
         return this->relation->getRowCount();
     }
 
-    void dumpPlan(std::stringstream& ss) override
+    bool hasBinding(uint32_t binding)
+    {
+        return binding == this->binding;
+    }
+
+    void dumpPlan(std::ostream& ss) override
     {
         ss << "CI(" << this->relation->getRowCount() << ")";
     }

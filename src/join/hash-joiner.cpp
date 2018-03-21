@@ -102,8 +102,6 @@ bool HashJoiner<HAS_MULTIPLE_JOINS>::getNext()
 #ifdef COLLECT_JOIN_SIZE
     this->rowCount++;
 #endif
-	//writeRowToFile();
-
     return true;
 }
 
@@ -133,7 +131,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     this->right->prepareSortedAccess(this->rightSelection);
 
 #ifdef STATISTICS
-    size_t avg = 0;
+    /*size_t avg = 0;
     for (auto& kv : this->hashTable.table)
     {
         avg += kv.second.size();
@@ -145,7 +143,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
         averageRowsInHash += avg;
     }
     else emptyHashTableCount++;
-    averageRowsInHashCount++;
+    averageRowsInHashCount++;*/
 #endif
 }
 
@@ -207,7 +205,7 @@ uint64_t HashJoiner<HAS_MULTIPLE_JOINS>::getColumn(uint32_t column)
 
 template <bool HAS_MULTIPLE_JOINS>
 void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                                             size_t& count)
+                                             const std::vector<Selection>& selections, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -223,7 +221,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, con
     }
 
 #ifdef __linux__
-    _mm_prefetch(results.data(), _MM_HINT_T0);
+	_mm_prefetch(results.data(), _MM_HINT_T0);
 #endif
 
 #ifdef INDEX_AVAILABLE

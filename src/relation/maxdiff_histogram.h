@@ -2,6 +2,9 @@
 
 #include <functional>   // std::greater
 #include <algorithm>
+#include <map>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "../settings.h"
 #include "iterator.h"
@@ -42,6 +45,6 @@ public:
 	uint32_t estimateResult(const Filter& filter);
 	uint64_t maxValue(uint32_t colId) { return histogram[colId][histogramCount[colId] - 1].max_value; }
 
-	void print();
+	//void print();
 
 };

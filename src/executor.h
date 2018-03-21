@@ -12,12 +12,7 @@ class Executor
 public:
     void executeQuery(Database& database, Query& query);
 
-	void executeNew(Database& database, Query& query);
-
-	void remapJoin(Join* join, std::unordered_map<uint32_t, std::unordered_map<uint32_t, uint32_t>>& map);
-
-
-//private:
+private:
     /**
      * Prepares iterators for all bindings of a query.
      * After this method every binding has a corresponding iterator in the views hashmap.
@@ -28,14 +23,17 @@ public:
                      std::vector<std::unique_ptr<Iterator>>& container);
 
     /**
+     * Creates AggregatedIterators for all bindings.
+     */
+    void createAggregatedViews(const Query& query, std::unordered_map<uint32_t, Iterator*>& views,
+                               std::vector<std::unique_ptr<Iterator>>& container);
+
+    /**
      * Combines all joins in a query to create a single root iterator.
      */
     Iterator* createRootView(Database& database, Query& query,
                              std::unordered_map<uint32_t, Iterator*>& views,
                              std::vector<std::unique_ptr<Iterator>>& container);
 
-	// Sestaveni planu dotazu.
-	Iterator* buildQueryPlan1(Database& database, Query& query,
-		std::unordered_map<uint32_t, Iterator*>& views,
-		std::vector<std::unique_ptr<Iterator>>& container);
+    void sum(Database& database, Query& query, Iterator* root);
 };

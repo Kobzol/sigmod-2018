@@ -34,14 +34,12 @@ void loadDatabase(Database& database)
     struct stat stats{};
 
     uint32_t columnId = 0;
-	uint32_t name = 0;
     while (std::getline(std::cin, line))
     {
         if (line == "Done") break;
 
 #ifdef __linux__
-
-        int fd = open(line.c_str(), O_RDONLY);
+		int fd = open(line.c_str(), O_RDONLY);
         fstat(fd, &stats);
 
         auto length = (size_t) stats.st_size;
@@ -56,6 +54,7 @@ void loadDatabase(Database& database)
         rel.columnCount = static_cast<uint32_t>(*reinterpret_cast<uint64_t*>(addr));
         addr += sizeof(uint64_t);
         rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
+        rel.id = static_cast<uint32_t>(database.relations.size() - 1);
         columnId += rel.columnCount;
 
 #ifdef TRANSPOSE_RELATIONS
@@ -77,11 +76,11 @@ void loadDatabase(Database& database)
 
         munmap(addr, length);
         close(fd);
+
 #else
 		database.relations.emplace_back();
 		ColumnRelation& rel = database.relations.back();
 		rel.cumulativeColumnId = columnId;
-		rel.name = name;
 
 		std::ifstream is(line, std::ifstream::binary);
 
@@ -113,9 +112,8 @@ void loadDatabase(Database& database)
 #endif
 
 #ifdef STATISTICS
-		tupleCount += rel.tupleCount;
-		columnCount += rel.columnCount;
-
+        tupleCount += rel.tupleCount;
+        columnCount += rel.columnCount;
 #ifdef __linux__
 		minTuples = std::min(minTuples, rel.tupleCount);
 		maxTuples = std::max(maxTuples, rel.tupleCount);
@@ -127,6 +125,7 @@ void loadDatabase(Database& database)
 		minColumns = min(minColumns, rel.columnCount);
 		maxColumns = max(maxColumns, rel.columnCount);
 #endif
+
 
 		bool sorted = true;
 		for (size_t i = 1; i < rel.tupleCount; i++)
@@ -143,13 +142,11 @@ void loadDatabase(Database& database)
 			sortedOnFirstColumn++;
 		}
 #endif
-
-		name++;
     }
 
-#ifdef USE_PRIMARY_INDEX
     std::vector<std::vector<PrimaryRowEntry>> relationData(database.relations.size());
 
+#ifdef USE_PRIMARY_INDEX
 #ifdef USE_THREADS
 #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
@@ -157,14 +154,17 @@ void loadDatabase(Database& database)
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
 #endif
     {
-        auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
-        relationData[i].resize(static_cast<size_t>(rows));
-        for (int r = 0; r < rows; r++)
+        if (PrimaryIndex::canBuild(database.relations[i]))
         {
-            for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+            auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
+            relationData[i].resize(static_cast<size_t>(rows));
+            for (int r = 0; r < rows; r++)
             {
-                relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
-                                                                           static_cast<size_t>(c));
+                for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+                {
+                    relationData[i][r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
+                                                                               static_cast<size_t>(c));
+                }
             }
         }
     }
@@ -174,16 +174,12 @@ void loadDatabase(Database& database)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations[r].columnCount); i++)
         {
-#ifdef USE_HASH_INDEX
             database.hashIndices.push_back(std::make_unique<HashIndex>(database.relations[r], i));
-#endif
-#ifdef USE_SORT_INDEX
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
-#endif
-#ifdef USE_PRIMARY_INDEX
+            database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[r], i,
+                                                                                 *database.sortIndices.back()));
             database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
                                                                              relationData[r]));
-#endif
         }
 
 #ifdef USE_PRIMARY_INDEX
@@ -209,6 +205,10 @@ void loadDatabase(Database& database)
 #endif
 #ifdef USE_SORT_INDEX
         database.sortIndices[i]->build();
+
+#ifdef USE_AGGREGATE_INDEX
+        database.aggregateIndices[i]->build();
+#endif
 #endif
 #ifdef USE_PRIMARY_INDEX
         database.primaryIndices[i]->build();
@@ -255,7 +255,6 @@ static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
 void createComponents(Query& query)
 {
     std::unordered_map<uint32_t, std::unique_ptr<UnionFind>> components;
-
     for (auto& join: query.joins)
     {
         for (auto& pred: join)

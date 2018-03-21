@@ -6,12 +6,12 @@
 
 #include "index.h"
 
-#define MAX_COLUMNS 10
+#define PRIMARY_INDEX_COLUMNS 4
 
 struct PrimaryRowEntry
 {
 public:
-    uint64_t row[MAX_COLUMNS];
+    uint64_t row[PRIMARY_INDEX_COLUMNS];
 };
 
 /**
@@ -21,6 +21,8 @@ public:
 class PrimaryIndex: public Index
 {
 public:
+    static bool canBuild(ColumnRelation& relation);
+
     PrimaryIndex(ColumnRelation& relation, uint32_t column, std::vector<PrimaryRowEntry> data);
 
     void build() final;

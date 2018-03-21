@@ -149,7 +149,7 @@ public:
         assert(iter == this->end);
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator() final
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) final
     {
         return std::make_unique<Child>(this->relation, this->binding, this->filters,
                                        this->originalStart,

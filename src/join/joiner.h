@@ -34,7 +34,7 @@ public:
         return true;
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator() final;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) final;
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections, HashTable& hashTable) override;
 
@@ -57,7 +57,9 @@ public:
 
     void assignJoinSize(Database& database) final;
 
-    void dumpPlan(std::stringstream& ss) final
+    bool hasBinding(uint32_t binding) final;
+
+    void dumpPlan(std::ostream& ss) final
     {
         ss << this->getJoinName() << "(";
         this->left->dumpPlan(ss);

@@ -65,7 +65,8 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Selec
 }
 
 template <bool HAS_MULTIPLE_JOINS>
-void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count)
+void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                                              const std::vector<Selection>& selections, size_t& count)
 {
     std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
     std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
@@ -166,6 +167,13 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
         if (!hasNext) return;
     }
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+bool IndexJoiner<HAS_MULTIPLE_JOINS>::isSortedOn(const Selection& selection)
+{
+    return this->left->isSortedOn(selection);
+}
+
 
 template <bool HAS_MULTIPLE_JOINS>
 void IndexJoiner<HAS_MULTIPLE_JOINS>::printPlan(unsigned int level)

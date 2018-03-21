@@ -15,7 +15,8 @@ public:
     bool getNext() final;
 
     void requireSelections(std::unordered_map<SelectionId, Selection> selections) final;
-    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds, size_t& count) final;
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                 const std::vector<Selection>& selections, size_t& count) final;
     bool isSortedOn(const Selection& selection) final;
     void aggregateDirect(std::vector<uint64_t>& results,
                          const std::vector<std::pair<uint32_t, uint32_t>>& leftColumns,

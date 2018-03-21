@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 
-pushd reference/small_workload
-time -p ../../cmake-build-debug/sigmod-2018 < small.complete > output.txt && diff output.txt small.result
+pushd reference/workloads/public
+time -p ../../../cmake-build-release/reference/harness public.init public.work public.result ../../../cmake-build-release/sigmod-2018
 popd
