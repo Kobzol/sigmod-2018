@@ -93,19 +93,8 @@ void Executor::createViews(Database& database,
 		}
 		else
 		{
-			filter = std::make_unique<FILTER_ITERATOR>(relation,
-				binding,
-				filterGroup.second);
+			auto filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
 		}
-        std::unique_ptr<FilterIterator> filter;
-        if (equalsIndex != -1)
-        {
-            filter = std::make_unique<HashFilterIterator>(relation,
-                                                          binding,
-                                                          filterGroup.second,
-                                                          equalsIndex);
-        }
-        else filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
 #else
         auto filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
 #endif

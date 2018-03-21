@@ -42,7 +42,7 @@ void SelfJoin::printPlan(unsigned int level)
 	// TODO... vypsat podminky.
 
 	std::cout << std::endl;
-	inner.printPlan(level + 1);
+	inner->printPlan(level + 1);
 
 	std::cout << std::endl;
 	printIndent(level);

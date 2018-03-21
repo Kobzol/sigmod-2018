@@ -201,7 +201,10 @@ public:
 
 
 
-	virtual void printPlan(unsigned int level) = 0;
+	virtual void printPlan(unsigned int level)
+    {
+
+    }
 
 	void printResult();
 

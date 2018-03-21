@@ -90,6 +90,15 @@
     <ClCompile Include="..\..\src\aggregation\aggregateSort.cpp">
       <Filter>aggregation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\relation\sort-index-iterator.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\relation\primary-index-iterator.cpp">
+      <Filter>relation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\index\index.cpp">
+      <Filter>index</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\index\hash-index.h">
@@ -163,6 +172,15 @@
     </ClInclude>
     <ClInclude Include="..\..\src\aggregation\aggregateAbstract.h">
       <Filter>aggregation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\sort-index-iterator.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\relation\primary-index-iterator.h">
+      <Filter>relation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\index\index.h">
+      <Filter>index</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
