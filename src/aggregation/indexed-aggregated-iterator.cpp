@@ -13,6 +13,7 @@ IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::IndexedAggregatedIterator(Iterator
 {
     this->index = database.getAggregateIndex(groupBy.relation, groupBy.column);
     this->start = this->index->data.data() - 1;
+    this->originalStart = this->start;
     this->end = this->index->data.data() + this->index->data.size();
     assert(this->start + 1 < this->end);
 }
@@ -54,6 +55,19 @@ void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::dumpPlan(std::ostream& ss)
 template<bool IS_GROUPBY_SUMMED>
 void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::iterateValue(const Selection& selection, uint64_t value)
 {
+#ifdef CACHE_ITERATE_VALUE
+    if (this->iteratedSelection == selection)
+    {
+        if (this->iteratedValue == value)
+        {
+            this->start = this->originalStart;
+            return;
+        }
+    }
+    else this->iteratedSelection = selection;
+    this->iteratedValue = value;
+#endif
+
     this->start = toPtr(*this->index, std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
                                                 [this](const AggregateRow& entry, uint64_t val) {
                                                     return entry.value < val;
@@ -62,6 +76,7 @@ void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::iterateValue(const Selection&
                                                 [this](uint64_t val, const AggregateRow& entry) {
                                                     return val < entry.value;
                                                 }));
+    this->originalStart = this->start;
 }
 
 template<bool IS_GROUPBY_SUMMED>

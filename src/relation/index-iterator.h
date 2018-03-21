@@ -18,7 +18,7 @@ public:
         {
             this->sortFilter = this->filters[0];
             this->startFilterIndex = 1;
-            this->sortSelection = this->sortFilter.selection;
+            this->iteratedSelection = this->sortFilter.selection;
         }
     }
     IndexIterator(ColumnRelation* relation, uint32_t binding,
@@ -68,7 +68,26 @@ public:
 
     void iterateValue(const Selection& selection, uint64_t value) final
     {
+#ifdef CACHE_ITERATE_VALUE
+        if (this->iteratedSelection == selection)
+        {
+            if (this->iteratedValue == value)
+            {
+                this->start = this->originalStart;
+                return;
+            }
+        }
+        else
+        {
+            this->iteratedSelection = selection;
+            this->index = this->getIndex(selection.relation, selection.column);
+        }
+
+        this->iteratedValue = value;
+#else
         this->index = this->getIndex(selection.relation, selection.column);
+#endif
+
         this->start = this->lowerBound(value);
         this->end = this->upperBound(value);
         this->start--;
@@ -96,7 +115,7 @@ public:
             {
                 this->index = this->getIndex(selection.relation, selection.column);
                 this->sortFilter = filter;
-                this->sortSelection = selection;
+                this->iteratedSelection = selection;
                 this->createIterators(filter, &this->start, &this->end);
                 this->start--;
                 this->originalStart = this->start;
@@ -158,11 +177,13 @@ public:
 
     Index* index;
     Filter sortFilter;
-    Selection sortSelection;
 
     Entry* start = nullptr;
     Entry* end = nullptr;
 
     Entry* startSaved;
     Entry* originalStart;
+
+    Selection iteratedSelection{100, 100, 100};
+    uint64_t iteratedValue;
 };

@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "small.test"
+#define INPUT_FILE "public.complete"
 
 #ifndef NDEBUG
     #define STATISTICS
@@ -25,6 +25,8 @@
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
 #define AGGREGATE_PUSH                  // use direct aggregation
 
+#define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
+
 //#define USE_HISTOGRAM
 #define BUCKET_N 50
 
@@ -45,6 +47,10 @@
 
 #ifndef INDEX_AVAILABLE                 // if there's no index, use sequential filters
     #define USE_SEQUENTIAL_FILTER
+#endif
+
+#ifndef AGGREGATE_PUSH
+    #undef USE_AGGREGATE_INDEX
 #endif
 
 #define USE_THREADS

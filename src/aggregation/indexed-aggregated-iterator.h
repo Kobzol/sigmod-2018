@@ -21,6 +21,10 @@ public:
     AggregateRow* start;
     AggregateRow* end;
     AggregateIndex* index;
+    AggregateRow* originalStart;
+
+    Selection iteratedSelection{100, 100, 100};
+    uint64_t iteratedValue;
 };
 
 template class IndexedAggregatedIterator<false>;
