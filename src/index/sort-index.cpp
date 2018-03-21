@@ -1,5 +1,6 @@
 #include "sort-index.h"
 #include "../relation/column-relation.h"
+#include "../thirdparty/kxsort.h"
 
 #include <cstring>
 #include <algorithm>
@@ -33,8 +34,8 @@ void SortIndex::build()
         this->data[i].value = value;
         this->data[i].row = static_cast<uint32_t>(i);
     }
-    std::sort(this->data.begin(), this->data.end());
-    //kx::radix_sort(this->data.begin(), this->data.end(), RadixTraitsRowEntry());
+    //std::sort(this->data.begin(), this->data.end());
+    kx::radix_sort(this->data.begin(), this->data.end(), RadixTraitsRowEntry());
 
     this->minValue = this->data[0].value;
     this->maxValue = this->data.back().value;

@@ -10,20 +10,21 @@
 #endif
 
 #define MEASURE_REAL_TIME
+#define STATISTICS
 
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
 //#define USE_HASH_INDEX
-#define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
+//#define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
 #define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
-#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
+//#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 
-#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
+//#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
 //#define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
-#define AGGREGATE_PUSH                  // use direct aggregation
+//#define AGGREGATE_PUSH                  // use direct aggregation
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
 
