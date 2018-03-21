@@ -11,7 +11,10 @@ SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding,
     if (!this->filters.empty())
     {
         this->index = this->getIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
-        this->createIterators(this->sortFilter, &this->start, &this->end);
+        if (this->index != nullptr)
+        {
+            this->createIterators(this->sortFilter, &this->start, &this->end);
+        }
     }
 
     this->start--;

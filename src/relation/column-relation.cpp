@@ -23,7 +23,8 @@ int32_t ColumnRelationIterator::getRowCount()
     return static_cast<int32_t>(this->relation->getRowCount());
 }
 
-std::unique_ptr<Iterator> ColumnRelationIterator::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container)
+std::unique_ptr<Iterator> ColumnRelationIterator::createIndexedIterator(
+        std::vector<std::unique_ptr<Iterator>>& container, const Selection& selection)
 {
-    return database.createIndexedIterator(*this->relation, this->binding, {});
+    return database.createIndexedIterator(selection, {});
 }

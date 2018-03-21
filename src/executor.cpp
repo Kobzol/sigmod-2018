@@ -71,19 +71,19 @@ void Executor::createViews(Database& database,
 #endif
 
         auto binding = filterGroup.first;
-        auto relation = &database.relations[filterGroup.second[0].selection.relation];
 #ifdef USE_HASH_INDEX
         std::unique_ptr<FilterIterator> filter;
         if (equalsIndex != -1)
         {
+            TODO: add check for created index
             filter = std::make_unique<HashFilterIterator>(relation,
                                                           binding,
                                                           filterGroup.second,
                                                           equalsIndex);
         }
-        else filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
+        else filter = database.createFilteredIterator(filterGroup.second[0].selection, filterGroup.second);
 #else
-        auto filter = database.createFilteredIterator(*relation, binding, filterGroup.second);
+        auto filter = database.createFilteredIterator(filterGroup.second[0].selection, filterGroup.second);
 #endif
         views.insert({ binding, filter.get() });
         container.push_back(std::move(filter));
@@ -158,9 +158,9 @@ static void createHashJoin(Iterator* left,
                     Join* join,
                     bool last)
 {
-    if (last)
+    if (last && database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]))
     {
-        container.push_back(right->createIndexedIterator(container));
+        container.push_back(right->createIndexedIterator(container, (*join)[0].selections[1 - leftIndex]));
         right = container.back().get();
     }
 
@@ -172,7 +172,7 @@ static void createIndexJoin(Iterator* left,
                     std::vector<std::unique_ptr<Iterator>>& container,
                     Join* join)
 {
-    container.push_back(right->createIndexedIterator(container));
+    container.push_back(right->createIndexedIterator(container, (*join)[0].selections[1 - leftIndex]));
     createTemplatedJoin<IndexJoiner>(left, container.back().get(), leftIndex, join, container);
 }
 static void createMergesortJoin(Iterator* left,
@@ -183,11 +183,11 @@ static void createMergesortJoin(Iterator* left,
 {
     if (!left->isJoin())
     {
-        container.push_back(left->createIndexedIterator(container));
+        container.push_back(left->createIndexedIterator(container, (*join)[0].selections[leftIndex]));
         left = container.back().get();
     }
 
-    container.push_back(right->createIndexedIterator(container));
+    container.push_back(right->createIndexedIterator(container, (*join)[0].selections[1 - leftIndex]));
 
     createTemplatedJoin<MergeSortJoiner>(left, container.back().get(), leftIndex, join, container);
 }
@@ -202,10 +202,8 @@ static void createJoin(Iterator* left,
                        bool last,
                        bool aggregable)
 {
-#ifndef INDEX_AVAILABLE
-    createHashJoin(left, right, leftIndex, container, join, false);
-    return;
-#endif
+    auto hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
+    auto hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
 
     int index = 0;
     for (; index < static_cast<int32_t>(join->size()); index++)
@@ -221,14 +219,14 @@ static void createJoin(Iterator* left,
         std::swap((*join)[0], (*join)[index]);
     }
 
-    if (first || left->isSortedOn((*join)[0].selections[leftIndex]))
+    if (hasLeftIndex && hasRightIndex && (first || left->isSortedOn((*join)[0].selections[leftIndex])))
     {
         createMergesortJoin(left, right, leftIndex, container, join);
     }
     else
     {
         // TODO: left now thinks it's empty when it's a SortIndexIterator without filters
-        if (left->predictSize() < 20000)
+        if (hasRightIndex && left->predictSize() < 20000)
         {
             createIndexJoin(left, right, leftIndex, container, join);
         }
@@ -341,7 +339,7 @@ void Executor::createAggregatedViews(const Query& query, std::unordered_map<uint
             if (sel == groupBy) joinSummed = true;
         }
 
-        container.push_back(kv.second->createIndexedIterator(container));
+        container.push_back(kv.second->createIndexedIterator(container, groupBy));
 
 #ifdef USE_AGGREGATE_INDEX
         bool canUseIndex = true;

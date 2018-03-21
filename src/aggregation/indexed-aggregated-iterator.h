@@ -11,7 +11,8 @@ public:
 
     bool getNext() final;
 
-    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) final;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) final;
 
     void prepareIndexedAccess() final;
     void iterateValue(const Selection& selection, uint64_t value) final;

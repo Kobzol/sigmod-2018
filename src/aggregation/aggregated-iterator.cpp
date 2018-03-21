@@ -66,9 +66,9 @@ bool AggregatedIterator<IS_GROUPBY_SUMMED>::getNext()
 
 template <bool IS_GROUPBY_SUMMED>
 std::unique_ptr<Iterator> AggregatedIterator<IS_GROUPBY_SUMMED>::createIndexedIterator(
-        std::vector<std::unique_ptr<Iterator>>& container)
+        std::vector<std::unique_ptr<Iterator>>& container, const Selection& selection)
 {
-    container.push_back(this->inner->createIndexedIterator(container));
+    container.push_back(this->inner->createIndexedIterator(container, selection));
     return std::make_unique<AggregatedIterator>(container.back().get(), this->groupBy, this->sumSelections);
 }
 

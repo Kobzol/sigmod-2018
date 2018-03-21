@@ -106,9 +106,10 @@ public:
         this->inner->sumRows(results, columnIds, selections, count);
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) override
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) override
     {
-        return this->inner->createIndexedIterator(container);
+        return this->inner->createIndexedIterator(container, selection);
     }
 
     void save() override

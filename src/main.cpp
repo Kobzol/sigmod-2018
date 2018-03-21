@@ -15,6 +15,7 @@
 #include "stats.h"
 #include "timer.h"
 #include "join/hash-joiner.h"
+#include "index/index-thread-pool.h"
 
 Database database;
 
@@ -131,9 +132,12 @@ int main(int argc, char** argv)
                     auto li = database.getSortIndex(l.relation, l.column);
                     auto ri = database.getSortIndex(r.relation, r.column);
 
-                    if (li->maxValue <= ri->minValue || ri->maxValue <= li->minValue)
+                    if (li != nullptr && ri != nullptr)
                     {
-                        joinsFilteredByMinMax++;
+                        if (li->maxValue <= ri->minValue || ri->maxValue <= li->minValue)
+                        {
+                            joinsFilteredByMinMax++;
+                        }
                     }
 #endif
                 }
@@ -167,8 +171,13 @@ int main(int argc, char** argv)
         }
     }
 
+#ifdef USE_INDEX_THREADPOOL
+    threadIndexPool.stop();
+#endif
+
 #ifdef STATISTICS
     std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
+    std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
@@ -201,7 +210,7 @@ int main(int argc, char** argv)
         std::cerr << std::endl;
     }*/
 
-    size_t relationCount = database.relations.size();
+    /*size_t relationCount = database.relations.size();
     std::cerr << "Query load time: " << queryLoadTime << std::endl;
     std::cerr << "ColumnRelation count: " << relationCount << std::endl;
     std::cerr << "Min tuple count: " << minTuples << std::endl;
@@ -221,7 +230,7 @@ int main(int argc, char** argv)
     std::cerr << "Joins on first column: " << joinsOnFirstColumn << std::endl;
     std::cerr << "Filters on first column: " << filtersOnFirstColumn << std::endl;
     std::cerr << "Self-join count: " << selfJoinCount << std::endl;
-    std::cerr << std::endl;
+    std::cerr << std::endl;*/
 
     std::cerr << std::flush;
 #endif

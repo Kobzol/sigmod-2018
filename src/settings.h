@@ -10,14 +10,13 @@
 #endif
 
 #define MEASURE_REAL_TIME
-#define STATISTICS
 
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
 
 //#define USE_HASH_INDEX
-//#define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
-#define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
+#define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
+//#define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
 //#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 
 //#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
@@ -25,8 +24,6 @@
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
 //#define AGGREGATE_PUSH                  // use direct aggregation
-
-#define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
 
 //#define USE_HISTOGRAM
 #define BUCKET_N 50
@@ -54,9 +51,17 @@
     #undef USE_AGGREGATE_INDEX
 #endif
 
+#ifdef INDEX_AVAILABLE
+    #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
+#endif
+
 #define USE_THREADS
 #define QUERY_NUM_THREADS 20            // number of threads to execute queries
 #define HASH_AGGREGATE_THREADS 4        // number of threads to aggregate results in top-level hash join
+
+#define USE_INDEX_THREADPOOL
+#define INDEX_THREADS 20
+#define INDEX_THREAD_BAILOUT 800
 
 //#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results
 

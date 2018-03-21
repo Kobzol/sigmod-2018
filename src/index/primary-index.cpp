@@ -16,9 +16,10 @@ PrimaryIndex::PrimaryIndex(ColumnRelation& relation, uint32_t column, std::vecto
 
 void PrimaryIndex::build()
 {
-    if (!canBuild(this->relation)) return;
-
-    if (this->buildStarted.test_and_set()) return;
+    if (!canBuild(this->relation))
+    {
+        return;
+    }
 
     std::sort(this->data.begin(), this->data.end(), [this](const PrimaryRowEntry& lhs, const PrimaryRowEntry& rhs) {
         return lhs.row[this->column] < rhs.row[this->column];

@@ -15,6 +15,11 @@ public:
 
     virtual void build() = 0;
 
+    bool take()
+    {
+        return !this->buildStarted.test_and_set();
+    }
+
     std::atomic_flag buildStarted = ATOMIC_FLAG_INIT;
     std::atomic<bool> buildCompleted { false };
 

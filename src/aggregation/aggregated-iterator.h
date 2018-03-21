@@ -27,7 +27,8 @@ public:
                                HashTable& hashTable) override;
 
     void prepareSortedAccess(const Selection& selection) final;
-    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) override;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) override;
 
     void dumpPlan(std::ostream& ss) override;
 

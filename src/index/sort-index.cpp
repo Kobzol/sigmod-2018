@@ -25,8 +25,6 @@ SortIndex::SortIndex(ColumnRelation& relation, uint32_t column)
 
 void SortIndex::build()
 {
-    if (this->buildStarted.test_and_set()) return;
-
     auto rows = static_cast<int32_t>(this->data.size());
     for (int i = 0; i < rows; i++)
     {

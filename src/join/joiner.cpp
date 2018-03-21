@@ -4,7 +4,7 @@
 #include "../database.h"
 #include "../hash-table.h"
 
-std::unique_ptr<Iterator> Joiner::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container)
+std::unique_ptr<Iterator> Joiner::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container, const Selection& selection)
 {
     assert(false);
     return std::unique_ptr<Iterator>();

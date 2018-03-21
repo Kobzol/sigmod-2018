@@ -1,4 +1,6 @@
 #include "io.h"
+#include "index/index-thread-pool.h"
+#include "timer.h"
 
 void loadDatabase(Database& database)
 {
@@ -165,6 +167,7 @@ void loadDatabase(Database& database)
 #endif
     }
 
+    Timer timer;
 #ifdef USE_THREADS
     #pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
@@ -172,20 +175,40 @@ void loadDatabase(Database& database)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #endif
     {
+#ifdef USE_INDEX_THREADPOOL
+        if (timer.get() > INDEX_THREAD_BAILOUT) continue;
+#endif
+
 #ifdef USE_HASH_INDEX
-        database.hashIndices[i]->build();
+        if (database.hashIndices[i]->take())
+        {
+            database.hashIndices[i]->build();
+        }
 #endif
 #ifdef USE_SORT_INDEX
-        database.sortIndices[i]->build();
+        if (database.sortIndices[i]->take())
+        {
+            database.sortIndices[i]->build();
+        }
 
 #ifdef USE_AGGREGATE_INDEX
-        database.aggregateIndices[i]->build();
+        if (database.aggregateIndices[i]->take())
+        {
+            database.aggregateIndices[i]->build();
+        }
 #endif
 #endif
 #ifdef USE_PRIMARY_INDEX
-        database.primaryIndices[i]->build();
+        if (database.primaryIndices[i]->take())
+        {
+            database.primaryIndices[i]->build();
+        }
 #endif
     }
+
+#ifdef USE_INDEX_THREADPOOL
+    threadIndexPool.start();
+#endif
 
 #ifdef USE_HISTOGRAM
 #ifdef USE_THREADS

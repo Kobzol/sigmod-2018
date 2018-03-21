@@ -34,7 +34,8 @@ public:
         return true;
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) final;
+    std::unique_ptr<Iterator>
+    createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container, const Selection& selection) final;
 
     void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections, HashTable& hashTable) override;
 

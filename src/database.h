@@ -23,10 +23,9 @@ public:
     PrimaryIndex* getPrimaryIndex(uint32_t relation, uint32_t column);
     AggregateIndex* getAggregateIndex(uint32_t relation, uint32_t column);
 
-    std::unique_ptr<Iterator> createIndexedIterator(ColumnRelation& relation, uint32_t binding,
-                                                    const std::vector<Filter>& filters);
-    std::unique_ptr<Iterator> createFilteredIterator(ColumnRelation& relation, uint32_t binding,
-                                                    const std::vector<Filter>& filters);
+    bool hasIndexedIterator(const Selection& selection);
+    std::unique_ptr<Iterator> createIndexedIterator(const Selection& selection, const std::vector<Filter>& filters);
+    std::unique_ptr<Iterator> createFilteredIterator(const Selection& selection, const std::vector<Filter>& filters);
 
     void addJoinSize(const Join& join, int64_t size);
 

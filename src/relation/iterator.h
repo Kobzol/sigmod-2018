@@ -130,7 +130,8 @@ public:
      * Creates an indexed version of this iterator.
      * It must support iterateValue.
      */
-    virtual std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) = 0;
+    virtual std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                            const Selection& selection) = 0;
 
     /**
      * Saves the state of the iterator.

@@ -58,19 +58,31 @@ std::string Database::createJoinKey(const Join& join)
     return key.str();
 }
 
-std::unique_ptr<Iterator> Database::createIndexedIterator(ColumnRelation& relation, uint32_t binding,
+bool Database::hasIndexedIterator(const Selection& selection)
+{
+    return this->getPrimaryIndex(selection.relation, selection.column) != nullptr ||
+            this->getSortIndex(selection.relation, selection.column) != nullptr;
+}
+std::unique_ptr<Iterator> Database::createIndexedIterator(const Selection& selection,
                                                           const std::vector<Filter>& filters)
 {
-    auto primary = this->getPrimaryIndex(relation.id, 0);
-    if (primary != nullptr) return std::make_unique<PrimaryIndexIterator>(&relation, binding, filters);
-    return std::make_unique<SortIndexIterator>(&relation, binding, filters);
+    assert(this->hasIndexedIterator(selection));
+
+    auto primary = this->getPrimaryIndex(selection.relation, selection.column);
+    if (primary != nullptr) return std::make_unique<PrimaryIndexIterator>(&this->relations[selection.relation],
+                                                                          selection.binding, filters);
+    return std::make_unique<SortIndexIterator>(&this->relations[selection.relation], selection.binding, filters);
 }
 
-std::unique_ptr<Iterator> Database::createFilteredIterator(ColumnRelation& relation, uint32_t binding,
+std::unique_ptr<Iterator> Database::createFilteredIterator(const Selection& selection,
                                                            const std::vector<Filter>& filters)
 {
 #ifdef USE_SEQUENTIAL_FILTER
-    return std::make_unique<FilterIterator>(&relation, binding, filters);
+    return std::make_unique<FilterIterator>(&this->relations[selection.relation], selection.binding, filters);
 #endif
-    return this->createIndexedIterator(relation, binding, filters);
+    if (this->hasIndexedIterator(selection))
+    {
+        return this->createIndexedIterator(selection, filters);
+    }
+    else return std::make_unique<FilterIterator>(&this->relations[selection.relation], selection.binding, filters);
 }

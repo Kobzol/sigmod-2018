@@ -4,7 +4,7 @@ project(sigmod2018)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fsanitize=address")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fsanitize=address -march=native")
 
 OPTION(REAL_RUN "Real run" OFF)
 if(NOT REAL_RUN)
@@ -27,6 +27,7 @@ set(SOURCE_FILES
         src/index/aggregate-index.cpp
         src/index/hash-index.cpp
         src/index/index.cpp
+        src/index/index-thread-pool.cpp
         src/index/primary-index.cpp
         src/index/sort-index.cpp
         src/join/hash-joiner.cpp

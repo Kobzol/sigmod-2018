@@ -12,10 +12,13 @@ IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::IndexedAggregatedIterator(Iterator
         : AggregatedIterator<IS_GROUPBY_SUMMED>(inner, groupBy, sumSelections)
 {
     this->index = database.getAggregateIndex(groupBy.relation, groupBy.column);
-    this->start = this->index->data.data() - 1;
-    this->originalStart = this->start;
-    this->end = this->index->data.data() + this->index->data.size();
-    assert(this->start + 1 < this->end);
+    if (this->index != nullptr)
+    {
+        this->start = this->index->data.data() - 1;
+        this->originalStart = this->start;
+        this->end = this->index->data.data() + this->index->data.size();
+        assert(this->start + 1 < this->end);
+    }
 }
 
 template<bool IS_GROUPBY_SUMMED>
@@ -39,7 +42,7 @@ bool IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::getNext()
 
 template<bool IS_GROUPBY_SUMMED>
 std::unique_ptr<Iterator> IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::createIndexedIterator(
-        std::vector<std::unique_ptr<Iterator>>& container)
+        std::vector<std::unique_ptr<Iterator>>& container, const Selection& selection)
 {
     return std::make_unique<IndexedAggregatedIterator>(this->inner, this->groupBy, this->sumSelections);
 }

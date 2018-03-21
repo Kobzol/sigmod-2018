@@ -108,7 +108,8 @@ public:
         return this->relation->getColumnCount();
     }
 
-    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container) override;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) override;
 
     void fillBindings(std::vector<uint32_t>& bindings) final
     {
@@ -120,7 +121,7 @@ public:
         return this->relation->getRowCount();
     }
 
-    bool hasBinding(uint32_t binding)
+    bool hasBinding(uint32_t binding) final
     {
         return binding == this->binding;
     }
