@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include "index-joiner.h"
+#include "../database.h"
 
 template <bool HAS_MULTIPLE_JOINS>
 IndexJoiner<HAS_MULTIPLE_JOINS>::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -60,7 +61,11 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Selec
 {
     this->initializeSelections(selections);
 
-    this->left->prepareSortedAccess(this->leftSelection);
+    if (database.hasIndexedIterator(this->leftSelection))
+    {
+        this->left->prepareSortedAccess(this->leftSelection);
+    }
+
     this->right->prepareIndexedAccess();
 }
 
@@ -173,4 +178,3 @@ bool IndexJoiner<HAS_MULTIPLE_JOINS>::isSortedOn(const Selection& selection)
 {
     return this->left->isSortedOn(selection);
 }
-

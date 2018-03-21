@@ -1,5 +1,6 @@
 #include "hash-joiner.h"
 #include "../stats.h"
+#include "../database.h"
 #include <atomic>
 #include <omp.h>
 #include <iostream>
@@ -129,7 +130,11 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
     this->prepareColumnMappings(selections, leftSelections);
 
     this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable);
-    this->right->prepareSortedAccess(this->rightSelection);
+
+    if (database.hasIndexedIterator(this->rightSelection))
+    {
+        this->right->prepareSortedAccess(this->rightSelection);
+    }
 
 #ifdef STATISTICS
     /*size_t avg = 0;

@@ -10,6 +10,7 @@
 #endif
 
 #define MEASURE_REAL_TIME
+#define STATISTICS
 
 //#define SORT_JOINS_BY_SIZE
 //#define TRANSPOSE_RELATIONS
@@ -59,8 +60,8 @@
 #define QUERY_NUM_THREADS 20            // number of threads to execute queries
 #define HASH_AGGREGATE_THREADS 4        // number of threads to aggregate results in top-level hash join
 
-#define USE_INDEX_THREADPOOL
-#define INDEX_THREADS 20
+//#define USE_INDEX_THREADPOOL
+#define INDEX_THREADS 8
 #define INDEX_THREAD_BAILOUT 800
 
 //#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results

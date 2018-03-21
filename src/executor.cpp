@@ -202,8 +202,9 @@ static void createJoin(Iterator* left,
                        bool last,
                        bool aggregable)
 {
-    auto hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
-    auto hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
+    bool hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
+    bool hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
+    bool bothIndices = hasLeftIndex && hasRightIndex;
 
     int index = 0;
     for (; index < static_cast<int32_t>(join->size()); index++)
@@ -219,7 +220,7 @@ static void createJoin(Iterator* left,
         std::swap((*join)[0], (*join)[index]);
     }
 
-    if (hasLeftIndex && hasRightIndex && (first || left->isSortedOn((*join)[0].selections[leftIndex])))
+    if (bothIndices && (first || left->isSortedOn((*join)[0].selections[leftIndex])))
     {
         createMergesortJoin(left, right, leftIndex, container, join);
     }
