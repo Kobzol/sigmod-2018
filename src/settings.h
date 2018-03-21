@@ -26,7 +26,7 @@
 #define COMPILE_FILTERS               // compile filters to x64 assembly
 //#define AGGREGATE_PUSH                  // use direct aggregation
 
-//#define USE_HISTOGRAM
+#define USE_HISTOGRAM
 #define BUCKET_N 50
 
 #if defined(USE_SORT_INDEX) || defined(USE_PRIMARY_INDEX)

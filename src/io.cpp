@@ -453,6 +453,19 @@ void loadQuery(Query& query, std::string& line)
             {
                 std::swap(predicate.selections[0], predicate.selections[1]);
             }
+
+            bool unique = true;
+            for (int i = 0; i < static_cast<int32_t>(join->size()) - 1; i++)
+            {
+                auto& j = (*join)[i];
+                if (j.selections[0] == predicate.selections[0] && j.selections[1] == predicate.selections[1])
+                {
+                    unique = false;
+                    break;
+                }
+            }
+
+            if (!unique) join->pop_back();
         }
         else // parse filter
         {
@@ -460,6 +473,21 @@ void loadQuery(Query& query, std::string& line)
 #ifdef COMPILE_FILTERS
             query.filters.back().evaluator = FilterCompiler().compile(std::vector<Filter>{ query.filters.back() });
 #endif
+            bool unique = true;
+            for (int i = 0; i < static_cast<int32_t>(query.filters.size()) - 1; i++)
+            {
+                if (query.filters[i].selection == query.filters.back().selection)
+                {
+                    if (query.filters[i].value == query.filters.back().value &&
+                            query.filters[i].oper == query.filters.back().oper)
+                    {
+                        unique = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!unique) query.filters.pop_back();
         }
 
         if (line[index++] == '|') break;
