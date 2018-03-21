@@ -21,7 +21,7 @@ public:
     }
 
     uint64_t value;
-    uint32_t row;
+    uint64_t row;
 };
 
 /**

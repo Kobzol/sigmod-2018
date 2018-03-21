@@ -27,10 +27,11 @@ void Executor::executeQuery(Database& database, Query& query)
     std::unordered_map<uint32_t, Iterator*> views;
     std::vector<std::unique_ptr<Iterator>> container;
 
-    this->createViews(database, query, views, container);
-    auto root = this->createRootView(database, query, views, container);
+    bool aggregable;
+    this->createViews(database, query, views, container, aggregable);
+    auto root = this->createRootView(database, query, views, container, aggregable);
 
-    this->sum(database, query, root);
+    this->sum(database, query, root, aggregable);
     query.result[query.result.size() - 1] = '\n';
 
 #ifdef STATISTICS
@@ -38,10 +39,8 @@ void Executor::executeQuery(Database& database, Query& query)
 #endif
 }
 
-void Executor::createViews(Database& database,
-                           const Query& query,
-                           std::unordered_map<uint32_t, Iterator*>& views,
-                           std::vector<std::unique_ptr<Iterator>>& container)
+void Executor::createViews(Database& database, const Query& query, std::unordered_map<uint32_t, Iterator*>& views,
+                           std::vector<std::unique_ptr<Iterator>>& container, bool& aggregable)
 {
     std::unordered_map<uint32_t, std::vector<Filter>> filtersByBindings;
 
@@ -107,8 +106,10 @@ void Executor::createViews(Database& database,
 
     if (query.isAggregable())
     {
+        aggregable = true;
         this->createAggregatedViews(query, views, container);
     }
+    else aggregable = false;
 
 #ifdef USE_SELF_JOIN
     // assign self-joins
@@ -237,7 +238,8 @@ static void createJoin(Iterator* left,
 
 Iterator* Executor::createRootView(Database& database, Query& query,
                                    std::unordered_map<uint32_t, Iterator*>& views,
-                                   std::vector<std::unique_ptr<Iterator>>& container)
+                                   std::vector<std::unique_ptr<Iterator>>& container,
+                                   bool aggregable)
 {
 #ifdef SORT_JOINS_BY_SIZE
     std::sort(query.joins.begin(), query.joins.end(), [&database, &views](const Join& a, const Join& b) {
@@ -248,16 +250,13 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount());
     });
 #endif
-
-    bool aggregatable = query.isAggregable();
-
     auto* join = &query.joins[0];
 
     auto leftBinding = (*join)[0].selections[0].binding;
     auto rightBinding = (*join)[0].selections[1].binding;
 
     createJoin(views[leftBinding], views[rightBinding], 0, container, join,
-               query, true, query.joins.size() == 1, aggregatable);
+               query, true, query.joins.size() == 1, aggregable);
 
     std::unordered_set<uint32_t> usedBindings = { leftBinding, rightBinding };
     Iterator* root = container.back().get();
@@ -291,11 +290,11 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         }
 
         createJoin(left, right, leftIndex, container, join, query,
-                   false, i == (static_cast<int32_t>(query.joins.size()) - 1), aggregatable);
+                   false, i == (static_cast<int32_t>(query.joins.size()) - 1), aggregable);
         root = container.back().get();
     }
 
-    if (aggregatable)
+    if (aggregable)
     {
         container.push_back(std::make_unique<Aggregator>(root, query));
         root = container.back().get();
@@ -375,7 +374,7 @@ void Executor::createAggregatedViews(const Query& query, std::unordered_map<uint
     }
 }
 
-void Executor::sum(Database& database, Query& query, Iterator* root)
+void Executor::sum(Database& database, Query& query, Iterator* root, bool aggregable)
 {
     std::unordered_map<SelectionId, Selection> selectionMap;
     for (auto& sel: query.selections)
@@ -383,7 +382,7 @@ void Executor::sum(Database& database, Query& query, Iterator* root)
         selectionMap[sel.getId()] = sel;
     }
 
-    if (query.isAggregable())
+    if (aggregable)
     {
         auto map = selectionMap;
         std::vector<uint32_t> bindings;

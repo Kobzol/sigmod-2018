@@ -28,8 +28,7 @@ void SortIndex::build()
     auto rows = static_cast<int32_t>(this->data.size());
     for (int i = 0; i < rows; i++)
     {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        this->data[i].value = value;
+        this->data[i].value = this->relation.getValue(static_cast<size_t>(i), this->column);
         this->data[i].row = static_cast<uint32_t>(i);
     }
     //std::sort(this->data.begin(), this->data.end());

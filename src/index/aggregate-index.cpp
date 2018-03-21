@@ -9,8 +9,6 @@ AggregateIndex::AggregateIndex(ColumnRelation& relation, uint32_t column, SortIn
 
 void AggregateIndex::build()
 {
-    if (this->buildStarted.test_and_set()) return;
-
     this->data.emplace_back(this->index.data[0].value);
     AggregateRow* row = &this->data.back();
     row->sums.resize(this->relation.getColumnCount());

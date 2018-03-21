@@ -29,7 +29,6 @@ bool Filter::isSkippable() const
     return false;
 }
 
-// TODO: check for aggregate indices
 bool Query::isAggregable() const
 {
 #ifndef AGGREGATE_PUSH
@@ -43,7 +42,7 @@ bool Query::isAggregable() const
     {
         for (auto& predicate : join)
         {
-            for (auto selection : predicate.selections)
+            for (auto& selection : predicate.selections)
             {
                 if (columnMap.find(selection.binding) == columnMap.end())
                 {
@@ -51,6 +50,11 @@ bool Query::isAggregable() const
                 }
 
                 if (columnMap[selection.binding] != selection.column)
+                {
+                    return false;
+                }
+
+                if (database.getAggregateIndex(selection.relation, selection.column) == nullptr)
                 {
                     return false;
                 }

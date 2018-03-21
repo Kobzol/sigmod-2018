@@ -13,6 +13,7 @@ public:
         for (int i = 0; i < INDEX_THREADS; i++)
         {
             this->workers[i] = std::thread(&IndexThreadPool::work, this);
+            this->workers[i].detach();
         }
     }
 
@@ -20,22 +21,32 @@ public:
     {
         for (int i = 0; i < static_cast<int32_t>(database.sortIndices.size()); i++)
         {
+            bool found = false;
 #ifdef USE_PRIMARY_INDEX
-            auto& index = database.primaryIndices[i];
-            if (index->take())
+            auto& primary = database.primaryIndices[i];
+            if (primary->take())
             {
-                index->build();
-                return true;
+                primary->build();
+                found = true;
             }
 #endif
 #ifdef USE_SORT_INDEX
-            auto& index = database.sortIndices[i];
-            if (index->take())
+            auto& sort = database.sortIndices[i];
+            if (sort->take())
             {
-                index->build();
-                return true;
+                sort->build();
+                found = true;
+
+#ifdef USE_AGGREGATE_INDEX
+                auto& aggregate = database.aggregateIndices[i];
+                if (aggregate->take())
+                {
+                    aggregate->build();
+                }
+#endif
             }
 #endif
+            if (found) return true;
         }
 
         return false;
