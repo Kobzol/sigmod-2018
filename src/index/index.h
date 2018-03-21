@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <limits>
+
 #include "../util.h"
 
 class ColumnRelation;
@@ -25,4 +27,7 @@ public:
 
     ColumnRelation& relation;
     uint32_t column;
+
+    uint64_t minValue = (std::numeric_limits<uint64_t>::max)();
+    uint64_t maxValue = 0;
 };

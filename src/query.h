@@ -124,6 +124,11 @@ public:
     }
 
     bool isSkippable() const;
+    size_t getInterval() const;
+
+    bool operator<(const Filter& rhs) {
+        return this->getInterval() < rhs.getInterval();
+    }
 
     Selection selection;
     uint64_t value;

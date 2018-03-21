@@ -1,32 +1,44 @@
-#include <iostream>
 #include "query.h"
 #include "database.h"
 
 bool Filter::isSkippable() const
 {
-#ifdef USE_SORT_INDEX
-    auto index = database.getSortIndex(this->selection.relation, this->selection.column);
-    if (index != nullptr)
-    {
-        uint64_t minValue = index->minValue;
-        uint64_t maxValue = index->maxValue;
+    uint64_t minValue = database.getMinValue(this->selection.relation, this->selection.column);
+    uint64_t maxValue = database.getMaxValue(this->selection.relation, this->selection.column);
 
-        if (this->oper == '=' && (maxValue < this->value || minValue > this->value))
-        {
-            return true;
-        }
-        else if (this->oper == '>' && maxValue <= this->value)
-        {
-            return true;
-        }
-        else if (this->oper == '<' && minValue >= this->value)
-        {
-            return true;
-        }
+    if (this->oper == '=' && (maxValue < this->value || minValue > this->value))
+    {
+        return true;
     }
-#endif
+    else if (this->oper == '>' && maxValue <= this->value)
+    {
+        return true;
+    }
+    else if (this->oper == '<' && minValue >= this->value)
+    {
+        return true;
+    }
 
     return false;
+}
+
+size_t Filter::getInterval() const
+{
+    if (this->oper == '=') return 0;
+
+    uint64_t minValue = database.getMinValue(this->selection.relation, this->selection.column);
+    uint64_t maxValue = database.getMaxValue(this->selection.relation, this->selection.column);
+
+    if (this->oper == '<')
+    {
+        if (minValue >= this->value) return 0;
+        return this->value - minValue;
+    }
+    else
+    {
+        if (maxValue <= this->value) return 0;
+        return maxValue - this->value;
+    }
 }
 
 bool Query::isAggregable() const

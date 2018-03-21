@@ -31,6 +31,9 @@ bool PrimaryIndex::build()
         return lhs.row[column] < rhs.row[column];
     });
 
+    this->minValue = this->data[0].row[column];
+    this->maxValue = this->data.back().row[column];
+
     this->buildCompleted = true;
     return true;
 }

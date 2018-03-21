@@ -30,6 +30,7 @@ extern size_t joinsOnFirstColumn;
 extern size_t filtersOnFirstColumn;
 extern size_t selfJoinCount;
 extern size_t filtersSkippedByHistogram;
+extern size_t filterEqualsJoined;
 extern std::atomic<size_t> averageRowsInHash;
 extern std::atomic<size_t> averageRowsInHashCount;
 extern std::atomic<size_t> emptyHashTableCount;

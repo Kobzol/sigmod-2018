@@ -183,6 +183,7 @@ int main(int argc, char** argv)
 #ifdef STATISTICS
     std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
+    std::cerr << "Filter equals joined: " << filterEqualsJoined << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;

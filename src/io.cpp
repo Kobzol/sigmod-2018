@@ -493,6 +493,23 @@ void loadQuery(Query& query, std::string& line)
         if (line[index++] == '|') break;
     }
 
+    for (auto& join: query.joins)
+    {
+        for (auto& j: join)
+        {
+            for (auto& s: j.selections)
+            {
+                for (auto& f: query.filters)
+                {
+                    if (f.selection == s)
+                    {
+                        filterEqualsJoined++;
+                    }
+                }
+            }
+        }
+    }
+
     // load selections
     while (true)
     {

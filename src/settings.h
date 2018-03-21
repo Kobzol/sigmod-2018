@@ -26,7 +26,7 @@
 #define COMPILE_FILTERS               // compile filters to x64 assembly
 //#define AGGREGATE_PUSH                  // use direct aggregation
 
-#define USE_HISTOGRAM
+//#define USE_HISTOGRAM
 #define BUCKET_N 50
 
 #if defined(USE_SORT_INDEX) || defined(USE_PRIMARY_INDEX)
@@ -58,7 +58,7 @@
 
 #define USE_THREADS
 #define QUERY_NUM_THREADS 20            // number of threads to execute queries
-#define HASH_AGGREGATE_THREADS 4        // number of threads to aggregate results in top-level hash join
+#define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 
 //#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30

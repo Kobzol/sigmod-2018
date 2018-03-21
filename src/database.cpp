@@ -90,3 +90,41 @@ std::unique_ptr<Iterator> Database::createFilteredIterator(const Selection& sele
     }
     else return std::make_unique<FilterIterator>(&this->relations[selection.relation], selection.binding, filters);
 }
+
+uint64_t Database::getMinValue(uint32_t relation, uint32_t column)
+{
+    auto* index = database.getSortIndex(relation, column);
+    if (index != nullptr)
+    {
+        return index->minValue;
+    }
+    else
+    {
+        auto* primary = database.getPrimaryIndex(relation, column);
+        if (primary != nullptr)
+        {
+            return primary->minValue;
+        }
+    }
+
+    return 0;
+}
+
+uint64_t Database::getMaxValue(uint32_t relation, uint32_t column)
+{
+    auto* index = database.getSortIndex(relation, column);
+    if (index != nullptr)
+    {
+        return index->maxValue;
+    }
+    else
+    {
+        auto* primary = database.getPrimaryIndex(relation, column);
+        if (primary != nullptr)
+        {
+            return primary->maxValue;
+        }
+    }
+
+    return std::numeric_limits<uint64_t>::max();
+}

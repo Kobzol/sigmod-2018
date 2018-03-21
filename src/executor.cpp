@@ -53,9 +53,7 @@ void Executor::createViews(Database& database, const Query& query, std::unordere
     // assign a filter iterator for filtered bindings
     for (auto& filterGroup: filtersByBindings)
     {
-        std::sort(filterGroup.second.begin(), filterGroup.second.end(), [](const Filter& lhs, const Filter& rhs) {
-            return lhs.oper == '=';
-        });
+        std::sort(filterGroup.second.begin(), filterGroup.second.end());
 
 #ifdef USE_HASH_INDEX
         int equalsIndex = -1;
