@@ -20,8 +20,11 @@ set(SOURCE_FILES
         src/query.cpp
         src/stats.cpp
         src/timer.cpp
+        src/aggregation/aggregated-iterator.cpp
         src/aggregation/aggregator.cpp
+        src/aggregation/indexed-aggregated-iterator.cpp
         src/emit/filter-compiler.cpp
+        src/index/aggregate-index.cpp
         src/index/hash-index.cpp
         src/index/index.cpp
         src/index/primary-index.cpp
@@ -39,7 +42,11 @@ set(SOURCE_FILES
         src/relation/maxdiff_histogram.cpp
         src/relation/primary-index-iterator.cpp
         src/relation/sort-index-iterator.cpp
-        src/aggregation/aggregated-iterator.cpp src/aggregation/aggregated-iterator.h src/index/aggregate-index.cpp src/index/aggregate-index.h src/aggregation/indexed-aggregated-iterator.cpp src/aggregation/indexed-aggregated-iterator.h)
+)
 
-add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
-add_executable(tester src/test/main.cpp ${SOURCE_FILES})
+add_library(joiner STATIC ${SOURCE_FILES})
+
+add_executable(sigmod-2018 src/main.cpp)
+target_link_libraries(sigmod-2018 joiner)
+add_executable(tester src/test/main.cpp)
+target_link_libraries(tester joiner)
