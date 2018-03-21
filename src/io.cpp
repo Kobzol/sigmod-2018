@@ -311,6 +311,22 @@ static SelectionId getJoinId(uint32_t bindingA, uint32_t bindingB)
     return second * 1000 + first;
 }
 
+std::vector<Filter> getFilters(const std::vector<Filter>& filters, const Selection& selection)
+{
+    std::vector<Filter> selected;
+    for (auto& f: filters)
+    {
+        if (f.selection == selection) selected.push_back(f);
+    }
+    return selected;
+}
+bool containsFilter(const std::vector<Filter>& filters, const Filter& filter)
+{
+    return std::find_if(filters.begin(), filters.end(), [&filter](const Filter& f) {
+        return f == filter;
+    }) != filters.end();
+}
+
 void createComponents(Query& query)
 {
     std::unordered_map<uint32_t, std::unique_ptr<UnionFind>> components;
@@ -376,6 +392,78 @@ void createComponents(Query& query)
                 }
             }
         }
+
+#ifdef EXPAND_FILTERS
+        std::vector<Filter> componentFilters;
+        for (auto& sel: kv.second)
+        {
+            auto filters = getFilters(query.filters, sel);
+            for (auto& f: filters)
+            {
+                if (!containsFilter(componentFilters, f))
+                {
+                    componentFilters.push_back(f);
+                }
+            }
+        }
+
+        if (componentFilters.empty()) continue;
+
+        bool impossible = false;
+        std::unordered_set<uint64_t> equals;
+
+        uint64_t minValue = 0;
+        uint64_t maxValue = std::numeric_limits<uint64_t>::max();
+
+        for (auto& f: componentFilters)
+        {
+            if (f.oper == '=')
+            {
+                equals.insert(f.value);
+                minValue = f.value;
+                maxValue = f.value;
+                if (equals.size() > 1)
+                {
+                    impossible = true;
+                    break;
+                }
+            }
+            else if (f.oper == '<')
+            {
+                maxValue = std::min(f.value, maxValue);
+            }
+            else minValue = std::max(f.value, minValue);
+        }
+
+        if (minValue == maxValue)
+        {
+            componentFilters = {
+                    Filter(Selection(0, 0, 0), minValue, nullptr, '=')
+            };
+        }
+        else if (minValue > 0 && maxValue < std::numeric_limits<uint64_t>::max())
+        {
+            componentFilters = {
+                    Filter(Selection(0, 0, 0), minValue, nullptr, '>'),
+                    Filter(Selection(0, 0, 0), maxValue, nullptr, '<')
+            };
+        }
+
+        query.impossible = impossible;
+
+        for (auto& sel: kv.second)
+        {
+            for (auto& filter: componentFilters)
+            {
+                auto assigned = filter;
+                assigned.selection = sel;
+                if (!containsFilter(query.filters, assigned))
+                {
+                    query.filters.push_back(assigned);
+                }
+            }
+        }
+#endif
     }
 
     // rewrite sum selections
@@ -501,7 +589,7 @@ void loadQuery(Query& query, std::string& line)
             {
                 for (auto& f: query.filters)
                 {
-                    if (f.selection == s)
+                    if (f.selection == s && f.oper == '=')
                     {
                         filterEqualsJoined++;
                     }

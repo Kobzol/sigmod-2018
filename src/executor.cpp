@@ -393,6 +393,17 @@ void Executor::createAggregatedViews(const Query& query, std::unordered_map<uint
 
 void Executor::sum(Database& database, Query& query, Iterator* root, bool aggregable)
 {
+    if (query.impossible)
+    {
+        std::stringstream ss;
+        for (int i = 0; i < static_cast<int32_t>(query.selections.size()); i++)
+        {
+            ss << "NULL ";
+        }
+        query.result = ss.str();
+        return;
+    }
+
     std::unordered_map<SelectionId, Selection> selectionMap;
     for (auto& sel: query.selections)
     {

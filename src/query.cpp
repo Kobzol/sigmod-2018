@@ -25,6 +25,7 @@ bool Filter::isSkippable() const
 size_t Filter::getInterval() const
 {
     if (this->oper == '=') return 0;
+    return 1;
 
     uint64_t minValue = database.getMinValue(this->selection.relation, this->selection.column);
     uint64_t maxValue = database.getMaxValue(this->selection.relation, this->selection.column);

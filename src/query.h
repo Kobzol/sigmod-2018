@@ -126,8 +126,13 @@ public:
     bool isSkippable() const;
     size_t getInterval() const;
 
-    bool operator<(const Filter& rhs) {
+    bool operator<(const Filter& rhs) const {
         return this->getInterval() < rhs.getInterval();
+    }
+    bool operator==(const Filter& rhs) const {
+        return this->selection == rhs.selection &&
+               this->oper == rhs.oper &&
+               this->value == rhs.value;
     }
 
     Selection selection;
@@ -149,6 +154,7 @@ public:
     std::string result;
 
     std::unordered_map<uint32_t, std::vector<Selection>> selfJoins; // binding to self-join selections
+    bool impossible = false;
 
 #ifdef STATISTICS
     std::string input;
