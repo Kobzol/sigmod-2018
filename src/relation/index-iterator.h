@@ -16,9 +16,8 @@ public:
     {
         if (!this->filters.empty())
         {
-            this->sortFilter = this->filters[0];
             this->startFilterIndex = 1;
-            this->iteratedSelection = this->sortFilter.selection;
+            this->iteratedSelection = this->filters[0].selection;
         }
     }
     IndexIterator(ColumnRelation* relation, uint32_t binding,
@@ -106,6 +105,8 @@ public:
 
     void prepareSortedAccess(const Selection& selection) final
     {
+        if (selection == this->iteratedSelection) return;
+
         // check if we can sort on a filtered column
         int i = 0;
         for (; i < this->filterSize; i++)
@@ -117,7 +118,6 @@ public:
                 if (index != nullptr)
                 {
                     this->index = index;
-                    this->sortFilter = filter;
                     this->iteratedSelection = selection;
                     this->createIterators(filter, &this->start, &this->end);
                     this->start--;
@@ -139,6 +139,7 @@ public:
         this->start = this->index->data.data() - 1;
         this->originalStart = this->start;
         this->end = this->index->data.data() + this->index->data.size();
+        this->iteratedSelection = selection;
 
         this->startFilterIndex = 0;
     }
@@ -178,7 +179,6 @@ public:
     }
 
     Index* index;
-    Filter sortFilter;
 
     Entry* start = nullptr;
     Entry* end = nullptr;

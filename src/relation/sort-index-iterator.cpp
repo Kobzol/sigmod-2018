@@ -11,10 +11,10 @@ SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding,
 {
     if (!this->filters.empty())
     {
-        this->index = this->getIndex(this->sortFilter.selection.relation, this->sortFilter.selection.column);
+        this->index = this->getIndex(this->iteratedSelection.relation, this->iteratedSelection.column);
         if (this->index != nullptr)
         {
-            this->createIterators(this->sortFilter, &this->start, &this->end);
+            this->createIterators(this->filters[0], &this->start, &this->end);
         }
     }
 
@@ -71,13 +71,13 @@ SortIndex* SortIndexIterator::getIndex(uint32_t relation, uint32_t column)
 
 bool SortIndexIterator::skipSameValue(const Selection& selection)
 {
-    if (selection == this->sortFilter.selection)
+    if (selection == this->iteratedSelection)
     {
-        uint64_t value = this->relation->getValue(this->rowIndex, this->sortFilter.selection.column);
+        uint64_t value = this->relation->getValue(this->rowIndex, this->iteratedSelection.column);
         for (; this->start < this->end; this->start++)
         {
             this->rowIndex = this->start->row;
-            if (this->relation->getValue(this->rowIndex, this->sortFilter.selection.column) != value)
+            if (this->relation->getValue(this->rowIndex, this->iteratedSelection.column) != value)
             {
 #ifdef COLLECT_JOIN_SIZE
                 this->rowCount++;
