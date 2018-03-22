@@ -267,11 +267,10 @@ static void createJoin(Iterator* left,
 
     bool hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
     bool hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
-    bool bothIndices = hasLeftIndex && hasRightIndex;
     bool leftSorted = left->isSortedOn((*join)[0].selections[leftIndex]);
     bool leftSortable = leftSorted || (hasLeftIndex && !left->isJoin());
 
-    if (leftSortable && (first || bothIndices || (leftSorted && hasRightIndex)))
+    if (leftSortable && hasRightIndex && (first || leftSorted))
     {
         createMergesortJoin(left, right, leftIndex, container, join, leftSorted);
     }

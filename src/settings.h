@@ -61,7 +61,7 @@
 #define QUERY_NUM_THREADS 20            // number of threads to execute queries
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 
-#define USE_INDEX_THREADPOOL
+//#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30
 #define INDEX_THREAD_BAILOUT 1200       // how many milliseconds should the index be precalculated
 
