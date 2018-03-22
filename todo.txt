@@ -1,6 +1,7 @@
 - sort joins (self-joins, size, filtered)
 - select best join plan, predict join sizes
-- crack aggregate index
+- change hash in hash join
 - scale primary index to number of rows
+- crack aggregate index
 
 - dynamic programming

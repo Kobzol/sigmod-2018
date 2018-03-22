@@ -34,10 +34,11 @@ public:
         return true;
     }
 
-    std::unique_ptr<Iterator>
-    createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container, const Selection& selection) final;
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) final;
 
-    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections, HashTable& hashTable) override;
+    void fillHashTable(const Selection& hashSelection, const std::vector<Selection>& selections,
+                       HashTable& hashTable) override;
 
     void fillBindings(std::vector<uint32_t>& bindings) final
     {

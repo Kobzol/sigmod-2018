@@ -33,3 +33,10 @@ void SelfJoin::dumpPlan(std::ostream& ss)
     this->inner->dumpPlan(ss);
     ss << ")";
 }
+
+std::unique_ptr<Iterator> SelfJoin::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                          const Selection& selection)
+{
+    container.push_back(this->inner->createIndexedIterator(container, selection));
+    return std::make_unique<SelfJoin>(container.back().get(), this->selections);
+}

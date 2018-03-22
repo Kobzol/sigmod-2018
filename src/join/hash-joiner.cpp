@@ -132,7 +132,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Select
 
     this->left->fillHashTable(this->leftSelection, leftSelections, this->hashTable);
 
-    if (this->last && database.hasIndexedIterator(this->rightSelection))
+    if (this->last)
     {
         this->right->prepareSortedAccess(this->rightSelection);
     }

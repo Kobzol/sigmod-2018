@@ -162,6 +162,7 @@ static void createHashJoin(Iterator* left,
         container.push_back(right->createIndexedIterator(container, (*join)[0].selections[1 - leftIndex]));
         right = container.back().get();
     }
+    else last = false;
 
     if (join->size() > 1)
     {

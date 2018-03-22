@@ -60,8 +60,8 @@ std::string Database::createJoinKey(const Join& join)
 
 bool Database::hasIndexedIterator(const Selection& selection)
 {
-    return this->getPrimaryIndex(selection.relation, selection.column) != nullptr ||
-            this->getSortIndex(selection.relation, selection.column) != nullptr;
+    return  this->getSortIndex(selection.relation, selection.column) != nullptr ||
+            this->getPrimaryIndex(selection.relation, selection.column) != nullptr;
 }
 std::unique_ptr<Iterator> Database::createIndexedIterator(const Selection& selection,
                                                           const std::vector<Filter>& filters)

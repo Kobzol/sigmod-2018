@@ -13,6 +13,9 @@ public:
     bool getNext() final;
     void dumpPlan(std::ostream& ss) final;
 
+    std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    const Selection& selection) override;
+
     std::vector<Selection> selections;
     int32_t selectionSize;
 };
