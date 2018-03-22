@@ -9,7 +9,7 @@ template <bool HAS_MULTIPLE_JOINS>
 class IndexJoiner: public Joiner
 {
 public:
-    IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join);
+    IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join, bool hasLeftIndex);
 
     bool getNext() final;
 
@@ -27,6 +27,8 @@ public:
     {
         return "NL";
     }
+
+    bool hasLeftIndex;
 };
 
 template class IndexJoiner<false>;

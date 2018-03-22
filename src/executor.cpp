@@ -189,18 +189,48 @@ static void createIndexJoin(Iterator* left,
                     Iterator* right,
                     uint32_t leftIndex,
                     std::vector<std::unique_ptr<Iterator>>& container,
-                    Join* join)
+                    Join* join,
+                    bool hasLeftIndex)
 {
+    if (hasLeftIndex && !left->isJoin())
+    {
+        container.push_back(left->createIndexedIterator(container, (*join)[0].selections[leftIndex]));
+        left = container.back().get();
+    }
+    else hasLeftIndex = false;
+
     container.push_back(right->createIndexedIterator(container, (*join)[0].selections[1 - leftIndex]));
-    createTemplatedJoin<IndexJoiner>(left, container.back().get(), leftIndex, join, container);
+    right = container.back().get();
+
+    if (join->size() > 1)
+    {
+        container.push_back(std::make_unique<IndexJoiner<true>>(
+                left,
+                right,
+                leftIndex,
+                *join,
+                hasLeftIndex
+        ));
+    }
+    else
+    {
+        container.push_back(std::make_unique<IndexJoiner<false>>(
+                left,
+                right,
+                leftIndex,
+                *join,
+                hasLeftIndex
+        ));
+    }
 }
 static void createMergesortJoin(Iterator* left,
-                         Iterator* right,
-                         uint32_t leftIndex,
-                         std::vector<std::unique_ptr<Iterator>>& container,
-                         Join* join)
+                                Iterator* right,
+                                uint32_t leftIndex,
+                                std::vector<std::unique_ptr<Iterator>>& container,
+                                Join* join,
+                                bool leftSorted)
 {
-    if (!left->isJoin())
+    if (!left->isJoin() && !leftSorted)
     {
         container.push_back(left->createIndexedIterator(container, (*join)[0].selections[leftIndex]));
         left = container.back().get();
@@ -238,17 +268,18 @@ static void createJoin(Iterator* left,
     bool hasLeftIndex = database.hasIndexedIterator((*join)[0].selections[leftIndex]);
     bool hasRightIndex = database.hasIndexedIterator((*join)[0].selections[1 - leftIndex]);
     bool bothIndices = hasLeftIndex && hasRightIndex;
+    bool leftSorted = left->isSortedOn((*join)[0].selections[leftIndex]);
+    bool leftSortable = leftSorted || (hasLeftIndex && !left->isJoin());
 
-    if (bothIndices && (first || left->isSortedOn((*join)[0].selections[leftIndex])))
+    if (leftSortable && (first || bothIndices || (leftSorted && hasRightIndex)))
     {
-        createMergesortJoin(left, right, leftIndex, container, join);
+        createMergesortJoin(left, right, leftIndex, container, join, leftSorted);
     }
     else
     {
-        // TODO: left now thinks it's empty when it's a SortIndexIterator without filters
-        if (hasRightIndex && left->predictSize() < 20000)
+        if (hasRightIndex)
         {
-            createIndexJoin(left, right, leftIndex, container, join);
+            createIndexJoin(left, right, leftIndex, container, join, hasLeftIndex);
         }
         else createHashJoin(left, right, leftIndex, container, join, last);
     }
@@ -259,13 +290,17 @@ Iterator* Executor::createRootView(Database& database, Query& query,
                                    std::vector<std::unique_ptr<Iterator>>& container,
                                    bool aggregable)
 {
+    std::sort(query.joins.begin(), query.joins.end(), [](const Join& a, const Join& b) {
+        return a.size() > b.size();
+    });
+
 #ifdef SORT_JOINS_BY_SIZE
     std::sort(query.joins.begin(), query.joins.end(), [&database, &views](const Join& a, const Join& b) {
-        auto& aLeft = database.relations[a[0].selections[0].relation];
-        auto& aRight = database.relations[a[0].selections[1].relation];
-        auto& bLeft = database.relations[b[0].selections[0].relation];
-        auto& bRight = database.relations[b[0].selections[1].relation];
-        return (aLeft.getRowCount() + aRight.getRowCount()) > (bLeft.getRowCount() + bRight.getRowCount());
+        auto& aLeft = views[a[0].selections[0].binding];
+        auto& aRight = views[a[0].selections[1].binding];
+        auto& bLeft = views[b[0].selections[0].binding];
+        auto& bRight = views[b[0].selections[1].binding];
+        return (aLeft->predictSize() * aRight->predictSize()) < (bLeft->predictSize() * bRight->predictSize());
     });
 #endif
     auto* join = &query.joins[0];

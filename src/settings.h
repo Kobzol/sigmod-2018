@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "public.complete"
+#define INPUT_FILE "small.complete"
 
 #ifndef NDEBUG
     #define STATISTICS
@@ -38,7 +38,7 @@
     #undef USE_AGGREGATE_INDEX
 #endif
 
-#define USE_BLOOM_FILTER                // use bloom filter in hash join
+//#define USE_BLOOM_FILTER                // use bloom filter in hash join
 #ifdef USE_BLOOM_FILTER
     #define BLOOM_FILTER_SIZE (2 << 18)
 #else
@@ -62,7 +62,7 @@
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 
 #define USE_INDEX_THREADPOOL
-#define INDEX_THREADS 8
+#define INDEX_THREADS 30
 #define INDEX_THREAD_BAILOUT 1200       // how many milliseconds should the index be precalculated
 
 //#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results

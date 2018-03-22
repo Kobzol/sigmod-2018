@@ -4,8 +4,9 @@
 #include "../database.h"
 
 template <bool HAS_MULTIPLE_JOINS>
-IndexJoiner<HAS_MULTIPLE_JOINS>::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
-        : Joiner(left, right, leftIndex, join)
+IndexJoiner<HAS_MULTIPLE_JOINS>::IndexJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join,
+                                             bool hasLeftIndex)
+        : Joiner(left, right, leftIndex, join), hasLeftIndex(hasLeftIndex)
 {
 
 }
@@ -61,7 +62,7 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Selec
 {
     this->initializeSelections(selections);
 
-    if (database.hasIndexedIterator(this->leftSelection))
+    if (this->hasLeftIndex)
     {
         this->left->prepareSortedAccess(this->leftSelection);
     }

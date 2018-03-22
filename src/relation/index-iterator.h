@@ -145,7 +145,11 @@ public:
 
     int64_t predictSize() final
     {
-        return (this->end - this->originalStart) - 1; // - 1 because originalStart is one before the first element
+        if (!this->filters.empty())
+        {
+            return (this->end - this->originalStart) - 1; // - 1 because originalStart is one before the first element
+        }
+        return this->relation->getRowCount();
     }
 
     void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count) final
