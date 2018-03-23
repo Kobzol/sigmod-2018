@@ -1,5 +1,5 @@
-#include <iostream>
 #include "merge-sort-joiner.h"
+#include <cstring>
 
 template <bool HAS_MULTIPLE_JOINS>
 MergeSortJoiner<HAS_MULTIPLE_JOINS>::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -168,16 +168,23 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
                                       const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
                                       size_t& count)
 {
+    std::vector<uint64_t> rightResults(results.size());
     while (true)
     {
         if (NOEXPECT(!this->findSameRow())) return;
 
+        std::memset(rightResults.data(), 0, sizeof(uint64_t) * rightResults.size());
         uint64_t value = this->rightValue;
         int32_t rightCount = 0;
         bool hasNext = true;
         do
         {
             rightCount++;
+            for (auto& c: rightColumns)
+            {
+                rightResults[c.second] += this->right->getColumn(c.first);
+            }
+
             if (!this->moveRight())
             {
                 hasNext = false;
@@ -207,18 +214,9 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
             while (value == this->leftValue);
         }
 
-        if (!rightColumns.empty() && leftCount > 0)
+        for (auto& c: rightColumns)
         {
-            this->right->restore();
-
-            for (int i = 0; i < rightCount; i++)
-            {
-                for (auto& c: rightColumns)
-                {
-                    results[c.second] += this->right->getColumn(c.first) * leftCount;
-                }
-                this->right->getNext();
-            }
+            results[c.second] += rightResults[c.second] * leftCount;
         }
 
         count += leftCount * rightCount;
