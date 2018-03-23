@@ -1,5 +1,6 @@
 #include "primary-index.h"
 #include "../relation/column-relation.h"
+#include "../thirdparty/kxsort.h"
 
 #include <algorithm>
 #include <cstring>
@@ -12,17 +13,30 @@ public:
 };
 
 template <int N>
+struct RadixTraitsRow
+{
+    static const int nBytes = 8;
+
+    RadixTraitsRow(int column): column(column)
+    {
+
+    }
+
+    int kth_byte(const Row<N> &x, int k) {
+        return (x.row[column] >> (k * 8)) & 0xFF;
+    }
+    bool compare(const Row<N> &x, const Row<N> &y) {
+        return x.row[column] < y.row[column];
+    }
+
+    int column;
+};
+
+template <int N>
 void sort(uint64_t* mem, int rows, uint32_t column)
 {
     auto* ptr = reinterpret_cast<Row<N>*>(mem);
-    std::sort(ptr, ptr + rows, [column](const Row<N>& lhs, const Row<N>& rhs)
-    {
-        return lhs.row[column] < rhs.row[column];
-    });
-    assert(std::is_sorted(ptr, ptr + rows, [column](const Row<N>& lhs, const Row<N>& rhs)
-    {
-        return lhs.row[column] < rhs.row[column];
-    }));
+    kx::radix_sort(ptr, ptr + rows, RadixTraitsRow<N>(column));
 }
 
 template <int N>
