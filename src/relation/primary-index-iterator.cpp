@@ -14,22 +14,27 @@ PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t bi
         }
     }
 
-    this->start--;
+    this->start = PrimaryIndex::move(*this->relation, this->start, -1);
     this->originalStart = this->start;
 }
 
-PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
-                                       PrimaryRowEntry* start, PrimaryRowEntry* end)
-        : IndexIterator(relation, binding, filters, start, end)
+PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t binding,
+                                           const std::vector<Filter>& filters,
+                                           PrimaryRowEntry* start, PrimaryRowEntry* end,
+                                           Selection iteratedSelection)
+        : IndexIterator(relation, binding, filters, start, end, iteratedSelection)
 {
-
+    if (iteratedSelection.binding != 100)
+    {
+        this->index = this->getIndex(this->iteratedSelection.relation, this->iteratedSelection.column);
+    }
 }
 
 bool PrimaryIndexIterator::getNext()
 {
-    this->start++;
+    this->start = this->index->move(this->start, 1);
 
-    for (; this->start < this->end; this->start++)
+    for (; this->start < this->end; this->start = this->index->move(this->start, 1))
     {
         if (this->passesFilters())
         {
@@ -84,28 +89,12 @@ PrimaryIndex* PrimaryIndexIterator::getIndex(uint32_t relation, uint32_t column)
     return database.getPrimaryIndex(relation, column);
 }
 
-PrimaryRowEntry* PrimaryIndexIterator::lowerBound(uint64_t value)
-{
-    return toPtr(*this->index, std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                [this](const PrimaryRowEntry& entry, uint64_t val) {
-                                                    return entry.row[this->index->column] < val;
-                                                }));
-}
-
-PrimaryRowEntry* PrimaryIndexIterator::upperBound(uint64_t value)
-{
-    return toPtr(*this->index, std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                                [this](uint64_t val, const PrimaryRowEntry& entry) {
-                                                    return val < entry.row[this->index->column];
-                                                }));
-}
-
 bool PrimaryIndexIterator::skipSameValue(const Selection& selection)
 {
     if (selection == this->iteratedSelection)
     {
         uint64_t value = this->relation->getValue(this->rowIndex, this->iteratedSelection.column);
-        for (; this->start < this->end; this->start++)
+        for (; this->start < this->end; this->start = this->index->move(this->start, 1))
         {
             if (this->relation->getValue(this->rowIndex, this->iteratedSelection.column) != value)
             {
@@ -128,7 +117,8 @@ std::unique_ptr<Iterator> PrimaryIndexIterator::createIndexedIterator(std::vecto
     {
         return std::make_unique<PrimaryIndexIterator>(this->relation, this->binding, this->filters,
                                                       this->originalStart,
-                                                      this->end);
+                                                      this->end,
+                                                      this->iteratedSelection);
     }
     else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters);
 }

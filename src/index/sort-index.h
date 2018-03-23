@@ -34,5 +34,21 @@ public:
 
     bool build() final;
 
+    RowEntry* move(RowEntry* ptr, int offset);
+
+    RowEntry* lowerBound(uint64_t value);
+    RowEntry* upperBound(uint64_t value);
+
+    int64_t count(RowEntry* from, RowEntry* to);
+
+    RowEntry* begin;
+    RowEntry* end;
+
     std::vector<RowEntry> data;
+
+private:
+    RowEntry* toPtr(const std::vector<RowEntry>::iterator& iterator)
+    {
+        return this->data.data() + (iterator - this->data.begin());
+    }
 };

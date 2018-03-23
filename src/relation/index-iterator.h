@@ -21,30 +21,32 @@ public:
         }
     }
     IndexIterator(ColumnRelation* relation, uint32_t binding,
-                                           const std::vector<Filter>& filters, Entry* start, Entry* end)
-            : FilterIterator(relation, binding, filters), start(start), end(end)
+                  const std::vector<Filter>& filters, Entry* start, Entry* end,
+                  Selection iteratedSelection)
+            : FilterIterator(relation, binding, filters), start(start), end(end), iteratedSelection(iteratedSelection)
     {
         this->originalStart = start;
     }
 
     virtual Index* getIndex(uint32_t relation, uint32_t column) = 0;
-    virtual Entry* lowerBound(uint64_t value) = 0;
-    virtual Entry* upperBound(uint64_t value) = 0;
-
-    Entry* toPtr(Index& index, const typename std::vector<Entry>::iterator& iterator)
+    Entry* lowerBound(uint64_t value)
     {
-        return index.data.data() + (iterator - index.data.begin());
+        return this->index->lowerBound(value);
+    }
+    Entry* upperBound(uint64_t value)
+    {
+        return this->index->upperBound(value);
     }
 
     void createIterators(const Filter& filter, Entry** start, Entry** end)
     {
         auto index = this->getIndex(filter.selection.relation, filter.selection.column);
 
-        Entry* last = index->data.data() + index->data.size();
+        Entry* last = index->end;
         uint64_t value = filter.value;
         if (filter.oper == '<')
         {
-            *start = index->data.data();
+            *start = index->begin;
             *end = this->lowerBound(value);
         }
         else if (filter.oper == '>')
@@ -59,10 +61,11 @@ public:
         }
     }
 
-    void prepareIndexedAccess() final
+    void prepareIndexedAccess(const Selection& selection) final
     {
         this->start = this->end;
         this->startFilterIndex = 0;
+        this->index = this->getIndex(selection.relation, selection.column);
     }
 
     void iterateValue(const Selection& selection, uint64_t value) final
@@ -89,7 +92,7 @@ public:
 
         this->start = this->lowerBound(value);
         this->end = this->upperBound(value);
-        this->start--;
+        this->start = this->index->move(this->start, -1);
         this->originalStart = this->start;
     }
 
@@ -120,7 +123,7 @@ public:
                     this->index = index;
                     this->iteratedSelection = selection;
                     this->createIterators(filter, &this->start, &this->end);
-                    this->start--;
+                    this->start = this->index->move(this->start, -1);
                     this->originalStart = this->start;
                     break;
                 }
@@ -136,9 +139,9 @@ public:
 
         this->index = this->getIndex(selection.relation, selection.column);
         assert(this->index != nullptr);
-        this->start = this->index->data.data() - 1;
+        this->start = this->index->move(this->index->begin, -1);
         this->originalStart = this->start;
-        this->end = this->index->data.data() + this->index->data.size();
+        this->end = this->index->end;
         this->iteratedSelection = selection;
 
         this->startFilterIndex = 0;
@@ -148,16 +151,17 @@ public:
     {
         if (!this->filters.empty())
         {
-            return (this->end - this->originalStart) - 1; // - 1 because originalStart is one before the first element
+            // - 1 because originalStart is one before the first element
+            return this->index->count(this->originalStart, this->end) - 1;
         }
         return this->relation->getRowCount();
     }
 
     void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count) final
     {
-        auto size = (this->end - this->originalStart) - 1;
+        auto size = this->index->count(this->originalStart, this->end) - 1;
         auto chunkSize = static_cast<size_t>(std::ceil(size / (double) count));
-        Entry* iter = this->originalStart + 1;
+        Entry* iter = this->index->move(this->originalStart, 1);
 
         size_t left = size;
         while (left > 0)
@@ -169,16 +173,17 @@ public:
                     this->relation,
                     this->binding,
                     this->filters,
-                    iter - 1,
-                    iter + chunk
+                    this->index->move(iter, -1),
+                    this->index->move(iter, chunk),
+                    this->iteratedSelection
             ));
-            iter += chunk;
+            iter = this->index->move(iter, chunk);
         }
 
         assert(iter == this->end);
     }
 
-    Index* index;
+    Index* index = nullptr;
 
     Entry* start = nullptr;
     Entry* end = nullptr;

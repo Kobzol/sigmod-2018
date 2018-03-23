@@ -101,21 +101,23 @@ void loadDatabase(Database& database)
 		maxColumns = max(maxColumns, rel.columnCount);
 #endif
 
-
-        bool sorted = true;
-        for (size_t i = 1; i < rel.tupleCount; i++)
+        /*for (int c = 0; c < rel.columnCount; c++)
         {
-            if (rel.getValue(i, 0) <= rel.getValue(i - 1, 0))
+            bool sorted = true;
+            for (size_t i = 1; i < rel.tupleCount; i++)
             {
-                sorted = false;
-                break;
+                if (rel.getValue(i, c) <= rel.getValue(i - 1, c))
+                {
+                    sorted = false;
+                    break;
+                }
             }
-        }
 
-        if (sorted)
-        {
-            sortedOnFirstColumn++;
-        }
+            if (sorted)
+            {
+                sortedOnFirstColumn++;
+            }
+        }*/
 #endif
     }
 
@@ -124,12 +126,13 @@ void loadDatabase(Database& database)
 #endif
 
     Timer transposeTimer;
-    std::vector<std::vector<PrimaryRowEntry>*> relationData(database.relations.size());
+    std::vector<uint64_t*> relationData(database.relations.size());
 
 #ifdef USE_PRIMARY_INDEX
-    for (auto& vec: relationData)
+    for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
     {
-        vec = new std::vector<PrimaryRowEntry>();
+        relationData[i] = new uint64_t[PrimaryIndex::rowSize(database.relations[i]) *
+                database.relations[i].getRowCount()];
     }
 
 #ifdef USE_THREADS
@@ -142,13 +145,13 @@ void loadDatabase(Database& database)
         if (PrimaryIndex::canBuild(database.relations[i]))
         {
             auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
-            relationData[i]->resize(static_cast<size_t>(rows));
             for (int r = 0; r < rows; r++)
             {
-                for (int c = 0; c < static_cast<int32_t>(database.relations[i].getColumnCount()); c++)
+                int columns = database.relations[i].getColumnCount();
+                for (int c = 0; c < static_cast<int32_t>(columns); c++)
                 {
-                    (*relationData[i])[r].row[c] = database.relations[i].getValue(static_cast<size_t>(r),
-                                                                                  static_cast<size_t>(c));
+                    relationData[i][r * columns + c] = database.relations[i].getValue(static_cast<size_t>(r),
+                                                                                      static_cast<size_t>(c));
                 }
             }
         }
@@ -168,14 +171,8 @@ void loadDatabase(Database& database)
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[r], i));
             database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[r], i,
                                                                                  *database.sortIndices.back()));
-
-            if (i == 0)
-            {
-                database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
-                                                                                 relationData[r]));
-            }
-            else database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
-                                                                                  nullptr));
+            database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[r], i,
+                                                                             relationData[r]));
         }
 
 #ifdef USE_PRIMARY_INDEX

@@ -37,6 +37,35 @@ bool SortIndex::build()
     this->minValue = this->data[0].value;
     this->maxValue = this->data.back().value;
 
+    this->begin = this->data.data();
+    this->end = this->data.data() + this->data.size();
+
     this->buildCompleted = true;
     return true;
+}
+
+RowEntry* SortIndex::move(RowEntry* ptr, int offset)
+{
+    return ptr + offset;
+}
+
+RowEntry* SortIndex::lowerBound(uint64_t value)
+{
+    return this->toPtr(std::lower_bound(this->data.begin(), this->data.end(), value,
+                                        [](const RowEntry& entry, uint64_t val) {
+                                            return entry.value < val;
+                                        }));
+}
+
+RowEntry* SortIndex::upperBound(uint64_t value)
+{
+    return this->toPtr(std::upper_bound(this->data.begin(), this->data.end(), value,
+                                        [](uint64_t val, const RowEntry& entry) {
+                                            return val < entry.value;
+                                        }));
+}
+
+int64_t SortIndex::count(RowEntry* from, RowEntry* to)
+{
+    return to - from;
 }

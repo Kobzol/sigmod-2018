@@ -23,26 +23,10 @@ SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding,
 }
 
 SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
-                                       RowEntry* start, RowEntry* end)
-        : IndexIterator(relation, binding, filters, start, end)
+                                       RowEntry* start, RowEntry* end, Selection iteratedSelection)
+        : IndexIterator(relation, binding, filters, start, end, iteratedSelection)
 {
 
-}
-
-RowEntry* SortIndexIterator::lowerBound(uint64_t value)
-{
-    return toPtr(*this->index, std::lower_bound(this->index->data.begin(), this->index->data.end(), value,
-                                   [](const RowEntry& entry, uint64_t val) {
-                                       return entry.value < val;
-                                   }));
-}
-
-RowEntry* SortIndexIterator::upperBound(uint64_t value)
-{
-    return toPtr(*this->index, std::upper_bound(this->index->data.begin(), this->index->data.end(), value,
-                                   [](uint64_t val, const RowEntry& entry) {
-                                       return val < entry.value;
-                                   }));
 }
 
 bool SortIndexIterator::getNext()
@@ -115,5 +99,6 @@ std::unique_ptr<Iterator> SortIndexIterator::createIndexedIterator(std::vector<s
     }
     else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters,
                                                     this->originalStart,
-                                                    this->end);
+                                                    this->end,
+                                                    this->iteratedSelection);
 }

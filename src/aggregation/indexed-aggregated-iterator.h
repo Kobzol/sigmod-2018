@@ -14,7 +14,7 @@ public:
     std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
                                                     const Selection& selection) final;
 
-    void prepareIndexedAccess() final;
+    void prepareIndexedAccess(const Selection& selection) final;
     void iterateValue(const Selection& selection, uint64_t value) final;
 
     void dumpPlan(std::ostream& ss) final;

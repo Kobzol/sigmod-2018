@@ -65,7 +65,7 @@ void HashFilterIterator::iterateValue(const Selection& selection, uint64_t value
     }
 }
 
-void HashFilterIterator::prepareIndexedAccess()
+void HashFilterIterator::prepareIndexedAccess(const Selection& selection)
 {
     this->activeRow = nullptr;
     this->startFilterIndex = 0;

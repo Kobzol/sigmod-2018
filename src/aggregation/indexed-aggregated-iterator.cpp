@@ -83,7 +83,7 @@ void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::iterateValue(const Selection&
 }
 
 template<bool IS_GROUPBY_SUMMED>
-void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::prepareIndexedAccess()
+void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::prepareIndexedAccess(const Selection& selection)
 {
     this->start = this->end;
 }

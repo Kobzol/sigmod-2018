@@ -6,12 +6,12 @@
 
 #include "index.h"
 
-#define PRIMARY_INDEX_COLUMNS 5
+#define PRIMARY_INDEX_MAX_COLUMNS 9
 
 struct PrimaryRowEntry
 {
 public:
-    uint64_t row[PRIMARY_INDEX_COLUMNS];
+    uint64_t row[1];
 };
 
 /**
@@ -22,11 +22,27 @@ class PrimaryIndex: public Index
 {
 public:
     static bool canBuild(ColumnRelation& relation);
+    static int rowSize(ColumnRelation& relation);
+    static PrimaryRowEntry* move(ColumnRelation& relation, PrimaryRowEntry* entry, int offset);
 
-    PrimaryIndex(ColumnRelation& relation, uint32_t column, std::vector<PrimaryRowEntry>* init);
+    PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* init);
 
     bool build() final;
 
-    std::vector<PrimaryRowEntry>* init;
-    std::vector<PrimaryRowEntry> data;
+    PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset);
+
+    PrimaryRowEntry* lowerBound(uint64_t value);
+    PrimaryRowEntry* upperBound(uint64_t value);
+
+    int64_t count(PrimaryRowEntry* from, PrimaryRowEntry* to);
+
+    PrimaryRowEntry* begin;
+    PrimaryRowEntry* end;
+
+    uint64_t* init;
+    uint64_t* mem;
+    PrimaryRowEntry* data;
+
+    int rowSizeBytes;
+    int rowOffset;
 };

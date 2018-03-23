@@ -39,7 +39,7 @@ public:
     virtual uint64_t getValue(const Selection& selection) = 0;
     virtual uint64_t getColumn(uint32_t column) = 0;
 
-    virtual void prepareIndexedAccess()
+    virtual void prepareIndexedAccess(const Selection& selection)
     {
 
     }

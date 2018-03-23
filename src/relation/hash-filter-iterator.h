@@ -19,7 +19,7 @@ public:
     bool getNext() final;
     bool skipSameValue(const Selection& selection) final;
 
-    void prepareIndexedAccess() final;
+    void prepareIndexedAccess(const Selection& selection) final;
     void iterateValue(const Selection& selection, uint64_t value) final;
 
     int64_t predictSize() final;

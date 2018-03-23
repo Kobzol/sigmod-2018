@@ -71,7 +71,6 @@ std::unique_ptr<Iterator> Database::createIndexedIterator(const Selection& selec
     auto primary = this->getPrimaryIndex(selection.relation, selection.column);
     if (primary != nullptr)
     {
-        assert(selection.column == 0);
         return std::make_unique<PrimaryIndexIterator>(&this->relations[selection.relation],
                                                       selection.binding, filters);
     }

@@ -67,7 +67,7 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::requireSelections(std::unordered_map<Selec
         this->left->prepareSortedAccess(this->leftSelection);
     }
 
-    this->right->prepareIndexedAccess();
+    this->right->prepareIndexedAccess(this->rightSelection);
 }
 
 template <bool HAS_MULTIPLE_JOINS>

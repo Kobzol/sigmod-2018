@@ -39,9 +39,9 @@ public:
         return this->inner->getColumn(column);
     }
 
-    void prepareIndexedAccess() override
+    void prepareIndexedAccess(const Selection& selection) override
     {
-        this->inner->prepareIndexedAccess();
+        this->inner->prepareIndexedAccess(selection);
     }
 
     void prepareSortedAccess(const Selection& selection) override
