@@ -18,6 +18,7 @@ public:
 
     bool getNext() final;
     bool skipSameValue(const Selection& selection) final;
+    bool skipTo(const Selection& selection, uint64_t value) final;
 
     RowEntry* findNextValue(const Selection& selection, uint64_t value) final;
     int64_t count() final;

@@ -22,6 +22,23 @@ bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::moveRight()
     this->rightValue = this->right->getColumn(this->rightColumns[0]);
     return true;
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::skipLeftToRight()
+{
+    if (!this->left->skipTo(this->leftSelection, this->rightValue)) return false;
+    this->leftValue = this->left->getColumn(this->leftColumns[0]);
+    return true;
+}
+
+template<bool HAS_MULTIPLE_JOINS>
+bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::skipRightToLeft()
+{
+    if (!this->right->skipTo(this->rightSelection, this->leftValue)) return false;
+    this->rightValue = this->right->getColumn(this->rightColumns[0]);
+    return true;
+}
+
 template <bool HAS_MULTIPLE_JOINS>
 bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::checkJoins()
 {
@@ -48,13 +65,13 @@ bool MergeSortJoiner<HAS_MULTIPLE_JOINS>::findSameRow()
 
     while (this->leftValue != this->rightValue)
     {
-        while (this->leftValue < this->rightValue)
+        if (this->leftValue < this->rightValue)
         {
-            if (!this->moveLeft()) return false;
+            if (!this->skipLeftToRight()) return false;
         }
-        while (this->leftValue > this->rightValue)
+        if (this->leftValue > this->rightValue)
         {
-            if (!this->moveRight()) return false;
+            if (!this->skipRightToLeft()) return false;
         }
     }
 

@@ -21,7 +21,7 @@ public:
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
         {
-            if (column < database.relations[i].columnCount)
+            if (column < static_cast<int32_t>(database.relations[i].columnCount))
             {
                 auto& primary = database.primaryIndices[database.getGlobalColumnId(static_cast<uint32_t>(i),
                                                                                    static_cast<uint32_t>(column))];

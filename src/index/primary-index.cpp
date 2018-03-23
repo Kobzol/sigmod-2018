@@ -1,6 +1,7 @@
 #include "primary-index.h"
 #include "../relation/column-relation.h"
 #include "../thirdparty/kxsort.h"
+#include "../database.h"
 
 #include <algorithm>
 #include <cstring>
@@ -130,6 +131,18 @@ bool PrimaryIndex::build()
 
     this->begin = this->data;
     this->end = this->move(data, rows);
+
+    bool unique = true;
+    for (int i = 1; i < rows; i++)
+    {
+        if (this->move(this->begin, i - 1)->row[this->column] == this->move(this->begin, i)->row[this->column])
+        {
+            unique = false;
+            break;
+        }
+    }
+
+    database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = unique;
 
     this->buildCompleted = true;
     return true;

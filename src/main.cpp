@@ -184,6 +184,8 @@ int main(int argc, char** argv)
     std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
     std::cerr << "Filter equals joined: " << filterEqualsJoined << std::endl;
+    std::cerr << "Join one unique: " << joinOneUnique << std::endl;
+    std::cerr << "Join both unique: " << joinBothUnique << std::endl;
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
@@ -192,6 +194,17 @@ int main(int argc, char** argv)
     for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 10); i++)
     {
         std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
+        /*for (auto& j : allQueries[i].joins)
+        {
+            for (auto& p: j)
+            {
+                for (auto& s: p.selections)
+                {
+                    std::cerr << database.unique[database.getGlobalColumnId(s.relation, s.column)] << ' ';
+                }
+            }
+        }
+        std::cerr << std::endl;*/
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;

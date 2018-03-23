@@ -125,6 +125,8 @@ void loadDatabase(Database& database)
     relationLoadTime = loadTimer.get();
 #endif
 
+    database.unique.resize(columnId);
+
     Timer transposeTimer;
     std::vector<uint64_t*> relationData(database.relations.size());
 
@@ -538,6 +540,11 @@ void loadQuery(Query& query, std::string& line)
             predicate.selections[1].binding = static_cast<uint32_t>(value);
             index++;
             predicate.selections[1].column = (uint32_t) readInt(line, index);
+
+            auto leftUnique = database.unique[database.getGlobalColumnId(predicate.selections[0].relation, predicate.selections[0].column)];
+            auto rightUnique = database.unique[database.getGlobalColumnId(predicate.selections[1].relation, predicate.selections[1].column)];
+            if (leftUnique || rightUnique) joinOneUnique++;
+            if (leftUnique && rightUnique) joinBothUnique++;
 
             // normalize the order of bindings in multiple-column joins
             if (predicate.selections[0].binding < predicate.selections[1].binding)

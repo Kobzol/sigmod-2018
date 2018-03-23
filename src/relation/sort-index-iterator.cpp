@@ -121,3 +121,23 @@ int64_t SortIndexIterator::count()
 {
     return (this->end - this->originalStart) - 1;
 }
+
+bool SortIndexIterator::skipTo(const Selection& selection, uint64_t value)
+{
+    assert(selection == this->iteratedSelection);
+    this->start++;
+
+    for (; this->start < this->end; this->start++)
+    {
+        this->rowIndex = this->start->row;
+        if (this->start->value >= value && this->passesFilters())
+        {
+#ifdef COLLECT_JOIN_SIZE
+            this->rowCount++;
+#endif
+            return true;
+        }
+    }
+
+    return false;
+}

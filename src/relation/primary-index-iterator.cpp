@@ -111,6 +111,23 @@ bool PrimaryIndexIterator::skipSameValue(const Selection& selection)
     }
     return this->getNext();
 }
+bool PrimaryIndexIterator::skipTo(const Selection& selection, uint64_t value)
+{
+    this->start = this->index->inc(this->start);
+
+    for (; this->start < this->end; this->start = this->index->inc(this->start))
+    {
+        if (this->getValue(selection) >= value && this->passesFilters())
+        {
+#ifdef COLLECT_JOIN_SIZE
+            this->rowCount++;
+#endif
+            return true;
+        }
+    }
+
+    return false;
+}
 
 std::unique_ptr<Iterator> PrimaryIndexIterator::createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
                                                                       const Selection& selection)

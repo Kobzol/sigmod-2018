@@ -30,6 +30,18 @@ public:
     {
         return this->getNext();
     }
+    /*
+     * Iterates while the current value for the given selection is lower than the given value.
+     * */
+    virtual bool skipTo(const Selection& selection, uint64_t value)
+    {
+        while (this->getNext())
+        {
+            if (this->getValue(selection) >= value) return true;
+        }
+
+        return false;
+    }
 
     virtual int32_t getColumnCount() = 0;
     virtual int32_t getRowCount()

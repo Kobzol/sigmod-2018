@@ -31,6 +31,9 @@ public:
     bool moveLeft();
     bool moveRight();
 
+    bool skipLeftToRight();
+    bool skipRightToLeft();
+
     bool checkJoins();
     bool findSameRow();
 
