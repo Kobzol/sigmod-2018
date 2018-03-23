@@ -243,7 +243,7 @@ void loadDatabase(Database& database)
 #endif
         bool built = false;
 #ifdef USE_PRIMARY_INDEX
-        if (database.primaryIndices[i]->column == 0 && database.primaryIndices[i]->take())
+        if (database.primaryIndices[i]->column < PREBUILD_PRIMARY_COLUMNS && database.primaryIndices[i]->take())
         {
             built = database.primaryIndices[i]->build();
         }

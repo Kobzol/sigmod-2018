@@ -17,15 +17,19 @@
 
 //#define USE_HASH_INDEX
 #define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
-#define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
-//#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
+//#define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
+#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 
 //#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
 //#define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
 //#define EXPAND_FILTERS                // expand filters to all members of a join component
-//#define AGGREGATE_PUSH                  // use direct aggregation
+#define AGGREGATE_PUSH                  // use direct aggregation
+
+#define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
+#define PREBUILD_PRIMARY_COLUMNS 3        // how many columns for primary index should be prebuilt
+
 
 //#define USE_HISTOGRAM
 #define BUCKET_N 50
@@ -49,12 +53,12 @@
     #define USE_SEQUENTIAL_FILTER
 #endif
 
-#ifndef AGGREGATE_PUSH
-    #undef USE_AGGREGATE_INDEX
+#ifndef INDEX_AVAILABLE
+    #undef AGGREGATE_PUSH
 #endif
 
-#ifdef INDEX_AVAILABLE
-    #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
+#ifndef AGGREGATE_PUSH
+    #undef USE_AGGREGATE_INDEX
 #endif
 
 #define USE_THREADS

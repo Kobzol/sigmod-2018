@@ -67,10 +67,17 @@ bool Query::isAggregable() const
                     return false;
                 }
 
+#ifdef USE_AGGREGATE_INDEX
                 if (database.getAggregateIndex(selection.relation, selection.column) == nullptr)
                 {
                     return false;
                 }
+#else
+                if (!database.hasIndexedIterator(selection))
+                {
+                    return false;
+                }
+#endif
             }
         }
     }

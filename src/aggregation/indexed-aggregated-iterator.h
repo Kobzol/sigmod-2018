@@ -24,7 +24,7 @@ public:
     AggregateIndex* index;
     AggregateRow* originalStart;
 
-    Selection iteratedSelection{100, 100, 100};
+    Selection iterateValueSelection{100, 100, 100};
     uint64_t iteratedValue;
 };
 

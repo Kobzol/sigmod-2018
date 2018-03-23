@@ -59,7 +59,7 @@ template<bool IS_GROUPBY_SUMMED>
 void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::iterateValue(const Selection& selection, uint64_t value)
 {
 #ifdef CACHE_ITERATE_VALUE
-    if (this->iteratedSelection == selection)
+    if (this->iterateValueSelection == selection)
     {
         if (this->iteratedValue == value)
         {
@@ -67,7 +67,7 @@ void IndexedAggregatedIterator<IS_GROUPBY_SUMMED>::iterateValue(const Selection&
             return;
         }
     }
-    else this->iteratedSelection = selection;
+    else this->iterateValueSelection = selection;
     this->iteratedValue = value;
 #endif
 
