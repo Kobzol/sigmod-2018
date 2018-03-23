@@ -1,30 +1,6 @@
-#include "maxdiff_histogram.h"
 #include <cstring>
+#include "maxdiff_histogram.h"
 
-bool MaxdiffHistogram::compareBuckets()
-{
-	if (histogramCount.size() != histogramCount_old.size())
-	{
-		return false;
-	}
-	
-	for (int i = 0; i < histogramCount_old.size(); i++)
-	{
-		if (histogramCount_old[i] != histogramCount[i])
-		{
-			return false;
-		}
-		for (int j = 0; j < histogramCount_old[i]; j++)
-		{
-			if (histogram_old[i][j].max_value < histogram[i][j].max_value - 10 ||
-				histogram_old[i][j].max_value > histogram[i][j].max_value + 10)
-			{
-				return false;
-			}
-		}
-	}
-	return true;
-}
 
 void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 {
@@ -43,10 +19,10 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 	{
 		//fullhistograms.emplace_back();
-		columnStats2.emplace_back();
-		columnStats2[i].cardinality = 0;
-		columnStats2[i].min = -1;
-		columnStats2[i].max = 0;
+		columnStats.emplace_back();
+		columnStats[i].cardinality = 0;
+		columnStats[i].min = -1;
+		columnStats[i].max = 0;
 	}
 
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
@@ -64,13 +40,14 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 			}
 			preSort[bucket].push_back(value);
 
-			columnStats2[i].min = value < columnStats2[i].min ? value : columnStats2[i].min;
-			columnStats2[i].max = value > columnStats2[i].max ? value : columnStats2[i].max;
+			columnStats[i].min = value < columnStats[i].min ? value : columnStats[i].min;
+			columnStats[i].max = value > columnStats[i].max ? value : columnStats[i].max;
 		}
 
 		int b = 0;
 		uint64_t segment = 0;
 		bool unique = true;
+		bool growByOne = true;
 		sorted_values.clear();
 		for (auto& sarray : preSort)
 		{
@@ -79,22 +56,31 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 			{
 				fullhistograms2[b][value & 0x1ffff]++;
 			}
-			for (int k = 0; k < fullHistSize; k++)
-				if (fullhistograms2[b][k] > 0)
-				{
-					sorted_values.push_back(std::make_pair(segment + k, fullhistograms2[b][k]));
-					unique &= (fullhistograms2[b][k] == 1);
-				}
+			if (sarray.size() > 0)
+				for (int k = 0; k < fullHistSize; k++)
+					if (fullhistograms2[b][k] > 0)
+					{
+						sorted_values.push_back(std::make_pair(segment + k, fullhistograms2[b][k]));
+						unique &= (fullhistograms2[b][k] == 1);
+					}
+					else
+					{
+						if (segment + k >= columnStats[i].min && segment + k <= columnStats[i].max)
+						{
+							growByOne = false;
+						}
+					}
 			sarray.clear();
 			b++;
 			segment += fullHistSize;
 		}
 
-		columnStats2[i].cardinality = sorted_values.size();
+		columnStats[i].cardinality = sorted_values.size();
 
-		isUnique.push_back(unique);
+		columnStats[i].isUnique = unique;
 		buckets_diff.clear();
 		buckets_order.clear();
+
 
 		if (!unique)
 		{
@@ -186,6 +172,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 					bucket_c++;
 					c = 0;
 				}
+				if (bucket_c == step_count) break;
 				c++;
 			}
 		}
@@ -195,155 +182,6 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 	{
 		delete[] h;
 	}
-}
-
-
-void MaxdiffHistogram::loadRelation_old(ColumnRelation& relation)
-{
-	std::map<uint64_t, uint32_t> sorted_values;
-	std::vector<HashMap<uint64_t, uint32_t>> fullhistograms;
-
-	std::vector<uint32_t> diffs(static_cast<size_t>(relation.getRowCount()));
-	std::vector<bool> isBorder(static_cast<size_t>(relation.getRowCount()));
-
-    std::vector<uint64_t> buckets_diff;
-	std::vector<uint64_t> buckets_order;
-
-	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
-	{
-		fullhistograms.emplace_back();
-		columnStats.emplace_back();
-		columnStats[i].cardinality = 0;
-		columnStats[i].min = -1;
-		columnStats[i].max = 0;
-	}
-
-#ifdef TRANSPOSE_RELATIONS
-	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
-		for (int j = 0; j < static_cast<int32_t>(relation.getRowCount()); j++)
-		{
-#else
-	for (int j = 0; j < static_cast<int32_t>(relation.getRowCount()); j++)
-		for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
-		{
-#endif
-			auto value = relation.getValue(j, i);
-			fullhistograms[i][value]++;
-			columnStats[i].min = value < columnStats[i].min ? value : columnStats[i].min;
-			columnStats[i].max = value > columnStats[i].max ? value : columnStats[i].max;
-		}
-
-
-
-	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
-    {
-		columnStats[i].cardinality = fullhistograms[i].size();
-
-        sorted_values.clear();
-        bool unique = true;
-
-        for (auto& element : fullhistograms[i])
-        {
-            sorted_values[element.first] = element.second;
-            unique &= element.second == 1;
-        }
-
-        isUnique.push_back(unique);
-        buckets_diff.clear();
-        buckets_order.clear();
-
-		if (!unique)
-        {
-            // computing the diffs between neighbors and searching for the greatest BUCKET_N diffs
-            int c = 0;
-            auto last = sorted_values.begin()->second;
-            for (auto& element : sorted_values)
-            {
-                int diff = (int) last - element.second;
-                last = element.second;
-				diffs[c] = diff;
-                isBorder[c] = false;
-
-                if (buckets_diff.size() == 0 || diff >= (int) buckets_diff.back())
-                {
-                    auto it = std::lower_bound(buckets_diff.cbegin(), buckets_diff.cend(), diff,
-                                          std::greater<uint32_t>());
-                    int pos = it - buckets_diff.cbegin();
-
-                    buckets_diff.insert(it, diff);
-                    buckets_order.insert(buckets_order.cbegin() + pos, c);
-                }
-
-                if (buckets_diff.size() > BUCKET_N)
-                {
-                    buckets_diff.pop_back();
-                    buckets_order.pop_back();
-                }
-
-                c++;
-            }
-
-            // marking the border values
-            for (auto& it : buckets_order)
-            {
-                isBorder[it] = true;
-            }
-
-            // creating the histogram buckets
-            histogramCount_old.push_back(buckets_order.size());
-            hist_bucket* hist = new hist_bucket[buckets_order.size()];
-            histogram_old.push_back(hist);
-
-            // computing the bucket values
-            int bucket_count = 0;
-            c = 0;
-            int distinct_values = 0;
-            uint64_t frequency = 0;
-            for (auto& element : sorted_values)
-            {
-                if (isBorder[c])
-                {
-                    hist[bucket_count].distinct_values = distinct_values;
-                    hist[bucket_count].frequency = frequency;
-                    hist[bucket_count].max_value = element.first;
-                    hist[bucket_count].max_value_frequency = element.second;
-
-                    // reset of counters
-                    distinct_values = 0;
-                    frequency = 0;
-                    bucket_count++;
-                } else
-                {
-                    distinct_values++;
-                    frequency += element.second;
-                }
-                c++;
-            }
-        } else
-        {
-            // creating the histogram buckets for unique attribute
-            auto hist_size = fullhistograms[i].size() < BUCKET_N ? fullhistograms[i].size() : BUCKET_N;
-			histogramCount_old.push_back(hist_size);
-			hist_bucket* hist = new hist_bucket[hist_size];
-			histogram_old.push_back(hist);
-			int step_count = fullhistograms[i].size() / BUCKET_N;
-			int c = 0, bucket_c = 0;
-            for (auto& element : sorted_values)
-            {
-                // TODO: rewrite with direct access to sorted_values
-                if (c == step_count)
-                {
-                    hist[bucket_c].distinct_values = step_count - 1;
-                    hist[bucket_c].frequency = step_count - 1;
-                    hist[bucket_c].max_value = element.first;
-                    hist[bucket_c].max_value_frequency = 1;
-                    bucket_c++;
-                    c = 0;
-                }
-                c++;
-            }
-        }
-    }
 }
 
 
@@ -436,11 +274,12 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 }
 
 
-//void MaxdiffHistogram::print()
-//{
-//	int i = 0;
-//	for (auto s : columnStats)
-//	{
-//		std::cout << i++ << ": " << s.cardinality << ", (" << s.min << ", " << s.max << ");  ";
-//	}
-//}
+void MaxdiffHistogram::print(int relation)
+{
+	int i = 0;
+	for (auto s : columnStats)
+	{
+		std::cerr << relation << "." << i << ": " << s.cardinality << ", (" << s.min << ", " << s.max << "), " << (s.isUnique ? "u " : " ") << (s.growByOne ? "u " : " ") << std::endl;
+		i++;
+	}
+}

@@ -4,6 +4,9 @@
 #include <algorithm>
 #include <map>
 #include <iostream>
+#ifndef __linux__
+#include <crtdbg.h>
+#endif
 
 #include "../settings.h"
 #include "iterator.h"
@@ -22,6 +25,8 @@ struct column_statistics
 	uint32_t cardinality;
 	uint32_t min;
 	uint32_t max;
+	bool isUnique;
+	bool growByOne;
 };
 
 /**
@@ -30,11 +35,7 @@ struct column_statistics
 */
 class MaxdiffHistogram
 {
-	std::vector<bool> isUnique;
-	std::vector<hist_bucket*> histogram_old;
-	std::vector<uint32_t> histogramCount_old;
 
-	
 	std::vector<hist_bucket*> histogram;
 	std::vector<uint32_t> histogramCount;
 
@@ -42,16 +43,11 @@ class MaxdiffHistogram
 public:
 	
 	std::vector<column_statistics> columnStats;
-	std::vector<column_statistics> columnStats2;
 
 	void loadRelation(ColumnRelation& relation);
 
-	void loadRelation_old(ColumnRelation& relation);
-	bool compareBuckets();
-
 	uint32_t estimateResult(const Filter& filter);
-	uint64_t maxValue(uint32_t colId) { return histogram_old[colId][histogramCount_old[colId] - 1].max_value; }
 
-	//void print();
+	void print(int relation);
 	
 };
