@@ -208,7 +208,12 @@ void loadDatabase(Database& database)
             {
                 break;
             }
-            auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
+            auto& index = database.primaryIndices[database.getGlobalColumnId(static_cast<uint32_t>(r), 0)];
+            if (index->take())
+            {
+                index->build();
+            }
+            /*auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
                                                                           static_cast<uint32_t>(c))];
             if (index->take())
             {
@@ -222,14 +227,14 @@ void loadDatabase(Database& database)
                     aggregated->build();
                 }
 #endif
-            }
+            }*/
         }
     }
 #endif
     threadIndexPool.start();
 #else
 #ifdef USE_THREADS
-    #pragma omp parallel for
+    #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #else
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)

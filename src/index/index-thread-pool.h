@@ -17,15 +17,19 @@ public:
         }
     }
 
-    bool buildPrimaryIndices()
+    bool buildPrimaryIndices(int column)
     {
         for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
         {
-            auto& primary = database.primaryIndices[database.getGlobalColumnId(static_cast<uint32_t>(i), 0)];
-            if (primary->take())
+            if (column < database.relations[i].columnCount)
             {
-                primary->build();
-                return true;
+                auto& primary = database.primaryIndices[database.getGlobalColumnId(static_cast<uint32_t>(i),
+                                                                                   static_cast<uint32_t>(column))];
+                if (primary->take())
+                {
+                    primary->build();
+                    return true;
+                }
             }
         }
 
@@ -55,7 +59,7 @@ public:
 #endif
                     return true;
                 }
-                #endif
+#endif
             }
         }
 
@@ -65,7 +69,9 @@ public:
     void work()
     {
 #ifdef USE_PRIMARY_INDEX
-        while (!this->stopped && this->buildPrimaryIndices());
+        while (!this->stopped && this->buildPrimaryIndices(0));
+        while (!this->stopped && this->buildPrimaryIndices(1));
+        while (!this->stopped && this->buildPrimaryIndices(2));
 #endif
 
         while (!this->stopped && this->buildSecondaryIndices());
