@@ -19,6 +19,8 @@ public:
     bool getNext() final;
     bool skipSameValue(const Selection& selection) final;
 
+    RowEntry* findNextValue(const Selection& selection, uint64_t value) final;
+
     bool passesFilters() final;
 
     void restore() final

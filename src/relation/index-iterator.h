@@ -37,6 +37,10 @@ public:
     {
         return this->index->upperBound(value);
     }
+    virtual Entry* findNextValue(const Selection& selection, uint64_t value)
+    {
+        return this->upperBound(value);
+    }
 
     void createIterators(const Filter& filter, Entry** start, Entry** end)
     {
@@ -92,7 +96,7 @@ public:
 #endif
 
         this->start = this->lowerBound(value);
-        this->end = this->upperBound(value);
+        this->end = this->findNextValue(selection, value);//this->upperBound(value);
         this->start = this->index->dec(this->start);
         this->originalStart = this->start;
     }

@@ -105,3 +105,14 @@ std::unique_ptr<Iterator> SortIndexIterator::createIndexedIterator(std::vector<s
                                                     this->end,
                                                     this->iteratedSelection);
 }
+
+RowEntry* SortIndexIterator::findNextValue(const Selection& selection, uint64_t value)
+{
+    auto ptr = this->start;
+    while (ptr < this->index->end && ptr->value == value)
+    {
+        ptr++;
+    }
+
+    return ptr;
+}

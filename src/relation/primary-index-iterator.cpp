@@ -124,3 +124,14 @@ std::unique_ptr<Iterator> PrimaryIndexIterator::createIndexedIterator(std::vecto
     }
     else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters);
 }
+
+PrimaryRowEntry* PrimaryIndexIterator::findNextValue(const Selection& selection, uint64_t value)
+{
+    auto ptr = this->start;
+    while (ptr < this->index->end && ptr->row[selection.column] == value)
+    {
+        ptr = this->index->inc(ptr);
+    }
+
+    return ptr;
+}
