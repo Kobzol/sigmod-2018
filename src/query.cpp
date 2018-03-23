@@ -78,15 +78,11 @@ bool Query::isAggregable() const
                     return false;
                 }
 #endif
+                if (database.isUnique(selection)) return false;
             }
         }
     }
 
     this->aggregable = true;
     return true;
-}
-
-bool Query::isInJoin(const Selection& selection) const
-{
-    return false;
 }

@@ -34,6 +34,8 @@ public:
     uint64_t getMinValue(uint32_t relation, uint32_t column);
     uint64_t getMaxValue(uint32_t relation, uint32_t column);
 
+    bool isUnique(const Selection& selection);
+
     std::vector<ColumnRelation> relations;
 #ifdef USE_HISTOGRAM
     std::vector<MaxdiffHistogram> histograms;

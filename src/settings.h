@@ -24,8 +24,8 @@
 #define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
-//#define EXPAND_FILTERS                // expand filters to all members of a join component
-//#define AGGREGATE_PUSH                  // use direct aggregation
+#define EXPAND_FILTERS                // expand filters to all members of a join component
+#define AGGREGATE_PUSH                  // use direct aggregation
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
 #define PREBUILD_PRIMARY_COLUMNS 3        // how many columns for primary index should be prebuilt

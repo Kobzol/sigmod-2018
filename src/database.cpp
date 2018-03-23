@@ -127,3 +127,8 @@ uint64_t Database::getMaxValue(uint32_t relation, uint32_t column)
 
     return std::numeric_limits<uint64_t>::max();
 }
+
+bool Database::isUnique(const Selection& selection)
+{
+    return this->unique[this->getGlobalColumnId(selection.relation, selection.column)];
+}

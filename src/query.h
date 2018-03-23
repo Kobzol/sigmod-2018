@@ -145,7 +145,6 @@ class Query
 {
 public:
     bool isAggregable() const;
-    bool isInJoin(const Selection& selection) const;
 
     std::vector<uint32_t> relations; // real ids of relations
     std::vector<Join> joins;
