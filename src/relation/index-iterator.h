@@ -71,7 +71,7 @@ public:
     void iterateValue(const Selection& selection, uint64_t value) final
     {
 #ifdef CACHE_ITERATE_VALUE
-        if (this->iteratedSelection == selection)
+        if (this->iterateValueSelection == selection)
         {
             if (this->iteratedValue == value)
             {
@@ -82,6 +82,7 @@ public:
         else
         {
             this->iteratedSelection = selection;
+            this->iterateValueSelection = selection;
             this->index = this->getIndex(selection.relation, selection.column);
         }
 
@@ -190,7 +191,9 @@ public:
 
     Entry* startSaved;
     Entry* originalStart;
+    Entry* originalEnd;
 
     Selection iteratedSelection{100, 100, 100};
+    Selection iterateValueSelection{100, 100, 100};
     uint64_t iteratedValue;
 };
