@@ -7,10 +7,9 @@
 
 struct RadixTraitsRowEntry
 {
-    static const int nBytes = 12;
+    static const int nBytes = 8;
     int kth_byte(const RowEntry &x, int k) {
-        if (k >= 8) return (x.value >> ((k - 8) * 8)) & 0xFF;
-        return (x.row >> (k * 8)) & 0xFF;
+        return (x.value >> (k * 8)) & 0xFF;
     }
     bool compare(const RowEntry &x, const RowEntry &y) {
         return x < y;
