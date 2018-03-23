@@ -116,3 +116,8 @@ RowEntry* SortIndexIterator::findNextValue(const Selection& selection, uint64_t 
 
     return ptr;
 }
+
+int64_t SortIndexIterator::count()
+{
+    return (this->end - this->originalStart) - 1;
+}

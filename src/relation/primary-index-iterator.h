@@ -18,6 +18,7 @@ public:
     bool skipSameValue(const Selection& selection) final;
 
     PrimaryRowEntry* findNextValue(const Selection& selection, uint64_t value) final;
+    int64_t count() final;
 
     bool passesFilters() final;
 

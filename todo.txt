@@ -1,7 +1,7 @@
 - sort joins (self-joins, size, filtered)
 - select best join plan, predict join sizes
-- change hash in hash join
-- scale primary index to number of rows
-- crack aggregate index
+- parallelize joins
+- optimize hash join
+- optimize itp
 
 - dynamic programming

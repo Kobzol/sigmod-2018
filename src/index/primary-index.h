@@ -24,6 +24,7 @@ public:
     static bool canBuild(ColumnRelation& relation);
     static int rowSize(ColumnRelation& relation);
     static PrimaryRowEntry* move(ColumnRelation& relation, PrimaryRowEntry* entry, int offset);
+    static int64_t count(ColumnRelation& relation, PrimaryRowEntry* from, PrimaryRowEntry* to);
 
     PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* init);
 

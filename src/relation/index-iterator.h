@@ -41,6 +41,7 @@ public:
     {
         return this->upperBound(value);
     }
+    virtual int64_t count() = 0;
 
     void createIterators(const Filter& filter, Entry** start, Entry** end)
     {
@@ -157,14 +158,14 @@ public:
         if (!this->filters.empty())
         {
             // - 1 because originalStart is one before the first element
-            return this->index->count(this->originalStart, this->end) - 1;
+            return this->count();
         }
         return this->relation->getRowCount();
     }
 
     void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count) final
     {
-        auto size = this->index->count(this->originalStart, this->end) - 1;
+        auto size = this->count();
         auto chunkSize = static_cast<size_t>(std::ceil(size / (double) count));
         Entry* iter = this->index->move(this->originalStart, 1);
 
@@ -195,7 +196,6 @@ public:
 
     Entry* startSaved;
     Entry* originalStart;
-    Entry* originalEnd;
 
     Selection iteratedSelection{100, 100, 100};
     Selection iterateValueSelection{100, 100, 100};

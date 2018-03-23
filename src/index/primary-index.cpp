@@ -84,6 +84,10 @@ PrimaryRowEntry* PrimaryIndex::move(ColumnRelation& relation, PrimaryRowEntry* e
 {
     return entry + (offset * (PrimaryIndex::rowSize(relation) / sizeof(PrimaryRowEntry)));
 }
+int64_t PrimaryIndex::count(ColumnRelation& relation, PrimaryRowEntry* from, PrimaryRowEntry* to)
+{
+    return (to - from) / (PrimaryIndex::rowSize(relation) / sizeof(PrimaryRowEntry));
+}
 
 PrimaryIndex::PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* init)
     : Index(relation, column), init(init)

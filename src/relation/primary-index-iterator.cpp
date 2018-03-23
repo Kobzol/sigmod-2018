@@ -135,3 +135,8 @@ PrimaryRowEntry* PrimaryIndexIterator::findNextValue(const Selection& selection,
 
     return ptr;
 }
+
+int64_t PrimaryIndexIterator::count()
+{
+    return PrimaryIndex::count(*this->relation, this->originalStart, this->end) - 1;
+}

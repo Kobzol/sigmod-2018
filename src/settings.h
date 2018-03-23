@@ -20,8 +20,8 @@
 #define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
 //#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 
-//#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
-//#define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
+#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
+#define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
 //#define EXPAND_FILTERS                // expand filters to all members of a join component
