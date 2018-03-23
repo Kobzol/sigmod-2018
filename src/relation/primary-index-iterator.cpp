@@ -93,10 +93,12 @@ bool PrimaryIndexIterator::skipSameValue(const Selection& selection)
 {
     if (selection == this->iteratedSelection)
     {
-        uint64_t value = this->relation->getValue(this->rowIndex, this->iteratedSelection.column);
+        uint64_t value = this->getColumn(this->iteratedSelection.column);
         for (; this->start < this->end; this->start = this->index->inc(this->start))
         {
-            if (this->relation->getValue(this->rowIndex, this->iteratedSelection.column) != value)
+            uint64_t newValue = this->getColumn(this->iteratedSelection.column);
+            if (value == newValue) continue;
+            if (this->passesFilters())
             {
 #ifdef COLLECT_JOIN_SIZE
                 this->rowCount++;

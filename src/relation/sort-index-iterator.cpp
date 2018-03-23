@@ -23,7 +23,8 @@ SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding,
 }
 
 SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
-                                       RowEntry* start, RowEntry* end, Selection iteratedSelection)
+                                     RowEntry* start, RowEntry* end,
+                                     Selection iteratedSelection)
         : IndexIterator(relation, binding, filters, start, end, iteratedSelection)
 {
 
@@ -61,7 +62,9 @@ bool SortIndexIterator::skipSameValue(const Selection& selection)
         for (; this->start < this->end; this->start++)
         {
             this->rowIndex = this->start->row;
-            if (this->relation->getValue(this->rowIndex, this->iteratedSelection.column) != value)
+            uint64_t newValue = this->relation->getValue(this->rowIndex, this->iteratedSelection.column);
+            if (newValue == value) continue;
+            if (this->passesFilters())
             {
 #ifdef COLLECT_JOIN_SIZE
                 this->rowCount++;
