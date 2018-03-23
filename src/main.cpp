@@ -189,7 +189,7 @@ int main(int argc, char** argv)
         return a.time > b.time;
     });
 
-    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 5); i++)
+    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 10); i++)
     {
         std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
     }

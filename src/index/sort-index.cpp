@@ -44,11 +44,6 @@ bool SortIndex::build()
     return true;
 }
 
-RowEntry* SortIndex::move(RowEntry* ptr, int offset)
-{
-    return ptr + offset;
-}
-
 RowEntry* SortIndex::lowerBound(uint64_t value)
 {
     return this->toPtr(std::lower_bound(this->data.begin(), this->data.end(), value,

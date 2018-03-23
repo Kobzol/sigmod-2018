@@ -32,9 +32,9 @@ PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t bi
 
 bool PrimaryIndexIterator::getNext()
 {
-    this->start = this->index->move(this->start, 1);
+    this->start = this->index->inc(this->start);
 
-    for (; this->start < this->end; this->start = this->index->move(this->start, 1))
+    for (; this->start < this->end; this->start = this->index->inc(this->start))
     {
         if (this->passesFilters())
         {
@@ -94,7 +94,7 @@ bool PrimaryIndexIterator::skipSameValue(const Selection& selection)
     if (selection == this->iteratedSelection)
     {
         uint64_t value = this->relation->getValue(this->rowIndex, this->iteratedSelection.column);
-        for (; this->start < this->end; this->start = this->index->move(this->start, 1))
+        for (; this->start < this->end; this->start = this->index->inc(this->start))
         {
             if (this->relation->getValue(this->rowIndex, this->iteratedSelection.column) != value)
             {

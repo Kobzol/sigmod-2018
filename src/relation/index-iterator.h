@@ -92,7 +92,7 @@ public:
 
         this->start = this->lowerBound(value);
         this->end = this->upperBound(value);
-        this->start = this->index->move(this->start, -1);
+        this->start = this->index->dec(this->start);
         this->originalStart = this->start;
     }
 
@@ -123,7 +123,7 @@ public:
                     this->index = index;
                     this->iteratedSelection = selection;
                     this->createIterators(filter, &this->start, &this->end);
-                    this->start = this->index->move(this->start, -1);
+                    this->start = this->index->dec(this->start);
                     this->originalStart = this->start;
                     break;
                 }
@@ -139,7 +139,7 @@ public:
 
         this->index = this->getIndex(selection.relation, selection.column);
         assert(this->index != nullptr);
-        this->start = this->index->move(this->index->begin, -1);
+        this->start = this->index->dec(this->index->begin);
         this->originalStart = this->start;
         this->end = this->index->end;
         this->iteratedSelection = selection;

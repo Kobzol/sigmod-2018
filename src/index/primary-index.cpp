@@ -117,11 +117,6 @@ bool PrimaryIndex::build()
     return true;
 }
 
-PrimaryRowEntry* PrimaryIndex::move(PrimaryRowEntry* ptr, int offset)
-{
-    return ptr + (offset * this->rowOffset);
-}
-
 PrimaryRowEntry* PrimaryIndex::lowerBound(uint64_t value)
 {
     if (this->columns == 1) return findLowerBound<1>(this->mem, this->relation.getRowCount(), value, this->column);

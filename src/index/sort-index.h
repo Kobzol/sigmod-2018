@@ -34,7 +34,18 @@ public:
 
     bool build() final;
 
-    RowEntry* move(RowEntry* ptr, int offset);
+    RowEntry* move(RowEntry* ptr, int offset)
+    {
+        return ptr + offset;
+    }
+    RowEntry* inc(RowEntry* ptr)
+    {
+        return ptr + 1;
+    }
+    RowEntry* dec(RowEntry* ptr)
+    {
+        return ptr - 1;
+    }
 
     RowEntry* lowerBound(uint64_t value);
     RowEntry* upperBound(uint64_t value);

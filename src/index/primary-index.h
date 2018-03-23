@@ -29,7 +29,18 @@ public:
 
     bool build() final;
 
-    PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset);
+    PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset)
+    {
+        return ptr + (offset * this->rowOffset);
+    }
+    PrimaryRowEntry* inc(PrimaryRowEntry* ptr)
+    {
+        return ptr + this->rowOffset;
+    }
+    PrimaryRowEntry* dec(PrimaryRowEntry* ptr)
+    {
+        return ptr - this->rowOffset;
+    }
 
     PrimaryRowEntry* lowerBound(uint64_t value);
     PrimaryRowEntry* upperBound(uint64_t value);
