@@ -1,8 +1,7 @@
-#include <cstring>
 #include "maxdiff_histogram.h"
+#include <cstring>
 
-
-void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
+void MaxdiffHistogram::loadRelation(ColumnRelation& relation, bool sampling, int sampleMax)
 {
 	std::vector<std::vector<uint64_t>> preSort; // sort of the input column
 	int preSort_max_bucket = 0;
@@ -16,6 +15,21 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 	std::vector<uint64_t> buckets_diff;
 	std::vector<uint64_t> buckets_order;
 
+	tupleCount = relation.getRowCount();
+	int skipSize = 0;
+	double multiplyKoeficient = 1;
+	if (sampling)
+	{
+		if (relation.getRowCount() < sampleMax)
+		{
+			sampling = false;
+		} else
+		{
+			skipSize = (relation.getRowCount() - sampleMax) * CHUNK_SIZE / sampleMax;
+			multiplyKoeficient = relation.getRowCount() / sampleMax;
+		}
+	}
+
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 	{
 		//fullhistograms.emplace_back();
@@ -25,12 +39,18 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 		columnStats[i].max = 0;
 	}
 
+	int chunkCount = 0;
 	for (int i = 0; i < static_cast<int32_t>(relation.getColumnCount()); i++)
 	{
 		for (int j = 0; j < static_cast<int32_t>(relation.getRowCount()); j++)
 		{
+			if (sampling && chunkCount++ == CHUNK_SIZE)
+			{
+				chunkCount = 0;
+				j += skipSize;
+				if (j > static_cast<int32_t>(relation.getRowCount())) break;
+			}
 			auto value = relation.getValue(j, i);
-			//fullhistograms[i][value]++;
 			int bucket = value >> 17;
 			while (preSort_max_bucket <= bucket)
 			{
@@ -134,9 +154,9 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 				if (isBorder[c])
 				{
 					hist[bucket_count].distinct_values = distinct_values;
-					hist[bucket_count].frequency = frequency;
+					hist[bucket_count].frequency = frequency * multiplyKoeficient;
 					hist[bucket_count].max_value = element.first;
-					hist[bucket_count].max_value_frequency = element.second;
+					hist[bucket_count].max_value_frequency = element.second * multiplyKoeficient;
 
 					// reset of counters
 					distinct_values = 0;
@@ -166,7 +186,7 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 				if (c == step_count)
 				{
 					hist[bucket_c].distinct_values = step_count - 1;
-					hist[bucket_c].frequency = step_count - 1;
+					hist[bucket_c].frequency = (step_count - 1) * multiplyKoeficient;
 					hist[bucket_c].max_value = element.first;
 					hist[bucket_c].max_value_frequency = 1;
 					bucket_c++;
@@ -184,6 +204,23 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation)
 	}
 }
 
+
+void MaxdiffHistogram::findTresholds(int col_order, int count, uint64_t* tresholds)
+{
+	int c = 1;
+	int countSum = 0;
+	int tresholdCount = tupleCount / count;
+	for (int i = 0; i < histogramCount[col_order]; i++)
+	{
+		countSum += histogram[col_order][i].frequency + histogram[col_order][i].max_value_frequency;
+		if (countSum > tresholdCount * c)
+		{
+			tresholds[c - 1] = histogram[col_order][i].max_value;
+			c++;
+		}
+		if (count == c) break;
+	}
+}
 
 uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 {
@@ -274,12 +311,33 @@ uint32_t MaxdiffHistogram::estimateResult(const Filter& filter)
 }
 
 
-void MaxdiffHistogram::print(int relation)
+void MaxdiffHistogram::printStatistics(int relation)
 {
 	int i = 0;
 	for (auto s : columnStats)
 	{
-		std::cerr << relation << "." << i << ": " << s.cardinality << ", (" << s.min << ", " << s.max << "), " << (s.isUnique ? "u " : " ") << (s.growByOne ? "u " : " ") << std::endl;
+		std::cout << relation << "." << i << ": " << s.cardinality << ", (" << s.min << ", " << s.max << "), " << (s.isUnique ? "u " : " ") << (s.growByOne ? "u " : " ") << std::endl;
 		i++;
+	}
+}
+
+void MaxdiffHistogram::print(int colOrder)
+{
+	std::cout << "histogram count " << histogramCount[colOrder] << std::endl;
+	for (int i = 0; i < histogramCount[colOrder]; i++)
+	{
+		std::cout << i << ": " << histogram[colOrder][i].distinct_values <<
+			", " << histogram[colOrder][i].frequency <<
+			", " << histogram[colOrder][i].max_value <<
+			", " << histogram[colOrder][i].max_value_frequency << std::endl;
+	}
+	std::cout << std::endl;
+	for (int i = 0; i < 50; i++)
+	{
+		Filter f;
+		f.oper = '<';
+		f.value = i * 1000;
+		f.selection.column = colOrder;
+		std::cout << "estimate " << i * 1000 << ": " << estimateResult(f) << std::endl;
 	}
 }

@@ -29,6 +29,8 @@ struct column_statistics
 	bool growByOne;
 };
 
+#define CHUNK_SIZE 5000
+
 /**
 * Histogram for each column in the relation
 * TODO: create histogram from smaller sample
@@ -38,16 +40,16 @@ class MaxdiffHistogram
 
 	std::vector<hist_bucket*> histogram;
 	std::vector<uint32_t> histogramCount;
-
-
+	uint64_t tupleCount;
 public:
 	
 	std::vector<column_statistics> columnStats;
 
-	void loadRelation(ColumnRelation& relation);
+	void loadRelation(ColumnRelation& relation, bool sampling = true, int sampleMax = 100000);
 
 	uint32_t estimateResult(const Filter& filter);
+	void findTresholds(int col_order, int count, uint64_t* treshold);
 
-	void print(int relation);
-	
+	void printStatistics(int relation);
+	void print(int colOrder);
 };
