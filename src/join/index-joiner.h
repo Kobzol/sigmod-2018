@@ -23,6 +23,8 @@ public:
 
     bool isSortedOn(const Selection& selection) final;
 
+    void split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count) final;
+
     std::string getJoinName() final
     {
         return "NL";

@@ -24,6 +24,7 @@ set(SOURCE_FILES
         src/aggregation/aggregator.cpp
         src/aggregation/indexed-aggregated-iterator.cpp
         src/emit/filter-compiler.cpp
+        src/foreign-key/foreign-key-checker.cpp
         src/index/aggregate-index.cpp
         src/index/hash-index.cpp
         src/index/index.cpp
@@ -43,6 +44,7 @@ set(SOURCE_FILES
         src/relation/maxdiff_histogram.cpp
         src/relation/primary-index-iterator.cpp
         src/relation/sort-index-iterator.cpp
+        src/rewrite/rewrite.cpp
 )
 
 add_library(joiner STATIC ${SOURCE_FILES})

@@ -106,9 +106,9 @@ std::unique_ptr<Iterator> SortIndexIterator::createIndexedIterator(std::vector<s
                                                     this->iteratedSelection);
 }
 
-RowEntry* SortIndexIterator::findNextValue(const Selection& selection, uint64_t value)
+RowEntry* SortIndexIterator::findNextValue(RowEntry* iter, const Selection& selection, uint64_t value)
 {
-    auto ptr = this->start;
+    auto ptr = iter;
     while (ptr < this->index->end && ptr->value == value)
     {
         ptr++;
@@ -117,9 +117,9 @@ RowEntry* SortIndexIterator::findNextValue(const Selection& selection, uint64_t 
     return ptr;
 }
 
-int64_t SortIndexIterator::count()
+int64_t SortIndexIterator::count(RowEntry* from, RowEntry* to)
 {
-    return (this->end - this->originalStart) - 1;
+    return to - from;
 }
 
 bool SortIndexIterator::skipTo(const Selection& selection, uint64_t value)
@@ -140,4 +140,9 @@ bool SortIndexIterator::skipTo(const Selection& selection, uint64_t value)
     }
 
     return false;
+}
+
+uint64_t SortIndexIterator::getValueForIter(RowEntry* iter, const Selection& selection)
+{
+    return this->relation->getValue(iter->row, selection.column);
 }

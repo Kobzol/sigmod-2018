@@ -40,6 +40,8 @@ public:
         return Selection::getId(this->relation, this->binding, this->column);
     }
 
+    bool isUnique() const;
+
     uint32_t relation;
     uint32_t binding; // index of relation in query
     uint32_t column;
@@ -145,6 +147,8 @@ class Query
 {
 public:
     bool isAggregable() const;
+    void fillBindings(std::vector<uint32_t>& bindings);
+    void dump(std::ostream& os);
 
     std::vector<uint32_t> relations; // real ids of relations
     std::vector<Join> joins;

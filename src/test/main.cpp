@@ -48,12 +48,6 @@ int main()
     std::cerr << fn(28) << std::endl;
     std::cerr << fn(14) << std::endl;*/
 
-    Query query;
-    //std::string line = "0 1 2|0.0=1.0&2.0=0.0|0.2 1.1 1.2 2.0";
-    //std::string line = "0 1 2|0.1=1.0&1.0=2.2&0.0>2|1.0 0.0 0.2";
-    std::string line = "0 1|0.2=1.0&0.2=2|1.1 0.2 1.0";
-    loadQuery(query, line);
-
     database.relations.push_back(createRelation(4, 3));
     database.relations.back().cumulativeColumnId = 0;
     database.relations.push_back(createRelation(4, 3));
@@ -61,7 +55,7 @@ int main()
 
     setRelation(database.relations[0], {
             1, 2, 3,
-            1, 2, 4,
+            2, 2, 4,
             4, 2, 6,
             3, 4, 2
     });
@@ -69,7 +63,7 @@ int main()
             1, 1, 4,
             2, 1, 3,
             2, 4, 2,
-            3, 8, 4
+            3, 3, 4
     });
     setRelation(database.relations[2], {
             1, 2, 2,
@@ -80,10 +74,17 @@ int main()
     int columnId = 0;
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
     {
+        database.relations[i].cumulativeColumnId = static_cast<uint32_t>(columnId);
+        columnId += database.relations[i].columnCount;
+    }
+    database.unique.resize(database.relations.back().cumulativeColumnId + database.relations.back().columnCount);
+
+    for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
+    {
         for (int j = 0; j < static_cast<int32_t>(database.relations[i].columnCount); j++)
         {
             database.primaryIndices.push_back(std::make_unique<PrimaryIndex>(database.relations[i], j,
-                                                                             nullptr));
+                                                                 nullptr));
             database.sortIndices.push_back(std::make_unique<SortIndex>(database.relations[i], j));
             database.aggregateIndices.push_back(std::make_unique<AggregateIndex>(database.relations[i], j,
                                                                                  *database.sortIndices.back()));
@@ -91,9 +92,14 @@ int main()
             database.sortIndices.back()->build();
             database.aggregateIndices.back()->build();
         }
-        database.relations[i].cumulativeColumnId = static_cast<uint32_t>(columnId);
-        columnId += database.relations[i].columnCount;
     }
+
+    Query query;
+    //std::string line = "0 1 2|0.0=1.0&2.0=0.0|0.2 1.1 1.2 2.0";
+    //std::string line = "0 1 2|0.1=1.0&1.0=2.2&0.0>2|1.0 0.0 0.2";
+    //std::string line = "0 1|0.2=1.0&0.2=2|1.1 0.2 1.0";
+    std::string line = "0 1|0.0=1.1|1.1 1.2";
+    loadQuery(query, line);
 
     Executor executor;
     executor.executeQuery(database, query);

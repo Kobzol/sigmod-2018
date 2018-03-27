@@ -418,8 +418,9 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
                                                      size_t& count)
 {
     size_t threadCount = HASH_AGGREGATE_THREADS;
-    std::vector<std::unique_ptr<Iterator>> groups;
-    this->right->split(groups, threadCount);
+    std::vector<std::unique_ptr<Iterator>> container;
+    std::vector<Iterator*> groups;
+    this->right->split(container, groups, threadCount);
 
     std::vector<std::vector<uint64_t>> workerResults(threadCount, results);
     std::atomic<size_t> atomicCount{count};
@@ -427,7 +428,7 @@ void HashJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& resu
     #pragma omp parallel for num_threads(threadCount)
     for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
     {
-        this->workerAggregate(groups[i].get(), workerResults[omp_get_thread_num()],
+        this->workerAggregate(groups[i], workerResults[omp_get_thread_num()],
                               leftColumns, rightColumns, atomicCount);
     }
 

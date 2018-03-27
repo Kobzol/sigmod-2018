@@ -142,9 +142,9 @@ std::unique_ptr<Iterator> PrimaryIndexIterator::createIndexedIterator(std::vecto
     else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters);
 }
 
-PrimaryRowEntry* PrimaryIndexIterator::findNextValue(const Selection& selection, uint64_t value)
+PrimaryRowEntry* PrimaryIndexIterator::findNextValue(PrimaryRowEntry* iter, const Selection& selection, uint64_t value)
 {
-    auto ptr = this->start;
+    auto ptr = iter;
     while (ptr < this->index->end && ptr->row[selection.column] == value)
     {
         ptr = this->index->inc(ptr);
@@ -153,7 +153,12 @@ PrimaryRowEntry* PrimaryIndexIterator::findNextValue(const Selection& selection,
     return ptr;
 }
 
-int64_t PrimaryIndexIterator::count()
+int64_t PrimaryIndexIterator::count(PrimaryRowEntry* from, PrimaryRowEntry* to)
 {
-    return PrimaryIndex::count(*this->relation, this->originalStart, this->end) - 1;
+    return PrimaryIndex::count(*this->relation, from, to);
+}
+
+uint64_t PrimaryIndexIterator::getValueForIter(PrimaryRowEntry* iter, const Selection& selection)
+{
+    return iter->row[selection.column];
 }

@@ -289,6 +289,19 @@ Iterator* Executor::createRootView(Database& database, Query& query,
                                    std::vector<std::unique_ptr<Iterator>>& container,
                                    bool aggregable)
 {
+    if (query.joins.empty())
+    {
+        std::vector<uint32_t> bindings;
+        query.fillBindings(bindings);
+        if (bindings.size() > 1)
+        {
+            std::cerr << query.input << std::endl;
+            query.dump(std::cerr);
+            throw "EXC";
+        }
+        return views[bindings[0]];
+    }
+
     std::sort(query.joins.begin(), query.joins.end(), [](const Join& a, const Join& b) {
         return a.size() > b.size();
     });
@@ -460,6 +473,13 @@ void Executor::sum(Database& database, Query& query, Iterator* root, bool aggreg
         root->requireSelections(map);
     }
     else root->requireSelections(selectionMap);
+
+    /*std::vector<std::unique_ptr<Iterator>> container;
+    std::vector<Iterator*> groups;
+    root->split(container, groups, 2);
+    container.push_back(std::make_unique<MultiWrapperIterator>(groups));
+    root = container.back().get();
+    root->requireSelections(selectionMap);*/
 
     std::vector<uint32_t> columnIds;
     std::vector<Selection> selections;

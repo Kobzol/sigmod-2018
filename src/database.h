@@ -36,6 +36,8 @@ public:
 
     bool isUnique(const Selection& selection);
 
+    bool isPkFk(const Selection& primary, const Selection& foreign);
+
     std::vector<ColumnRelation> relations;
 #ifdef USE_HISTOGRAM
     std::vector<MaxdiffHistogram> histograms;
@@ -51,6 +53,8 @@ public:
     std::mutex joinMapMutex;
 
 private:
+    std::unordered_map<std::string, bool> pkFkPairs;
+
     template<typename T>
     T* getIndex(const std::vector<std::unique_ptr<T>>& indices, uint32_t relation, uint32_t column);
 };

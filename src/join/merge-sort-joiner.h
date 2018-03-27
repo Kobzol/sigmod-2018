@@ -23,6 +23,8 @@ public:
                          const std::vector<std::pair<uint32_t, uint32_t>>& rightColumns,
                          size_t& count);
 
+    void split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count) final;
+
     std::string getJoinName() final
     {
         return "MS";

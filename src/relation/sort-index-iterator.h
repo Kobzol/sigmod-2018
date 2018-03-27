@@ -20,8 +20,9 @@ public:
     bool skipSameValue(const Selection& selection) final;
     bool skipTo(const Selection& selection, uint64_t value) final;
 
-    RowEntry* findNextValue(const Selection& selection, uint64_t value) final;
-    int64_t count() final;
+    RowEntry* findNextValue(RowEntry* iter, const Selection& selection, uint64_t value) final;
+    int64_t count(RowEntry* from, RowEntry* to) final;
+    uint64_t getValueForIter(RowEntry* iter, const Selection& selection) final;
 
     bool passesFilters() final;
 

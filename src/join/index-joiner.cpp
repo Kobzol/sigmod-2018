@@ -179,3 +179,19 @@ bool IndexJoiner<HAS_MULTIPLE_JOINS>::isSortedOn(const Selection& selection)
 {
     return this->left->isSortedOn(selection);
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::split(std::vector<std::unique_ptr<Iterator>>& container,
+                                            std::vector<Iterator*>& groups, size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->left->split(container, subGroups, count);
+    for (auto& it: subGroups)
+    {
+        container.push_back(
+                std::make_unique<IndexJoiner<HAS_MULTIPLE_JOINS>>(
+                        it, this->right, this->leftIndex, this->join, this->hasLeftIndex)
+        );
+        groups.push_back(container.back().get());
+    }
+}

@@ -33,6 +33,7 @@ extern size_t filtersSkippedByHistogram;
 extern size_t filterEqualsJoined;
 extern size_t joinOneUnique;
 extern size_t joinBothUnique;
+extern size_t skippableFK;
 extern std::atomic<size_t> averageRowsInHash;
 extern std::atomic<size_t> averageRowsInHashCount;
 extern std::atomic<size_t> emptyHashTableCount;

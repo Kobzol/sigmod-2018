@@ -32,6 +32,7 @@
     size_t filterEqualsJoined = 0;
     size_t joinOneUnique = 0;
     size_t joinBothUnique = 0;
+    size_t skippableFK = 0;
     std::atomic<size_t> averageRowsInHash{0};
     std::atomic<size_t> averageRowsInHashCount{0};
     std::atomic<size_t> emptyHashTableCount{0};

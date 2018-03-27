@@ -37,11 +37,9 @@ public:
     {
         return this->index->upperBound(value);
     }
-    virtual Entry* findNextValue(const Selection& selection, uint64_t value)
-    {
-        return this->upperBound(value);
-    }
-    virtual int64_t count() = 0;
+    virtual Entry* findNextValue(Entry* iter, const Selection& selection, uint64_t value) = 0;
+    virtual int64_t count(Entry* from, Entry* to) = 0;
+    virtual uint64_t getValueForIter(Entry* iter, const Selection& selection) = 0;
 
     void createIterators(const Filter& filter, Entry** start, Entry** end)
     {
@@ -97,7 +95,7 @@ public:
 #endif
 
         this->start = this->lowerBound(value);
-        this->end = this->findNextValue(selection, value);//this->upperBound(value);
+        this->end = this->findNextValue(this->start, selection, value);
         this->start = this->index->dec(this->start);
         this->originalStart = this->start;
     }
@@ -158,14 +156,16 @@ public:
         if (!this->filters.empty())
         {
             // - 1 because originalStart is one before the first element
-            return this->count();
+            return this->count(this->originalStart, this->end) - 1;
         }
         return this->relation->getRowCount();
     }
 
-    void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count) final
+    void split(std::vector<std::unique_ptr<Iterator>>& container,
+               std::vector<Iterator*>& groups,
+               size_t count) final
     {
-        auto size = this->count();
+        auto size = this->count(this->originalStart, this->end) - 1;
         auto chunkSize = static_cast<size_t>(std::ceil(size / (double) count));
         Entry* iter = this->index->move(this->originalStart, 1);
 
@@ -175,7 +175,7 @@ public:
             size_t chunk = std::min(chunkSize, left);
             left -= chunk;
 
-            groups.push_back(std::make_unique<Child>(
+            container.push_back(std::make_unique<Child>(
                     this->relation,
                     this->binding,
                     this->filters,
@@ -183,10 +183,92 @@ public:
                     this->index->move(iter, chunk),
                     this->iteratedSelection
             ));
+            groups.push_back(container.back().get());
             iter = this->index->move(iter, chunk);
         }
 
         assert(iter == this->end);
+    }
+
+    void splitToBounds(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
+                       std::vector<uint64_t>& bounds, size_t count) final
+    {
+        assert(this->index != nullptr);
+
+        auto size = this->count(this->originalStart, this->end) - 1;
+        auto chunkSize = static_cast<size_t>(std::ceil(size / (double) count));
+        Entry* iter = this->index->move(this->originalStart, 1);
+
+        bool first = true;
+        size_t left = size;
+        while (left > 0 && iter < this->end)
+        {
+            size_t chunk = std::min(chunkSize, left);
+            left -= chunk;
+
+            if (!first)
+            {
+                bounds.push_back(this->getValueForIter(iter, this->iteratedSelection));
+            }
+
+            auto end = this->index->move(iter, chunk);
+            if (end < this->index->end)
+            {
+                auto alignedEnd = this->findNextValue(end, this->iteratedSelection,
+                                                      this->getValueForIter(end, this->iteratedSelection));
+                left -= this->count(end, alignedEnd);
+                end = alignedEnd;
+            }
+
+            container.push_back(std::make_unique<Child>(
+                    this->relation,
+                    this->binding,
+                    this->filters,
+                    this->index->move(iter, -1),
+                    end,
+                    this->iteratedSelection
+            ));
+            groups.push_back(container.back().get());
+            iter = end;
+            if (first) first = false;
+        }
+
+        // TODO: fill rest with end-end iterators
+
+        assert(bounds.size() == groups.size() - 1);
+        assert(iter == this->end);
+    }
+
+    void splitUsingBounds(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
+                                  const std::vector<uint64_t>& bounds) final
+    {
+        Entry* iter = this->index->move(this->originalStart, 1);
+        for (int i = 0; i < static_cast<int32_t>(bounds.size()); i++)
+        {
+            Entry* end = this->lowerBound(bounds[i]);
+            container.push_back(std::make_unique<Child>(
+                    this->relation,
+                    this->binding,
+                    this->filters,
+                    this->index->move(iter, -1),
+                    end,
+                    this->iteratedSelection
+            ));
+            groups.push_back(container.back().get());
+            iter = end;
+        }
+
+        container.push_back(std::make_unique<Child>(
+                this->relation,
+                this->binding,
+                this->filters,
+                this->index->move(iter, -1),
+                this->end,
+                this->iteratedSelection
+        ));
+        groups.push_back(container.back().get());
+
+        assert(groups.size() == bounds.size() + 1);
     }
 
     Index* index = nullptr;

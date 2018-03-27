@@ -1,6 +1,7 @@
 #include "database.h"
 #include "relation/primary-index-iterator.h"
 #include "relation/sort-index-iterator.h"
+#include "foreign-key/foreign-key-checker.h"
 
 template <typename T>
 T* Database::getIndex(const std::vector<std::unique_ptr<T>>& indices, uint32_t relation, uint32_t column)
@@ -131,4 +132,20 @@ uint64_t Database::getMaxValue(uint32_t relation, uint32_t column)
 bool Database::isUnique(const Selection& selection)
 {
     return this->unique[this->getGlobalColumnId(selection.relation, selection.column)];
+}
+
+bool Database::isPkFk(const Selection& primary, const Selection& foreign)
+{
+    std::stringstream ss;
+    ss << primary.relation << '.' << primary.column << '=' << foreign.relation << foreign.column;
+    auto key = ss.str();
+
+    auto it = this->pkFkPairs.find(key);
+    if (it != this->pkFkPairs.end()) return it->second;
+
+    ForeignKeyChecker checker;
+
+    bool pk = checker.isForeignKey(primary, foreign);
+    this->pkFkPairs.insert({ key, pk });
+    return pk;
 }

@@ -1,6 +1,7 @@
 #include "sort-index.h"
 #include "../relation/column-relation.h"
 #include "../thirdparty/kxsort.h"
+#include "../database.h"
 
 #include <cstring>
 #include <algorithm>
@@ -31,7 +32,6 @@ bool SortIndex::build()
         this->data[i].value = this->relation.getValue(static_cast<size_t>(i), this->column);
         this->data[i].row = static_cast<uint32_t>(i);
     }
-    //std::sort(this->data.begin(), this->data.end());
     kx::radix_sort(this->data.begin(), this->data.end(), RadixTraitsRowEntry());
 
     this->minValue = this->data[0].value;
@@ -39,6 +39,18 @@ bool SortIndex::build()
 
     this->begin = this->data.data();
     this->end = this->data.data() + this->data.size();
+
+    bool unique = true;
+    for (int i = 1; i < rows; i++)
+    {
+        if (this->begin[i - 1].value == this->begin[i].value)
+        {
+            unique = false;
+            break;
+        }
+    }
+
+    database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = unique;
 
     this->buildCompleted = true;
     return true;

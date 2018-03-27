@@ -16,6 +16,7 @@
 #include "timer.h"
 #include "join/hash-joiner.h"
 #include "index/index-thread-pool.h"
+#include "foreign-key/foreign-key-checker.h"
 
 Database database;
 
@@ -131,9 +132,9 @@ int main(int argc, char** argv)
                         }
                     }
 
-#ifdef USE_SORT_INDEX
                     auto& l = predicate.selections[0];
                     auto& r = predicate.selections[1];
+#ifdef USE_SORT_INDEX
                     auto li = database.getSortIndex(l.relation, l.column);
                     auto ri = database.getSortIndex(r.relation, r.column);
 
@@ -181,31 +182,21 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef STATISTICS
-    std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
+    std::cerr << "Skippable by FK: " << skippableFK << std::endl;
+
+    /*std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
     std::cerr << "Filter equals joined: " << filterEqualsJoined << std::endl;
     std::cerr << "Join one unique: " << joinOneUnique << std::endl;
-    std::cerr << "Join both unique: " << joinBothUnique << std::endl;
+    std::cerr << "Join both unique: " << joinBothUnique << std::endl;*/
 
     std::sort(allQueries.begin(), allQueries.end(), [](const Query& a, const Query& b) {
         return a.time > b.time;
     });
 
-    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 10); i++)
+    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 6); i++)
     {
-        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << ' ';
-        std::cerr << allQueries[i].isAggregable() << std::endl;
-        /*for (auto& j : allQueries[i].joins)
-        {
-            for (auto& p: j)
-            {
-                for (auto& s: p.selections)
-                {
-                    std::cerr << database.unique[database.getGlobalColumnId(s.relation, s.column)] << ' ';
-                }
-            }
-        }
-        std::cerr << std::endl;*/
+        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;

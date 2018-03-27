@@ -135,7 +135,18 @@ public:
     virtual void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                          const std::vector<Selection>& selections, size_t& count)
     {
+        for (int i = 0; i < static_cast<int32_t>(results.size()); i++)
+        {
+            this->save();
+            while (this->getNext())
+            {
+                results[i] += this->getColumn(columnIds[i]);
+                count++;
+            }
+            this->restore();
+        }
 
+        count /= results.size();
     }
 
     /**
@@ -181,7 +192,22 @@ public:
     /**
      * Splits the iterator in up to @p count subiterators and store them into @p groups.
      */
-    virtual void split(std::vector<std::unique_ptr<Iterator>>& groups, size_t count)
+    virtual void split(std::vector<std::unique_ptr<Iterator>>& container,
+                       std::vector<Iterator*>& groups,
+                       size_t count)
+    {
+        assert(false);
+    }
+    virtual void splitToBounds(std::vector<std::unique_ptr<Iterator>>& container,
+                               std::vector<Iterator*>& groups,
+                               std::vector<uint64_t>& bounds,
+                               size_t count)
+    {
+        assert(false);
+    }
+    virtual void splitUsingBounds(std::vector<std::unique_ptr<Iterator>>& container,
+                                  std::vector<Iterator*>& groups,
+                                  const std::vector<uint64_t>& bounds)
     {
         assert(false);
     }

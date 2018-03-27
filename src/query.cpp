@@ -1,3 +1,4 @@
+#include <unordered_set>
 #include "query.h"
 #include "database.h"
 
@@ -85,4 +86,67 @@ bool Query::isAggregable() const
 
     this->aggregable = true;
     return true;
+}
+
+void Query::fillBindings(std::vector<uint32_t>& bindings)
+{
+    std::unordered_set<uint32_t> bindingMap;
+    for (auto& join: this->joins)
+    {
+        for (auto& pred: join)
+        {
+            for (auto& sel: pred.selections)
+            {
+                bindingMap.insert(sel.binding);
+            }
+        }
+    }
+
+    for (auto& filter: this->filters)
+    {
+        bindingMap.insert(filter.selection.binding);
+    }
+
+    for (auto& sel: this->selections)
+    {
+        bindingMap.insert(sel.binding);
+    }
+
+    for (auto& kv: bindingMap)
+    {
+        bindings.push_back(kv);
+    }
+}
+
+void Query::dump(std::ostream& os)
+{
+    for (auto& join: this->joins)
+    {
+        for (auto& pred: join)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                os << pred.selections[i].binding << "." << pred.selections[i].column;
+                if (i == 0) os << "=";
+            }
+            os << "&";
+        }
+    }
+
+    os << "|";
+    for (auto& filter: this->filters)
+    {
+        os << filter.selection.binding << "." << filter.selection.column << filter.oper << filter.value << " ";
+    }
+
+    os << "|";
+    for (auto& sel: this->selections)
+    {
+        os << sel.binding << "." << sel.column << " ";
+    }
+}
+
+bool Selection::isUnique() const
+{
+    return database.isUnique(*this);
 }

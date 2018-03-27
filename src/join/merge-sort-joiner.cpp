@@ -244,3 +244,28 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>&
         if (NOEXPECT(!hasNext)) return;
     }
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+void MergeSortJoiner<HAS_MULTIPLE_JOINS>::split(std::vector<std::unique_ptr<Iterator>>& container,
+                                                std::vector<Iterator*>& groups, size_t count)
+{
+    std::vector<Iterator*> leftGroups;
+    std::vector<uint64_t> bounds;
+    this->left->splitToBounds(container, leftGroups, bounds, count);
+
+    std::vector<Iterator*> rightGroups;
+    this->right->splitUsingBounds(container, rightGroups, bounds);
+
+    assert(leftGroups.size() == rightGroups.size());
+
+    for (int i = 0; i < static_cast<int32_t>(leftGroups.size()); i++)
+    {
+        container.push_back(std::make_unique<MergeSortJoiner<HAS_MULTIPLE_JOINS>>(
+            leftGroups[i],
+            rightGroups[i],
+            this->leftIndex,
+            this->join
+        ));
+        groups.push_back(container.back().get());
+    }
+}
