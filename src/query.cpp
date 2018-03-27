@@ -50,6 +50,7 @@ bool Query::isAggregable() const
 #endif
 
     if (this->aggregable) return true;
+    if (this->joins.empty()) return false;
 
     std::unordered_map<uint32_t, uint32_t> columnMap;
     for (auto& join : this->joins)
