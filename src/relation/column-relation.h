@@ -111,6 +111,9 @@ public:
     std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
                                                     const Selection& selection) override;
 
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                         const std::vector<Selection>& selections, size_t& count) override;
+
     void fillBindings(std::vector<uint32_t>& bindings) final
     {
         bindings.push_back(this->binding);

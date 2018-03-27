@@ -299,6 +299,7 @@ Iterator* Executor::createRootView(Database& database, Query& query,
             query.dump(std::cerr);
             throw "EXC";
         }
+
         return views[bindings[0]];
     }
 

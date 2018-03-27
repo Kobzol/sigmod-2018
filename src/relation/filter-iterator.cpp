@@ -58,3 +58,9 @@ int64_t FilterIterator::predictSize()
     return this->relation->getRowCount();
 #endif
 }
+
+void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                             const std::vector<Selection>& selections, size_t& count)
+{
+    Iterator::sumRows(results, columnIds, selections, count);
+}

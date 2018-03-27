@@ -2,6 +2,5 @@
 - select best join plan, predict join sizes
 - parallelize joins
 - optimize hash join
-- optimize itp
 
 - dynamic programming
