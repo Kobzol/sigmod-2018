@@ -12,7 +12,7 @@ class SortIndexIterator: public IndexIterator<RowEntry, SortIndex, SortIndexIter
 public:
     SortIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters);
     SortIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
-    RowEntry* start, RowEntry* end, Selection iteratedSelection);
+    RowEntry* start, RowEntry* end, Selection iteratedSelection, int startFilterIndex);
 
     SortIndex* getIndex(uint32_t relation, uint32_t column) final;
 

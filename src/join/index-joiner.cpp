@@ -127,14 +127,19 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
 
         std::memset(rightResults.data(), 0, sizeof(uint64_t) * rightResults.size());
         size_t rightCount = 0;
-        while (this->right->getNext())
+
+        if (!rightColumns.empty())
         {
-            for (auto& c: rightColumns)
+            while (this->right->getNext())
             {
-                rightResults[c.second] += this->right->getColumn(c.first);
+                for (auto& c: rightColumns)
+                {
+                    rightResults[c.second] += this->right->getColumn(c.first);
+                }
+                rightCount++;
             }
-            rightCount++;
         }
+        else rightCount = this->right->iterateCount();
 
         bool hasNext = true;
         int32_t leftCount = 0;

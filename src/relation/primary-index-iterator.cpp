@@ -21,8 +21,8 @@ PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t bi
 PrimaryIndexIterator::PrimaryIndexIterator(ColumnRelation* relation, uint32_t binding,
                                            const std::vector<Filter>& filters,
                                            PrimaryRowEntry* start, PrimaryRowEntry* end,
-                                           Selection iteratedSelection)
-        : IndexIterator(relation, binding, filters, start, end, iteratedSelection)
+                                           Selection iteratedSelection, int startFilterIndex)
+        : IndexIterator(relation, binding, filters, start, end, iteratedSelection, startFilterIndex)
 {
     if (iteratedSelection.binding != 100)
     {
@@ -137,7 +137,8 @@ std::unique_ptr<Iterator> PrimaryIndexIterator::createIndexedIterator(std::vecto
         return std::make_unique<PrimaryIndexIterator>(this->relation, this->binding, this->filters,
                                                       this->originalStart,
                                                       this->end,
-                                                      this->iteratedSelection);
+                                                      this->iteratedSelection,
+                                                      this->startFilterIndex);
     }
     else return std::make_unique<SortIndexIterator>(this->relation, this->binding, this->filters);
 }

@@ -217,6 +217,13 @@ public:
         return false;
     }
 
+    virtual size_t iterateCount()
+    {
+        size_t count = 0;
+        while (this->getNext()) count++;
+        return count;
+    }
+
     int rowIndex = -1;
     int savedRowIndex;
 };

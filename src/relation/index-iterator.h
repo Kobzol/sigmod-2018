@@ -22,10 +22,12 @@ public:
     }
     IndexIterator(ColumnRelation* relation, uint32_t binding,
                   const std::vector<Filter>& filters, Entry* start, Entry* end,
-                  Selection iteratedSelection)
-            : FilterIterator(relation, binding, filters), start(start), end(end), iteratedSelection(iteratedSelection)
+                  Selection iteratedSelection, int startFilterIndex)
+            : FilterIterator(relation, binding, filters), start(start), end(end),
+              iteratedSelection(iteratedSelection)
     {
         this->originalStart = start;
+        this->startFilterIndex = startFilterIndex;
     }
 
     virtual Index* getIndex(uint32_t relation, uint32_t column) = 0;
@@ -181,7 +183,8 @@ public:
                     this->filters,
                     this->index->move(iter, -1),
                     this->index->move(iter, chunk),
-                    this->iteratedSelection
+                    this->iteratedSelection,
+                    this->startFilterIndex
             ));
             groups.push_back(container.back().get());
             iter = this->index->move(iter, chunk);
@@ -226,7 +229,8 @@ public:
                     this->filters,
                     this->index->move(iter, -1),
                     end,
-                    this->iteratedSelection
+                    this->iteratedSelection,
+                    this->startFilterIndex
             ));
             groups.push_back(container.back().get());
             iter = end;
@@ -252,7 +256,8 @@ public:
                     this->filters,
                     this->index->move(iter, -1),
                     end,
-                    this->iteratedSelection
+                    this->iteratedSelection,
+                    this->startFilterIndex
             ));
             groups.push_back(container.back().get());
             iter = end;
@@ -264,11 +269,23 @@ public:
                 this->filters,
                 this->index->move(iter, -1),
                 this->end,
-                this->iteratedSelection
+                this->iteratedSelection,
+                this->startFilterIndex
         ));
         groups.push_back(container.back().get());
 
         assert(groups.size() == bounds.size() + 1);
+    }
+
+    size_t iterateCount() final
+    {
+        if (this->startFilterIndex >= this->filterSize)
+        {
+            size_t count = this->index->count(this->start, this->end);
+            if (count == 0) return count;
+            return count - 1;
+        }
+        else return Iterator::iterateCount();
     }
 
     Index* index = nullptr;

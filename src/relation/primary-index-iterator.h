@@ -12,7 +12,8 @@ class PrimaryIndexIterator: public IndexIterator<PrimaryRowEntry, PrimaryIndex, 
 public:
     PrimaryIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters);
     PrimaryIndexIterator(ColumnRelation* relation, uint32_t binding, const std::vector<Filter>& filters,
-                       PrimaryRowEntry* start, PrimaryRowEntry* end, Selection iteratedSelection);
+                         PrimaryRowEntry* start, PrimaryRowEntry* end, Selection iteratedSelection,
+                         int startFilterIndex);
 
     bool getNext() final;
     bool skipSameValue(const Selection& selection) final;
