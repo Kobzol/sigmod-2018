@@ -54,6 +54,13 @@ bool ForeignKeyChecker::isForeignKey(const Selection& primary, const Selection& 
     assert(database.hasIndexedIterator(primary));
     assert(database.hasIndexedIterator(foreign));
 
+    auto leftMin = database.getMinValue(primary.relation, primary.column);
+    auto leftMax = database.getMaxValue(primary.relation, primary.column);
+    auto rightMin = database.getMinValue(foreign.relation, foreign.column);
+    auto rightMax = database.getMaxValue(foreign.relation, foreign.column);
+
+    if (leftMin > rightMin || rightMin > leftMax || rightMax > leftMax || rightMax < leftMin) return false;
+
     auto left = database.createIndexedIterator(primary, {});
     auto right = database.createIndexedIterator(foreign, {});
 
