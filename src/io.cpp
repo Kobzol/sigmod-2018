@@ -366,10 +366,12 @@ void loadQuery(Query& query, std::string& line)
             index++;
             predicate.selections[1].column = (uint32_t) readInt(line, index);
 
+#ifdef STATISTICS
             auto leftUnique = database.unique[database.getGlobalColumnId(predicate.selections[0].relation, predicate.selections[0].column)];
             auto rightUnique = database.unique[database.getGlobalColumnId(predicate.selections[1].relation, predicate.selections[1].column)];
             if (leftUnique || rightUnique) joinOneUnique++;
             if (leftUnique && rightUnique) joinBothUnique++;
+#endif
 
             // normalize the order of bindings in multiple-column joins
             if (predicate.selections[0].binding < predicate.selections[1].binding)

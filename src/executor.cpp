@@ -295,8 +295,10 @@ Iterator* Executor::createRootView(Database& database, Query& query,
         query.fillBindings(bindings);
         if (bindings.size() > 1)
         {
+#ifdef STATISTICS
             std::cerr << query.input << std::endl;
             query.dump(std::cerr);
+#endif
             throw "EXC";
         }
 

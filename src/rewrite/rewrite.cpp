@@ -152,7 +152,9 @@ static void rewriteFks(Query& query)
                     if (skippableSelections.find(join[0].selections[s].getId()) != skippableSelections.end() &&
                         !hasOtherColumn(query, join[0].selections[s], skippableSelections))
                     {
+#ifdef STATISTICS
                         skippableFK++;
+#endif
 
                         rewriteSelection(query, join[0].selections[s], join[0].selections[1 - s]);
                         query.joins.erase(query.joins.begin() + j);
