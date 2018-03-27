@@ -217,7 +217,7 @@ void loadDatabase(Database& database)
             {
                 index->build();
             }
-            /*auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
+            auto& index = database.sortIndices[database.getGlobalColumnId(static_cast<uint32_t>(r),
                                                                           static_cast<uint32_t>(c))];
             if (index->take())
             {
@@ -231,7 +231,7 @@ void loadDatabase(Database& database)
                     aggregated->build();
                 }
 #endif
-            }*/
+            }
         }
     }
 #endif
@@ -445,8 +445,6 @@ void loadQuery(Query& query, std::string& line)
 
         if (line[index++] == '|') break;
     }
-
-    rewriteQuery(query);
 
 #ifdef STATISTICS
     query.input = line;

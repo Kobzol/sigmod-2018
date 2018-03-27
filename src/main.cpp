@@ -17,8 +17,62 @@
 #include "join/hash-joiner.h"
 #include "index/index-thread-pool.h"
 #include "foreign-key/foreign-key-checker.h"
+#include "rewrite/rewrite.h"
 
 Database database;
+
+static void buildIndices(std::vector<Query>& queries)
+{
+    std::unordered_set<uint32_t> needIndices;
+
+    for (auto& query: queries)
+    {
+        for (auto& join: query.joins)
+        {
+            for (auto& pred: join)
+            {
+                for (auto& sel: pred.selections)
+                {
+                    uint32_t globalId = database.getGlobalColumnId(sel.relation, sel.column);
+                    if (!database.primaryIndices[globalId]->buildCompleted)
+                    {
+                        needIndices.insert(globalId);
+                    }
+                }
+            }
+        }
+    }
+
+    std::vector<uint32_t> indices(needIndices.begin(), needIndices.end());
+    auto count = static_cast<int32_t>(indices.size());
+
+#ifdef STATISTICS
+    Timer indexBuildTimer;
+#endif
+
+#pragma omp parallel for
+    for (int i = 0; i < count; i++)
+    {
+        if (database.primaryIndices[indices[i]]->take())
+        {
+            database.primaryIndices[indices[i]]->build();
+        }
+    }
+
+#ifdef STATISTICS
+    indexBuildTime += indexBuildTimer.get();
+    Timer queryRewriteTimer;
+#endif
+
+    for (auto& query: queries)
+    {
+        rewriteQuery(query);
+    }
+
+#ifdef STATISTICS
+    queryRewriteTime += queryRewriteTimer.get();
+#endif
+}
 
 int main(int argc, char** argv)
 {
@@ -58,6 +112,8 @@ int main(int argc, char** argv)
     size_t aggregatableQueries = 0;
 #endif
 
+    std::unordered_set<uint32_t> joinColumns;
+
     Executor executor;
     std::string line;
     std::vector<Query> queries;
@@ -68,6 +124,7 @@ int main(int argc, char** argv)
             auto queryCount = static_cast<int32_t>(queries.size());
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
+            buildIndices(queries);
 #ifdef USE_THREADS
             #pragma omp parallel for num_threads(numThreads)
             for (int i = 0; i < queryCount; i++)
@@ -134,6 +191,9 @@ int main(int argc, char** argv)
 
                     auto& l = predicate.selections[0];
                     auto& r = predicate.selections[1];
+
+                    joinColumns.insert(l.relation * 100 + l.column);
+                    joinColumns.insert(r.relation * 100 + r.column);
 #ifdef USE_SORT_INDEX
                     auto li = database.getSortIndex(l.relation, l.column);
                     auto ri = database.getSortIndex(r.relation, r.column);
@@ -183,6 +243,9 @@ int main(int argc, char** argv)
 
 #ifdef STATISTICS
     std::cerr << "Skippable by FK: " << skippableFK << std::endl;
+    std::cerr << "Join columns: " << joinColumns.size() << std::endl;
+    std::cerr << "Index build time: " << indexBuildTime << std::endl;
+    std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 
     /*std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;

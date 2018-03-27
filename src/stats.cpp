@@ -11,6 +11,8 @@
     double indicesInitTime = 0.0;
     double startIndexTime = 0.0;
     double histogramTime = 0.0;
+    double indexBuildTime = 0.0;
+    double queryRewriteTime = 0.0;
     size_t tupleCount = 0;
     size_t columnCount = 0;
     uint32_t minColumns = std::numeric_limits<uint32_t>::max();
@@ -33,6 +35,7 @@
     size_t joinOneUnique = 0;
     size_t joinBothUnique = 0;
     size_t skippableFK = 0;
+    std::atomic<size_t> primaryColumnsIndexed{0};
     std::atomic<size_t> averageRowsInHash{0};
     std::atomic<size_t> averageRowsInHashCount{0};
     std::atomic<size_t> emptyHashTableCount{0};
