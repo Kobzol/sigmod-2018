@@ -84,6 +84,10 @@ bool ForeignKeyChecker::isForeignKey(const Selection& primary, const Selection& 
         auto r = rightGroups[i];
 
         valid[i] = ::isForeignKey(l, r, primary, foreign) ? 1 : 0;
+        if (!valid[i])
+        {
+            #pragma omp cancel for
+        }
     }
 
     for (auto& v: valid)
