@@ -35,6 +35,10 @@ public:
     {
         return this->getId() == other.getId();
     }
+    bool operator!=(const Selection& other) const
+    {
+        return !(*this == other);
+    }
 
     SelectionId getId() const
     {

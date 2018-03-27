@@ -261,6 +261,22 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
 
     uint64_t minValue = 0;
     uint64_t maxValue = std::numeric_limits<uint64_t>::max();
+    bool equalFound = false;
+    bool lessFound = false;
+    bool greaterFound = false;
+    Filter equalFilter;
+
+    std::unordered_map<SelectionId, std::pair<uint64_t, uint64_t>> actualRanges;
+    for (auto& sel: selections)
+    {
+        auto values = std::make_pair(
+                database.getMinValue(sel.relation, sel.column),
+                database.getMaxValue(sel.relation, sel.column)
+        );
+        actualRanges[sel.getId()] = values;
+        minValue = std::max(minValue, values.first);
+        maxValue = std::min(maxValue, values.second);
+    }
 
     for (auto& f: componentFilters)
     {
@@ -269,30 +285,63 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
             equals.insert(f.value);
             minValue = f.value;
             maxValue = f.value;
+            equalFound = true;
+            equalFilter = f;
             if (equals.size() > 1)
             {
                 impossible = true;
                 break;
             }
         }
-        else if (f.oper == '<')
+        if (f.oper == '<')
         {
-            maxValue = std::min(f.value, maxValue);
+            lessFound = true;
+            maxValue = std::min(maxValue, f.value - 1);
         }
-        else minValue = std::max(f.value, minValue);
+        else
+        {
+            greaterFound = true;
+            minValue = std::max(minValue, f.value + 1);
+        }
     }
 
-    if (minValue == maxValue)
+    // remove all component filters
+    for (auto& f: componentFilters)
     {
-        componentFilters = {
-                Filter(Selection(0, 0, 0), minValue, nullptr, '=')
-        };
+        query.filters.erase(std::remove(query.filters.begin(), query.filters.end(), f), query.filters.end());
     }
-    else if (minValue > 0 && maxValue < std::numeric_limits<uint64_t>::max())
+
+    if (equalFound)
     {
-        componentFilters = {
-                Filter(Selection(0, 0, 0), minValue, nullptr, 'r', maxValue)
-        };
+        for (auto& sel: selections)
+        {
+            if (sel.getId() != equalFilter.selection.getId())
+            {
+                query.filters.emplace_back(sel, equalFilter.value, nullptr, '=');
+            }
+        }
+    }
+    else
+    {
+        for (auto& sel: selections)
+        {
+            auto range = actualRanges[sel.getId()];
+            if (greaterFound && lessFound)
+            {
+                query.filters.emplace_back(sel, minValue - 1, nullptr, 'r', maxValue + 1);
+            }
+            else
+            {
+                if (range.first < minValue && greaterFound)
+                {
+                    query.filters.emplace_back(sel, minValue - 1, nullptr, '>');
+                }
+                if (range.second > maxValue && lessFound)
+                {
+                    query.filters.emplace_back(sel, maxValue + 1, nullptr, '<');
+                }
+            }
+        }
     }
 
     for (auto& sel: selections)
@@ -308,19 +357,6 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
     }
 
     query.setImpossible(impossible);
-
-    for (auto& sel: selections)
-    {
-        for (auto& filter: componentFilters)
-        {
-            auto assigned = filter;
-            assigned.selection = sel;
-            if (!containsFilter(query.filters, assigned))
-            {
-                query.filters.push_back(assigned);
-            }
-        }
-    }
 }
 
 void rewriteQuery(Query& query)
