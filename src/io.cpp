@@ -280,13 +280,14 @@ void loadDatabase(Database& database)
     Timer histogramTimer;
 
 #ifdef USE_THREADS
-    #pragma omp parallel for
+    //#pragma omp parallel for
+    std::vector<uint32_t*> hist_aux;
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
 #else
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
 #endif
     {
-        database.histograms[i].loadRelation(database.relations[i]);
+        database.histograms[i].loadRelation(database.relations[i], hist_aux);
     }
 #ifdef STATISTICS
     histogramTime = histogramTimer.get();

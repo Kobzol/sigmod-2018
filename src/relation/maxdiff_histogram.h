@@ -18,6 +18,8 @@ struct hist_bucket
 	uint32_t distinct_values;
 	uint64_t max_value;
 	uint32_t max_value_frequency;
+	uint64_t* other_columns_max;
+	uint64_t* other_columns_min;
 };
 
 struct column_statistics
@@ -30,6 +32,8 @@ struct column_statistics
 };
 
 #define CHUNK_SIZE 5000
+#define HIST_MASK 0x1ffff
+#define BUCKET_SHIFT 17
 
 /**
 * Histogram for each column in the relation
@@ -41,11 +45,14 @@ class MaxdiffHistogram
 	std::vector<hist_bucket*> histogram;
 	std::vector<uint32_t> histogramCount;
 	uint64_t tupleCount;
-public:
-	
+
+
+public:	
+
+
 	std::vector<column_statistics> columnStats;
 
-	void loadRelation(ColumnRelation& relation, bool sampling = true, int sampleMax = 100000);
+	void loadRelation(ColumnRelation& relation, std::vector<uint32_t*>& fullhistograms2, bool sampling = true, int sampleMax = 100000);
 
 	uint32_t estimateResult(const Filter& filter);
 	void findTresholds(int col_order, int count, uint64_t* treshold);
