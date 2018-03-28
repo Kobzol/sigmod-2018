@@ -40,3 +40,41 @@ std::unique_ptr<Iterator> SelfJoin::createIndexedIterator(std::vector<std::uniqu
     container.push_back(this->inner->createIndexedIterator(container, selection));
     return std::make_unique<SelfJoin>(container.back().get(), this->selections);
 }
+
+void SelfJoin::splitToBounds(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
+                             std::vector<uint64_t>& bounds, size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->splitToBounds(container, subGroups, bounds, count);
+
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<SelfJoin>(group, this->selections));
+        groups.push_back(container.back().get());
+    }
+}
+
+void SelfJoin::splitUsingBounds(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
+                                const std::vector<uint64_t>& bounds)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->splitUsingBounds(container, subGroups, bounds);
+
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<SelfJoin>(group, this->selections));
+        groups.push_back(container.back().get());
+    }
+}
+
+void SelfJoin::split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->split(container, subGroups, count);
+
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<SelfJoin>(group, this->selections));
+        groups.push_back(container.back().get());
+    }
+}

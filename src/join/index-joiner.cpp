@@ -193,9 +193,10 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::split(std::vector<std::unique_ptr<Iterator
     this->left->split(container, subGroups, count);
     for (auto& it: subGroups)
     {
-        container.push_back(
-                std::make_unique<IndexJoiner<HAS_MULTIPLE_JOINS>>(
-                        it, this->right, this->leftIndex, this->join, this->hasLeftIndex)
+        container.push_back(this->right->createIndexedIterator(container, this->rightSelection));
+        container.push_back(std::make_unique<IndexJoiner<HAS_MULTIPLE_JOINS>>(
+                        it, container.back().get(),
+                        this->leftIndex, this->join, this->hasLeftIndex)
         );
         groups.push_back(container.back().get());
     }

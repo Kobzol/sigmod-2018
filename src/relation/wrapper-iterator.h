@@ -276,17 +276,28 @@ public:
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                  const std::vector<Selection>& selections, size_t& count) override
     {
-        const int threadCount = 8;
-        std::vector<std::vector<uint64_t>> subResults(threadCount);
+        std::vector<std::vector<uint64_t>> subResults(PARALLEL_JOIN_THREADS);
+        for (auto& subResult: subResults)
+        {
+            subResult.resize(results.size());
+        }
 
         std::atomic<size_t> localCount{0};
 
-#pragma omp parallel for
+#pragma omp parallel for num_threads(PARALLEL_JOIN_THREADS) schedule(dynamic)
         for (int i = 0; i < static_cast<int32_t>(this->iterators.size()); i++)
         {
             size_t c = 0;
             this->iterators[i]->sumRows(subResults[omp_get_thread_num()], columnIds, selections, c);
             localCount += c;
+        }
+
+        for (auto& subResult: subResults)
+        {
+            for (int r = 0; r < static_cast<int32_t>(results.size()); r++)
+            {
+                results[r] += subResult[r];
+            }
         }
 
         count = localCount;

@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "small.complete"
+#define INPUT_FILE "public.complete"
 
 #ifndef NDEBUG
     #define STATISTICS
@@ -20,13 +20,14 @@
 #define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
 //#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 
-#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
+//#define USE_SELF_JOIN                   // merge 0.0=0.1 into a filter
 #define USE_SEQUENTIAL_FILTER         // use sequential filter instead of indexed filters
 
 //#define COMPILE_FILTERS               // compile filters to x64 assembly
 #define EXPAND_FILTERS                // expand filters to all members of a join component
 //#define AGGREGATE_PUSH                  // use direct aggregation
 #define REWRITE_FKS                     // rewrite PK-FK joins
+#define USE_PARALLEL_JOIN               // parallelize indexed joins
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
 #define PREBUILD_PRIMARY_COLUMNS 3        // how many columns for primary index should be prebuilt
@@ -63,9 +64,11 @@
 #endif
 
 #define USE_THREADS
-#define QUERY_NUM_THREADS 20            // number of threads to execute queries
+#define QUERY_NUM_THREADS 10            // number of threads to execute queries
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 #define FK_CHECK_THREADS 40
+#define PARALLEL_JOIN_THREADS 4
+#define PARALLEL_JOIN_SPLIT 16
 
 //#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30

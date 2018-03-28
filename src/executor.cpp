@@ -270,7 +270,7 @@ static void createJoin(Iterator* left,
     bool leftSorted = left->isSortedOn((*join)[0].selections[leftIndex]);
     bool leftSortable = leftSorted || (hasLeftIndex && !left->isJoin());
 
-    if (leftSortable && hasRightIndex && (first || leftSorted))
+    if (leftSortable && hasRightIndex && first)//(first || leftSorted))
     {
         createMergesortJoin(left, right, leftIndex, container, join, leftSorted);
     }
@@ -280,7 +280,7 @@ static void createJoin(Iterator* left,
         {
             createIndexJoin(left, right, leftIndex, container, join, hasLeftIndex);
         }
-        else createHashJoin(left, right, leftIndex, container, join, last);
+        //else createHashJoin(left, right, leftIndex, container, join, last);
     }
 }
 
@@ -477,12 +477,17 @@ void Executor::sum(Database& database, Query& query, Iterator* root, bool aggreg
     }
     else root->requireSelections(selectionMap);
 
-    /*std::vector<std::unique_ptr<Iterator>> container;
+#ifdef USE_PARALLEL_JOIN
+    std::vector<std::unique_ptr<Iterator>> container;
     std::vector<Iterator*> groups;
-    root->split(container, groups, 2);
-    container.push_back(std::make_unique<MultiWrapperIterator>(groups));
-    root = container.back().get();
-    root->requireSelections(selectionMap);*/
+    if (!query.joins.empty())
+    {
+        root->split(container, groups, PARALLEL_JOIN_SPLIT);
+        container.push_back(std::make_unique<MultiWrapperIterator>(groups));
+        root = container.back().get();
+        root->requireSelections(selectionMap);
+    }
+#endif
 
     std::vector<uint32_t> columnIds;
     std::vector<Selection> selections;

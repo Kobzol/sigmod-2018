@@ -1,5 +1,6 @@
 #include "merge-sort-joiner.h"
 #include <cstring>
+#include <iostream>
 
 template <bool HAS_MULTIPLE_JOINS>
 MergeSortJoiner<HAS_MULTIPLE_JOINS>::MergeSortJoiner(Iterator* left, Iterator* right, uint32_t leftIndex, Join& join)
@@ -256,9 +257,7 @@ void MergeSortJoiner<HAS_MULTIPLE_JOINS>::split(std::vector<std::unique_ptr<Iter
     std::vector<Iterator*> rightGroups;
     this->right->splitUsingBounds(container, rightGroups, bounds);
 
-    assert(leftGroups.size() == rightGroups.size());
-
-    for (int i = 0; i < static_cast<int32_t>(leftGroups.size()); i++)
+    for (int i = 0; i < static_cast<int32_t>(rightGroups.size()); i++)
     {
         container.push_back(std::make_unique<MergeSortJoiner<HAS_MULTIPLE_JOINS>>(
             leftGroups[i],

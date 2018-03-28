@@ -34,7 +34,7 @@ static void buildIndices(std::vector<Query>& queries)
                 for (auto& sel: pred.selections)
                 {
                     uint32_t globalId = database.getGlobalColumnId(sel.relation, sel.column);
-                    if (!database.primaryIndices[globalId]->buildCompleted)
+                    if (!database.sortIndices[globalId]->buildCompleted)
                     {
                         needIndices.insert(globalId);
                     }

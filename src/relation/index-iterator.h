@@ -39,7 +39,7 @@ public:
     {
         return this->index->upperBound(value);
     }
-    virtual Entry* findNextValue(Entry* iter, const Selection& selection, uint64_t value) = 0;
+    virtual Entry* findNextValue(Entry* iter, Entry* end, const Selection& selection, uint64_t value) = 0;
     virtual int64_t count(Entry* from, Entry* to) = 0;
     virtual uint64_t getValueForIter(Entry* iter, const Selection& selection) = 0;
 
@@ -97,7 +97,7 @@ public:
 #endif
 
         this->start = this->lowerBound(value);
-        this->end = this->findNextValue(this->start, selection, value);
+        this->end = this->findNextValue(this->start, this->index->end, selection, value);
         this->start = this->index->dec(this->start);
         this->originalStart = this->start;
     }
@@ -204,6 +204,7 @@ public:
 
         bool first = true;
         size_t left = size;
+
         while (left > 0 && iter < this->end)
         {
             size_t chunk = std::min(chunkSize, left);
@@ -217,7 +218,7 @@ public:
             auto end = this->index->move(iter, chunk);
             if (end < this->index->end)
             {
-                auto alignedEnd = this->findNextValue(end, this->iteratedSelection,
+                auto alignedEnd = this->findNextValue(end, this->end, this->iteratedSelection,
                                                       this->getValueForIter(end, this->iteratedSelection));
                 left -= this->count(end, alignedEnd);
                 end = alignedEnd;
@@ -237,24 +238,39 @@ public:
             if (first) first = false;
         }
 
-        // TODO: fill rest with end-end iterators
+        if (groups.empty())
+        {
+            container.push_back(std::make_unique<Child>(
+                    this->relation,
+                    this->binding,
+                    this->filters,
+                    this->end,
+                    this->end,
+                    this->iteratedSelection
+            ));
+            groups.push_back(container.back().get());
+        }
 
-        assert(bounds.size() == groups.size() - 1);
         assert(iter == this->end);
     }
 
     void splitUsingBounds(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
-                                  const std::vector<uint64_t>& bounds) final
+                          const std::vector<uint64_t>& bounds) final
     {
         Entry* iter = this->index->move(this->originalStart, 1);
         for (int i = 0; i < static_cast<int32_t>(bounds.size()); i++)
         {
             Entry* end = this->lowerBound(bounds[i]);
+            Entry* start = this->index->dec(iter);
+            if (end < iter)
+            {
+                end = iter;
+            }
             container.push_back(std::make_unique<Child>(
                     this->relation,
                     this->binding,
                     this->filters,
-                    this->index->move(iter, -1),
+                    start,
                     end,
                     this->iteratedSelection,
                     this->startFilterIndex

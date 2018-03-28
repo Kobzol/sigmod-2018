@@ -27,7 +27,10 @@ SortIndexIterator::SortIndexIterator(ColumnRelation* relation, uint32_t binding,
                                      Selection iteratedSelection, int startFilterIndex)
         : IndexIterator(relation, binding, filters, start, end, iteratedSelection, startFilterIndex)
 {
-
+    if (iteratedSelection.binding != 100)
+    {
+        this->index = this->getIndex(this->iteratedSelection.relation, this->iteratedSelection.column);
+    }
 }
 
 bool SortIndexIterator::getNext()
@@ -107,10 +110,10 @@ std::unique_ptr<Iterator> SortIndexIterator::createIndexedIterator(std::vector<s
                                                     this->startFilterIndex);
 }
 
-RowEntry* SortIndexIterator::findNextValue(RowEntry* iter, const Selection& selection, uint64_t value)
+RowEntry* SortIndexIterator::findNextValue(RowEntry* iter, RowEntry* end, const Selection& selection, uint64_t value)
 {
     auto ptr = iter;
-    while (ptr < this->index->end && ptr->value == value)
+    while (ptr < end && ptr->value == value)
     {
         ptr++;
     }
