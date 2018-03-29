@@ -270,7 +270,11 @@ static void createJoin(Iterator* left,
     bool leftSorted = left->isSortedOn((*join)[0].selections[leftIndex]);
     bool leftSortable = leftSorted || (hasLeftIndex && !left->isJoin());
 
-    if (leftSortable && hasRightIndex && first)//(first || leftSorted))
+#ifdef USE_PARALLEL_JOIN
+    if (leftSortable && hasRightIndex && first)
+#else
+    if (leftSortable && hasRightIndex && (first || leftSorted))
+#endif
     {
         createMergesortJoin(left, right, leftIndex, container, join, leftSorted);
     }
@@ -280,7 +284,7 @@ static void createJoin(Iterator* left,
         {
             createIndexJoin(left, right, leftIndex, container, join, hasLeftIndex);
         }
-        //else createHashJoin(left, right, leftIndex, container, join, last);
+        else createHashJoin(left, right, leftIndex, container, join, last);
     }
 }
 

@@ -246,7 +246,8 @@ public:
                     this->filters,
                     this->end,
                     this->end,
-                    this->iteratedSelection
+                    this->iteratedSelection,
+                    this->startFilterIndex
             ));
             groups.push_back(container.back().get());
         }
