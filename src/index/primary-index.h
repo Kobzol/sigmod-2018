@@ -14,6 +14,15 @@ public:
     uint64_t row[1];
 };
 
+struct IndexGroup
+{
+public:
+    uint64_t startValue;
+    uint64_t endValue;
+    PrimaryRowEntry* start;
+    PrimaryRowEntry* end;
+};
+
 /**
  * Primary index for a given relation and column.
  * Stores a sorted list of <value, row data> pairs.
@@ -46,7 +55,18 @@ public:
     PrimaryRowEntry* lowerBound(uint64_t value);
     PrimaryRowEntry* upperBound(uint64_t value);
 
+    template <int N>
+    PrimaryRowEntry* findLowerBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
+
+    template <int N>
+    PrimaryRowEntry* findUpperBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
+
     int64_t count(PrimaryRowEntry* from, PrimaryRowEntry* to);
+
+    uint32_t groupValue(uint64_t value)
+    {
+        return static_cast<uint32_t>(((value - this->minValue) / (double) (this->diff)) * this->groupCount);
+    }
 
     PrimaryRowEntry* begin;
     PrimaryRowEntry* end;
@@ -54,6 +74,11 @@ public:
     uint64_t* init;
     uint64_t* mem;
     PrimaryRowEntry* data;
+
+    std::vector<IndexGroup> groups;
+    uint64_t diff;
+
+    int groupCount;
 
     int rowSizeBytes;
     int rowOffset;

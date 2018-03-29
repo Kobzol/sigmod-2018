@@ -18,7 +18,7 @@ struct RadixTraitsRow
 {
     static const int nBytes = 8;
 
-    RadixTraitsRow(int column): column(column)
+    explicit RadixTraitsRow(int column): column(column)
     {
 
     }
@@ -38,26 +38,6 @@ void sort(uint64_t* mem, int rows, uint32_t column)
 {
     auto* ptr = reinterpret_cast<Row<N>*>(mem);
     kx::radix_sort(ptr, ptr + rows, RadixTraitsRow<N>(column));
-}
-
-template <int N>
-PrimaryRowEntry* findLowerBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
-{
-    auto* ptr = reinterpret_cast<Row<N>*>(mem);
-    auto iter = std::lower_bound(ptr, ptr + rows, value, [column](const Row<N>& entry, uint64_t val) {
-        return entry.row[column] < val;
-    });
-    return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
-}
-
-template <int N>
-PrimaryRowEntry* findUpperBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
-{
-    auto* ptr = reinterpret_cast<Row<N>*>(mem);
-    auto iter = std::upper_bound(ptr, ptr + rows, value, [column](uint64_t val, const Row<N>& entry) {
-        return val < entry.row[column];
-    });
-    return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
 }
 
 bool PrimaryIndex::canBuild(ColumnRelation& relation)
@@ -128,19 +108,52 @@ bool PrimaryIndex::build()
 
     this->minValue = this->data[0].row[column];
     this->maxValue = this->move(this->data, rows - 1)->row[column];
+    this->diff = (this->maxValue - this->minValue) + 1;
 
     this->begin = this->data;
     this->end = this->move(data, rows);
 
+#ifdef USE_MULTILEVEL_INDEX
+    this->groupCount = 32;
+    this->groups.resize(static_cast<size_t>(this->groupCount));
+
+    int group = 0;
+    this->groups[0].startValue = this->minValue;
+    this->groups[0].start = this->begin;
+#endif
+
     bool unique = true;
     for (int i = 1; i < rows; i++)
     {
-        if (this->move(this->begin, i - 1)->row[this->column] == this->move(this->begin, i)->row[this->column])
+        uint64_t lastValue = this->move(this->begin, i - 1)->row[this->column];
+        uint64_t value = this->move(this->begin, i)->row[this->column];
+
+#ifdef USE_MULTILEVEL_INDEX
+        if (NOEXPECT(this->groupValue(value) > group))
+        {
+            this->groups[group].endValue = value;
+            this->groups[group].end = this->move(this->begin, i);
+            group++;
+            this->groups[group].startValue = value;
+            this->groups[group].start = this->groups[group - 1].end;
+        }
+#endif
+
+        if (lastValue == value)
         {
             unique = false;
+#ifndef USE_MULTILEVEL_INDEX
             break;
+#endif
         }
     }
+
+#ifdef USE_MULTILEVEL_INDEX
+    this->groups[group].endValue = this->maxValue + 1;
+    this->groups[group].end = this->end;
+
+    assert(group == this->groupCount - 1);
+#endif
 
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = unique;
 
@@ -184,4 +197,40 @@ PrimaryRowEntry* PrimaryIndex::upperBound(uint64_t value)
 int64_t PrimaryIndex::count(PrimaryRowEntry* from, PrimaryRowEntry* to)
 {
     return (to - from) / this->rowOffset;
+}
+
+template<int N>
+PrimaryRowEntry* PrimaryIndex::findLowerBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
+{
+#ifdef USE_MULTILEVEL_INDEX
+    for (auto& group: this->groups)
+    {
+        if (group.startValue <= value && value < group.endValue)
+        {
+            auto* ptr = reinterpret_cast<Row<N>*>(group.start);
+            auto* end = reinterpret_cast<Row<N>*>(group.end);
+            auto iter = std::lower_bound(ptr, end, value, [column](const Row<N>& entry, uint64_t val) {
+                return entry.row[column] < val;
+            });
+            if (iter == end) return this->end;
+            return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
+        }
+    }
+#endif
+
+    auto* ptr = reinterpret_cast<Row<N>*>(mem);
+    auto iter = std::lower_bound(ptr, ptr + rows, value, [column](const Row<N>& entry, uint64_t val) {
+        return entry.row[column] < val;
+    });
+    return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
+}
+
+template<int N>
+PrimaryRowEntry* PrimaryIndex::findUpperBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
+{
+    auto* ptr = reinterpret_cast<Row<N>*>(mem);
+    auto iter = std::upper_bound(ptr, ptr + rows, value, [column](uint64_t val, const Row<N>& entry) {
+        return val < entry.row[column];
+    });
+    return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
 }
