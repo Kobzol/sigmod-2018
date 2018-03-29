@@ -62,5 +62,30 @@ int64_t FilterIterator::predictSize()
 void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                              const std::vector<Selection>& selections, size_t& count)
 {
-    Iterator::sumRows(results, columnIds, selections, count);
+    auto rows = static_cast<int32_t>(this->getRowCount());
+    size_t localCount = 0;
+
+    for (int i = 0; i < static_cast<int32_t>(results.size()); i++)
+    {
+        this->save();
+        this->rowIndex++;
+
+        while (this->rowIndex < rows)
+        {
+            if (this->passesFilters())
+            {
+                results[i] += this->getColumn(columnIds[i]);
+                localCount++;
+            }
+
+            this->rowIndex++;
+        }
+
+        if (localCount == 0) break;
+        else if (i < results.size() - 1) localCount = 0;
+
+        this->restore();
+    }
+
+    count = localCount;
 }

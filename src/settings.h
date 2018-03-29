@@ -64,7 +64,7 @@
     #undef USE_AGGREGATE_INDEX
 #endif
 
-//#define USE_THREADS
+#define USE_THREADS
 #define QUERY_NUM_THREADS 10            // number of threads to execute queries
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 #define FK_CHECK_THREADS 40
