@@ -39,4 +39,8 @@
     std::atomic<size_t> averageRowsInHash{0};
     std::atomic<size_t> averageRowsInHashCount{0};
     std::atomic<size_t> emptyHashTableCount{0};
+    std::atomic<size_t> indexMinMaxTime{0};
+    std::atomic<size_t> indexGroupCountTime{0};
+    std::atomic<size_t> indexCopyToBucketsTime{0};
+    std::atomic<size_t> indexSortTime{0};
 #endif

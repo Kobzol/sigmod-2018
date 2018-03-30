@@ -85,7 +85,7 @@ bool SortIndex::build()
     {
         auto start = groups[i].start;
         auto end = start + groups[i].count;
-        kx::radix_sort(this->data.begin() + start, this->data.begin() + end, RadixTraitsRowEntry());
+        kx::radix_sort(this->data.begin() + start, this->data.begin() + end, RadixTraitsRowEntry(), diff);
     }
 
     //kx::radix_sort(this->data.begin(), this->data.end(), RadixTraitsRowEntry());

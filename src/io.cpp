@@ -237,7 +237,26 @@ void loadDatabase(Database& database)
 #endif
     threadIndexPool.start();
 #else
-#ifdef USE_THREADS
+    std::vector<uint32_t> primaryIndices;
+    for (int i = 0; i < static_cast<int32_t>(columnId); i++)
+    {
+        if (database.primaryIndices[i]->column < PREBUILD_PRIMARY_COLUMNS)
+        {
+            primaryIndices.push_back(i);
+        }
+    }
+
+    int threads = primaryIndices.size();
+#pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
+    {
+        if (database.primaryIndices[primaryIndices[i]]->take())
+        {
+            database.primaryIndices[primaryIndices[i]]->build();
+        }
+    }
+
+/*#ifdef USE_THREADS
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #else
@@ -270,7 +289,7 @@ void loadDatabase(Database& database)
 #endif
         }
 #endif
-    }
+    }*/
 #endif
 
 #ifdef STATISTICS

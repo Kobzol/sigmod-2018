@@ -70,7 +70,6 @@ void MaxdiffHistogram::loadRelation(ColumnRelation& relation, std::vector<uint32
 		int b = 0;
 		uint64_t segment = 0;
 		bool unique = true;
-		bool growByOne = true;
 		sorted_values.clear();
 		for (auto& sarray : preSort)
 		{
@@ -253,7 +252,7 @@ void MaxdiffHistogram::findTresholds(int col_order, int count, uint64_t* treshol
 	int c = 1;
 	int countSum = 0;
 	int tresholdCount = tupleCount / count;
-	for (int i = 0; i < histogramCount[col_order]; i++)
+	for (int i = 0; i < static_cast<int32_t>(histogramCount[col_order]); i++)
 	{
 		countSum += histogram[col_order][i].frequency + histogram[col_order][i].max_value_frequency;
 		if (countSum > tresholdCount * c)
@@ -367,7 +366,7 @@ void MaxdiffHistogram::printStatistics(int relation)
 void MaxdiffHistogram::print(int colOrder)
 {
 	std::cout << "histogram count " << histogramCount[colOrder] << std::endl;
-	for (int i = 0; i < histogramCount[colOrder]; i++)
+	for (int i = 0; i < static_cast<int32_t>(histogramCount[colOrder]); i++)
 	{
 		std::cout << i << ": " << histogram[colOrder][i].distinct_values <<
 			", " << histogram[colOrder][i].frequency <<

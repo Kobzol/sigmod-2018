@@ -1,5 +1,7 @@
 #pragma once
 
+#include "settings.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -41,4 +43,8 @@
     extern std::atomic<size_t> averageRowsInHash;
     extern std::atomic<size_t> averageRowsInHashCount;
     extern std::atomic<size_t> emptyHashTableCount;
+    extern std::atomic<size_t> indexMinMaxTime;
+    extern std::atomic<size_t> indexGroupCountTime;
+    extern std::atomic<size_t> indexCopyToBucketsTime;
+    extern std::atomic<size_t> indexSortTime;
 #endif

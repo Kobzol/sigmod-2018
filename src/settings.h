@@ -27,11 +27,11 @@
 #define EXPAND_FILTERS                // expand filters to all members of a join component
 //#define AGGREGATE_PUSH                  // use direct aggregation
 #define REWRITE_FKS                     // rewrite PK-FK joins
-#define USE_PARALLEL_JOIN               // parallelize indexed joins
+//#define USE_PARALLEL_JOIN               // parallelize indexed joins
 //#define USE_MULTILEVEL_INDEX            // use multi-level primary index
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
-#define PREBUILD_PRIMARY_COLUMNS 3        // how many columns for primary index should be prebuilt
+#define PREBUILD_PRIMARY_COLUMNS 0       // how many columns for primary index should be prebuilt
 
 
 //#define USE_HISTOGRAM
@@ -70,6 +70,7 @@
 #define FK_CHECK_THREADS 40
 #define PARALLEL_JOIN_THREADS 2
 #define PARALLEL_JOIN_SPLIT 4
+#define PRIMARY_BUILD_THREADS 8         // number of threads to build primary index
 
 //#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30
