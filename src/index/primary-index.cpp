@@ -123,19 +123,19 @@ bool PrimaryIndex::build()
 #endif
 
     bool unique = true;
+    uint64_t lastValue = this->begin->row[this->column];
     for (int i = 1; i < rows; i++)
     {
-        uint64_t lastValue = this->move(this->begin, i - 1)->row[this->column];
         uint64_t value = this->move(this->begin, i)->row[this->column];
 
 #ifdef USE_MULTILEVEL_INDEX
-        if (NOEXPECT(this->groupValue(value) > group))
+        if (this->groupValue(value) > group)
         {
             this->groups[group].endValue = value;
             this->groups[group].end = this->move(this->begin, i);
+            this->groups[group + 1].startValue = value;
+            this->groups[group + 1].start = this->groups[group].end;
             group++;
-            this->groups[group].startValue = value;
-            this->groups[group].start = this->groups[group - 1].end;
         }
 #endif
 
@@ -146,6 +146,7 @@ bool PrimaryIndex::build()
             break;
 #endif
         }
+        lastValue = value;
     }
 
 #ifdef USE_MULTILEVEL_INDEX
@@ -202,6 +203,9 @@ int64_t PrimaryIndex::count(PrimaryRowEntry* from, PrimaryRowEntry* to)
 template<int N>
 PrimaryRowEntry* PrimaryIndex::findLowerBound(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
 {
+    if (value < this->minValue) return this->begin;
+    if (value > this->maxValue) return this->end;
+
 #ifdef USE_MULTILEVEL_INDEX
     for (auto& group: this->groups)
     {
@@ -212,8 +216,9 @@ PrimaryRowEntry* PrimaryIndex::findLowerBound(uint64_t* mem, int64_t rows, uint6
             auto iter = std::lower_bound(ptr, end, value, [column](const Row<N>& entry, uint64_t val) {
                 return entry.row[column] < val;
             });
-            if (iter == end) return this->end;
-            return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
+
+            return reinterpret_cast<PrimaryRowEntry*>(iter);
+
         }
     }
 #endif
