@@ -131,7 +131,7 @@ uint64_t Database::getMaxValue(uint32_t relation, uint32_t column)
 
 bool Database::isUnique(const Selection& selection)
 {
-    return this->unique[this->getGlobalColumnId(selection.relation, selection.column)];
+    return static_cast<bool>(this->unique[this->getGlobalColumnId(selection.relation, selection.column)]);
 }
 
 bool Database::isPkFk(const Selection& primary, const Selection& foreign)

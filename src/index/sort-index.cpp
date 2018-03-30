@@ -50,7 +50,7 @@ bool SortIndex::build()
         }
     }
 
-    database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = unique;
+    database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
 
     this->buildCompleted = true;
     return true;

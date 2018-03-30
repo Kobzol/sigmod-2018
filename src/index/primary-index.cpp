@@ -155,7 +155,7 @@ bool PrimaryIndex::build()
     assert(group == this->groupCount - 1);
 #endif
 
-    database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = unique;
+    database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
 
     this->buildCompleted = true;
     return true;

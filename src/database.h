@@ -47,7 +47,7 @@ public:
     std::vector<std::unique_ptr<SortIndex>> sortIndices;
     std::vector<std::unique_ptr<PrimaryIndex>> primaryIndices;
     std::vector<std::unique_ptr<AggregateIndex>> aggregateIndices;
-    std::vector<bool> unique;
+    std::vector<uint32_t> unique;
 
     std::unordered_map<std::string, int64_t> joinSizeMap;
     std::mutex joinMapMutex;
