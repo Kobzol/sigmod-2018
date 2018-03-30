@@ -114,6 +114,8 @@ public:
     std::vector<IndexGroup> groups;
     uint64_t diff;
 
+    PrimaryRowEntry* (PrimaryIndex::*lowerBoundFn)(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
+
     int groupCount;
 
     int rowSizeBytes;

@@ -18,6 +18,16 @@ struct Group
     size_t index{0};
 };
 
+template<int N>
+PrimaryRowEntry* findLowerBound2(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
+{
+    auto* ptr = reinterpret_cast<Row<N>*>(mem);
+    auto iter = std::lower_bound(ptr, ptr + rows, value, [column](const Row<N>& entry, uint64_t val) {
+        return entry.row[column] < val;
+    });
+    return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
+}
+
 bool PrimaryIndex::canBuild(ColumnRelation& relation)
 {
     return relation.getColumnCount() <= PRIMARY_INDEX_MAX_COLUMNS;
@@ -205,29 +215,27 @@ bool PrimaryIndex::build(uint32_t threads)
 
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
 
+    if (this->columns == 1) this->lowerBoundFn = &PrimaryIndex::findLowerBound<1>;
+    if (this->columns == 2) this->lowerBoundFn = &PrimaryIndex::findLowerBound<2>;
+    if (this->columns == 3) this->lowerBoundFn = &PrimaryIndex::findLowerBound<3>;
+    if (this->columns == 4) this->lowerBoundFn = &PrimaryIndex::findLowerBound<4>;
+    if (this->columns == 5) this->lowerBoundFn = &PrimaryIndex::findLowerBound<5>;
+    if (this->columns == 6) this->lowerBoundFn = &PrimaryIndex::findLowerBound<6>;
+    if (this->columns == 7) this->lowerBoundFn = &PrimaryIndex::findLowerBound<7>;
+    if (this->columns == 8) this->lowerBoundFn = &PrimaryIndex::findLowerBound<8>;
+    if (this->columns == 9) this->lowerBoundFn = &PrimaryIndex::findLowerBound<9>;
+
     this->buildCompleted = true;
     return true;
 }
 
 PrimaryRowEntry* PrimaryIndex::lowerBound(uint64_t value)
 {
-    if (this->columns == 1) return findLowerBound<1>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 2) return findLowerBound<2>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 3) return findLowerBound<3>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 4) return findLowerBound<4>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 5) return findLowerBound<5>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 6) return findLowerBound<6>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 7) return findLowerBound<7>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 8) return findLowerBound<8>(this->mem, this->relation.getRowCount(), value, this->column);
-    if (this->columns == 9) return findLowerBound<9>(this->mem, this->relation.getRowCount(), value, this->column);
-    
-    assert(false);
-    return nullptr;
+    return (this->*lowerBoundFn)(this->mem, this->relation.getRowCount(), value, this->column);
 }
 
 PrimaryRowEntry* PrimaryIndex::upperBound(uint64_t value)
 {
-
     if (this->columns == 1) return findUpperBound<1>(this->mem, this->relation.getRowCount(), value, this->column);
     if (this->columns == 2) return findUpperBound<2>(this->mem, this->relation.getRowCount(), value, this->column);
     if (this->columns == 3) return findUpperBound<3>(this->mem, this->relation.getRowCount(), value, this->column);
