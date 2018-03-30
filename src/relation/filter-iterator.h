@@ -30,7 +30,7 @@ public:
                                                     const Selection& selection) override;
 
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                         const std::vector<Selection>& selections, size_t& count) final;
+                         const std::vector<Selection>& selections, size_t& count) override;
 
     int64_t predictSize() override;
 

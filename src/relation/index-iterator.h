@@ -294,6 +294,21 @@ public:
         assert(groups.size() == bounds.size() + 1);
     }
 
+    void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
+                         const std::vector<Selection>& selections, size_t& count) final
+    {
+        auto resultCount = static_cast<int32_t>(results.size());
+        while (this->getNext())
+        {
+            for (int i = 0; i < resultCount; i++)
+            {
+                results[i] += this->getColumn(columnIds[i]);
+            }
+
+            count++;
+        }
+    }
+
     size_t iterateCount() final
     {
         if (this->startFilterIndex >= this->filterSize)
