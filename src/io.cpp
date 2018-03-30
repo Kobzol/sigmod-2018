@@ -252,7 +252,7 @@ void loadDatabase(Database& database)
     {
         if (database.primaryIndices[primaryIndices[i]]->take())
         {
-            database.primaryIndices[primaryIndices[i]]->build();
+            database.primaryIndices[primaryIndices[i]]->build(PRIMARY_THREADS_PREBUILD);
         }
     }
 

@@ -3,8 +3,10 @@
 #include <atomic>
 #include <limits>
 #include <vector>
+#include <array>
 
 #include "index.h"
+#include "../settings.h"
 
 #define PRIMARY_INDEX_MAX_COLUMNS 9
 
@@ -23,6 +25,34 @@ public:
     PrimaryRowEntry* end;
 };
 
+template <int N>
+struct Row
+{
+public:
+    std::array<uint64_t, N> row;
+};
+
+template <int N>
+struct RadixTraitsRow
+{
+    static const int nBytes = 8;
+
+    explicit RadixTraitsRow(int column, uint64_t minValue): minValue(minValue), column(column)
+    {
+
+    }
+
+    int kth_byte(const Row<N> &x, int k) {
+        return ((x.row[this->column] - this->minValue) >> (k * 8)) & 0xFF;
+    }
+    bool compare(const Row<N> &x, const Row<N> &y) {
+        return x.row[this->column] < y.row[this->column];
+    }
+
+    uint64_t minValue;
+    int column;
+};
+
 /**
  * Primary index for a given relation and column.
  * Stores a sorted list of <value, row data> pairs.
@@ -37,7 +67,11 @@ public:
 
     PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* init);
 
-    bool build() final;
+    bool build() final
+    {
+        return this->build(PRIMARY_THREADS_PREBUILD);
+    }
+    bool build(uint32_t threads);
 
     PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset)
     {
@@ -68,13 +102,15 @@ public:
         return static_cast<uint32_t>(((value - this->minValue) / (double) (this->diff)) * this->groupCount);
     }
 
+    template <int N>
+    void sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t column, uint64_t minValue, uint64_t maxValue);
+
     PrimaryRowEntry* begin;
     PrimaryRowEntry* end;
 
     uint64_t* init;
     uint64_t* mem;
     PrimaryRowEntry* data;
-
     std::vector<IndexGroup> groups;
     uint64_t diff;
 

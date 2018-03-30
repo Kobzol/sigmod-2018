@@ -4,56 +4,19 @@
 #include "../database.h"
 #include "../timer.h"
 #include "../stats.h"
+#include "sort.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <omp.h>
 
-template <int N>
-struct Row
-{
-public:
-    std::array<uint64_t, N> row;
-};
-
-template <int N>
-struct RadixTraitsRow
-{
-    static const int nBytes = 8;
-
-    explicit RadixTraitsRow(int column, uint64_t minValue): minValue(minValue), column(column)
-    {
-
-    }
-
-    int kth_byte(const Row<N> &x, int k) {
-        return ((x.row[this->column] - this->minValue) >> (k * 8)) & 0xFF;
-    }
-    bool compare(const Row<N> &x, const Row<N> &y) {
-        return x.row[this->column] < y.row[this->column];
-    }
-
-    uint64_t minValue;
-    int column;
-};
-
 struct Group
 {
     size_t count{0};
     size_t start = 0;
-    std::atomic<size_t> index{0};
+    size_t index{0};
 };
-
-template <int N>
-void sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t column, uint64_t minValue, uint64_t maxValue)
-{
-    uint64_t diff = maxValue - minValue + 1;
-
-    auto* ptr = reinterpret_cast<Row<N>*>(mem);
-    auto* stop = reinterpret_cast<Row<N>*>(end);
-    kx::radix_sort(ptr, stop, RadixTraitsRow<N>(column, minValue), diff);
-}
 
 bool PrimaryIndex::canBuild(ColumnRelation& relation)
 {
@@ -91,7 +54,7 @@ PrimaryIndex::PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* 
 
 }
 
-bool PrimaryIndex::build()
+bool PrimaryIndex::build(uint32_t threads)
 {
     if (!canBuild(this->relation))
     {
@@ -115,7 +78,7 @@ bool PrimaryIndex::build()
 
     Timer timer;
 
-#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(PRIMARY_BUILD_THREADS)
+#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(threads)
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
@@ -149,20 +112,26 @@ bool PrimaryIndex::build()
         groups[i].index = groups[i].start;
     }
 
-    auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
-#pragma omp parallel for num_threads(PRIMARY_BUILD_THREADS)
+    std::vector<uint32_t> rowTargets(rows);
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
-        auto* item = this->move(this->data, groups[groupIndex].index++);
+        rowTargets[i] = groups[groupIndex].index++;
+    }
+
+    auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
+#pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < rows; i++)
+    {
+        auto* item = this->move(this->data, rowTargets[i]);
         std::memcpy(item, this->move(src, i), this->rowSizeBytes);
     }
 
     indexCopyToBucketsTime += timer.get() * 1000;
     timer.reset();
 
-#pragma omp parallel for num_threads(PRIMARY_BUILD_THREADS)
+#pragma omp parallel for num_threads(threads)
     for (int i = 0; i < GROUP_COUNT; i++)
     {
         auto start = groups[i].start;
@@ -192,7 +161,7 @@ bool PrimaryIndex::build()
     this->end = this->move(data, rows);
 
 #ifdef USE_MULTILEVEL_INDEX
-    this->groupCount = 32;
+    this->groupCount = 64;
     this->groups.resize(static_cast<size_t>(this->groupCount));
 
     int group = 0;
@@ -316,4 +285,15 @@ PrimaryRowEntry* PrimaryIndex::findUpperBound(uint64_t* mem, int64_t rows, uint6
         return val < entry.row[column];
     });
     return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
+}
+
+template<int N>
+void PrimaryIndex::sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t column,
+                        uint64_t minValue, uint64_t maxValue)
+{
+    uint64_t diff = maxValue - minValue + 1;
+
+    auto* ptr = reinterpret_cast<Row<N>*>(mem);
+    auto* stop = reinterpret_cast<Row<N>*>(end);
+    kx::radix_sort(ptr, stop, RadixTraitsRow<N>(column, minValue), diff);
 }

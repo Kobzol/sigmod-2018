@@ -55,7 +55,7 @@ static void buildIndices(std::vector<Query>& queries)
     {
         if (database.primaryIndices[indices[i]]->take())
         {
-            database.primaryIndices[indices[i]]->build();
+            database.primaryIndices[indices[i]]->build(PRIMARY_THREADS_LAZY);
         }
     }
 
