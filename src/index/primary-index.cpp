@@ -101,15 +101,18 @@ bool PrimaryIndex::build(uint32_t threads)
 
     const int TARGET_SIZE = 1024 * 512;
     double size = (rows * this->rowSizeBytes) / static_cast<double>(TARGET_SIZE);
-    const auto GROUP_COUNT = static_cast<int>(std::ceil(size));
+    const auto GROUP_COUNT = static_cast<int>(std::min((maxValue - minValue) + 1,
+                                                       static_cast<uint64_t>(std::ceil(size))));
 //    const int GROUP_COUNT = 128;
-    auto diff = std::max(1UL, maxValue - minValue) + 1;
-    std::vector<Group> groups(GROUP_COUNT);
+    auto diff = std::max(((maxValue - minValue) + 1) / GROUP_COUNT + 1, 1UL);
+    auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
+
+    std::vector<Group> groups(static_cast<size_t>(GROUP_COUNT));
 
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
+        auto groupIndex = (value - minValue) >> shift;
         groups[groupIndex].count++;
     }
 
@@ -126,7 +129,7 @@ bool PrimaryIndex::build(uint32_t threads)
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
+        auto groupIndex = (value - minValue) >> shift;
         rowTargets[i] = groups[groupIndex].index++;
     }
 
