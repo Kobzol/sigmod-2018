@@ -3,7 +3,8 @@
 #include "aggregated-iterator.h"
 
 template <bool IS_GROUPBY_SUMMED>
-AggregatedIterator<IS_GROUPBY_SUMMED>::AggregatedIterator(Iterator* inner, Selection groupBy, std::vector<Selection> sumSelections)
+AggregatedIterator<IS_GROUPBY_SUMMED>::AggregatedIterator(Iterator* inner, Selection groupBy,
+                                                          std::vector<Selection> sumSelections)
         : WrapperIterator(inner), groupBy(std::move(groupBy)), sumSelections(std::move(sumSelections))
 {
     if (IS_GROUPBY_SUMMED)
@@ -207,4 +208,48 @@ bool AggregatedIterator<IS_GROUPBY_SUMMED>::getValueMaybe(const Selection& selec
     }
 
     return false;
+}
+
+template<bool IS_GROUPBY_SUMMED>
+void AggregatedIterator<IS_GROUPBY_SUMMED>::splitToBounds(std::vector<std::unique_ptr<Iterator>>& container,
+                                                          std::vector<Iterator*>& groups, std::vector<uint64_t>& bounds,
+                                                          size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->splitToBounds(container, subGroups, bounds, count);
+
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<AggregatedIterator>(group, this->groupBy, this->sumSelections));
+        groups.push_back(container.back().get());
+    }
+}
+
+template<bool IS_GROUPBY_SUMMED>
+void AggregatedIterator<IS_GROUPBY_SUMMED>::splitUsingBounds(std::vector<std::unique_ptr<Iterator>>& container,
+                                                             std::vector<Iterator*>& groups,
+                                                             const std::vector<uint64_t>& bounds)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->splitUsingBounds(container, subGroups, bounds);
+
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<AggregatedIterator>(group, this->groupBy, this->sumSelections));
+        groups.push_back(container.back().get());
+    }
+}
+
+template<bool IS_GROUPBY_SUMMED>
+void AggregatedIterator<IS_GROUPBY_SUMMED>::split(std::vector<std::unique_ptr<Iterator>>& container,
+                                                  std::vector<Iterator*>& groups, size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->split(container, subGroups, count);
+
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<AggregatedIterator>(group, this->groupBy, this->sumSelections));
+        groups.push_back(container.back().get());
+    }
 }

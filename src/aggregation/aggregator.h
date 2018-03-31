@@ -20,5 +20,7 @@ public:
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                  const std::vector<Selection>& selections, size_t& count) override;
 
+    void split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count) final;
+
     const Query& query;
 };

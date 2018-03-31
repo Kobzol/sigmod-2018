@@ -66,3 +66,14 @@ void Aggregator::sumRows(std::vector<uint64_t>& results, const std::vector<uint3
         count++; // TODO
     }
 }
+
+void Aggregator::split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->inner->split(container, subGroups, count);
+    for (auto& group: subGroups)
+    {
+        container.push_back(std::make_unique<Aggregator>(group, this->query));
+        groups.push_back(container.back().get());
+    }
+}
