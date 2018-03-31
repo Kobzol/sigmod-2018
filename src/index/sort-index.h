@@ -5,6 +5,7 @@
 
 #include "../util.h"
 #include "index.h"
+#include "../settings.h"
 
 struct RowEntry
 {
@@ -32,7 +33,11 @@ class SortIndex: public Index
 public:
     SortIndex(ColumnRelation& relation, uint32_t column);
 
-    bool build() final;
+    bool build() final
+    {
+        return this->build(PRIMARY_THREADS_PREBUILD);
+    }
+    bool build(uint32_t threads);
 
     RowEntry* move(RowEntry* ptr, int offset)
     {

@@ -23,6 +23,11 @@ Database database;
 
 static void buildIndices(std::vector<Query>& queries)
 {
+#ifdef STATISTICS
+    Timer indexBuildTimer;
+#endif
+
+#ifdef USE_PRIMARY_INDEX
     std::unordered_set<uint32_t> needIndices;
 
     for (auto& query: queries)
@@ -46,10 +51,6 @@ static void buildIndices(std::vector<Query>& queries)
     std::vector<uint32_t> indices(needIndices.begin(), needIndices.end());
     auto count = static_cast<int32_t>(indices.size());
 
-#ifdef STATISTICS
-    Timer indexBuildTimer;
-#endif
-
 #pragma omp parallel for
     for (int i = 0; i < count; i++)
     {
@@ -58,6 +59,7 @@ static void buildIndices(std::vector<Query>& queries)
             database.primaryIndices[indices[i]]->build(PRIMARY_THREADS_LAZY);
         }
     }
+#endif
 
 #ifdef STATISTICS
     indexBuildTime += indexBuildTimer.get();

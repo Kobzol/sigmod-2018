@@ -179,12 +179,6 @@ void loadDatabase(Database& database)
                                                                              relationData[r]));
         }
 
-#ifdef USE_PRIMARY_INDEX
-        // free memory
-        //relationData[r]->resize(0);
-        //relationData[r]->shrink_to_fit();
-#endif
-
 #ifdef USE_HISTOGRAM
         database.histograms.emplace_back();
 #endif
@@ -237,6 +231,7 @@ void loadDatabase(Database& database)
 #endif
     threadIndexPool.start();
 #else
+#ifdef USE_PRIMARY_INDEX
     std::vector<uint32_t> primaryIndices;
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
     {
@@ -255,8 +250,9 @@ void loadDatabase(Database& database)
             database.primaryIndices[primaryIndices[i]]->build(PRIMARY_THREADS_PREBUILD);
         }
     }
+#endif
 
-/*#ifdef USE_THREADS
+#ifdef USE_THREADS
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #else
@@ -279,7 +275,7 @@ void loadDatabase(Database& database)
 #ifdef USE_SORT_INDEX
         if (!built && database.sortIndices[i]->take())
         {
-            database.sortIndices[i]->build();
+            database.sortIndices[i]->build(4);
 
 #ifdef USE_AGGREGATE_INDEX
             if (database.aggregateIndices[i]->take())
@@ -289,7 +285,7 @@ void loadDatabase(Database& database)
 #endif
         }
 #endif
-    }*/
+    }
 #endif
 
 #ifdef STATISTICS

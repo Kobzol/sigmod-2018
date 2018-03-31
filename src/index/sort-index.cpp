@@ -8,10 +8,9 @@
 
 struct RadixTraitsRowEntry
 {
-    static const int nBytes = 12;
+    static const int nBytes = 8;
     int kth_byte(const RowEntry &x, int k) {
-        if (k >= 8) return (x.value >> ((k - 8) * 8)) & 0xFF;
-        return (x.row >> (k * 8)) & 0xFF;
+        return (x.value >> (k * 8)) & 0xFF;
     }
     bool compare(const RowEntry &x, const RowEntry &y) {
         return x < y;
@@ -20,9 +19,9 @@ struct RadixTraitsRowEntry
 
 struct Group
 {
-    std::atomic<size_t> count{0};
+    size_t count{0};
     size_t start = 0;
-    std::atomic<size_t> index{0};
+    size_t index{0};
 };
 
 SortIndex::SortIndex(ColumnRelation& relation, uint32_t column)
@@ -31,9 +30,7 @@ SortIndex::SortIndex(ColumnRelation& relation, uint32_t column)
 
 }
 
-#define SORT_BUILD_THREADS 4
-
-bool SortIndex::build()
+bool SortIndex::build(uint32_t threads)
 {
     this->data.resize(static_cast<size_t>(this->relation.getRowCount()));
     auto rows = static_cast<int32_t>(this->data.size());
@@ -41,22 +38,24 @@ bool SortIndex::build()
     uint64_t minValue = std::numeric_limits<uint64_t>::max();
     uint64_t maxValue = 0;
 
-#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(SORT_BUILD_THREADS)
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         minValue = value < minValue ? value : minValue;
         maxValue = value > maxValue ? value : maxValue;
+        this->data[i].value = value;
+        this->data[i].row = i;
     }
 
-    /*const int TARGET_SIZE = 1024 * 1024;
-    double size = (rows * sizeof(RowEntry)) / static_cast<double>(TARGET_SIZE);
-    const auto GROUP_COUNT = static_cast<int>(std::ceil(size));*/
-    const int GROUP_COUNT = 64;
     auto diff = std::max(1UL, maxValue - minValue) + 1;
+
+    const int TARGET_SIZE = 1024 * 1024;
+    double size = (rows * sizeof(RowEntry)) / static_cast<double>(TARGET_SIZE);
+    const auto GROUP_COUNT = static_cast<int>(std::ceil(size));
+//    const int GROUP_COUNT = 64;
+
     std::vector<Group> groups(GROUP_COUNT);
 
-#pragma omp parallel for num_threads(SORT_BUILD_THREADS)
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
@@ -70,25 +69,30 @@ bool SortIndex::build()
         groups[i].index = groups[i].start;
     }
 
-#pragma omp parallel for num_threads(SORT_BUILD_THREADS)
+    std::vector<uint32_t> rowTargets(rows);
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
-        auto& item = this->data[groups[groupIndex].index++];
+        rowTargets[i] = groups[groupIndex].index++;
+    }
+
+#pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < rows; i++)
+    {
+        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
+        auto& item = this->data[rowTargets[i]];
         item.value = value;
         item.row = static_cast<uint64_t>(i);
     }
 
-#pragma omp parallel for num_threads(SORT_BUILD_THREADS)
+#pragma omp parallel for num_threads(threads)
     for (int i = 0; i < GROUP_COUNT; i++)
     {
         auto start = groups[i].start;
         auto end = start + groups[i].count;
         kx::radix_sort(this->data.begin() + start, this->data.begin() + end, RadixTraitsRowEntry(), diff);
     }
-
-    //kx::radix_sort(this->data.begin(), this->data.end(), RadixTraitsRowEntry());
 
     this->minValue = this->data[0].value;
     this->maxValue = this->data.back().value;
