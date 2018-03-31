@@ -13,9 +13,8 @@
 
 struct Group
 {
-    size_t count{0};
+    size_t count = 0;
     size_t start = 0;
-    size_t index{0};
 };
 
 template<int N>
@@ -108,11 +107,14 @@ bool PrimaryIndex::build(uint32_t threads)
     auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
     std::vector<Group> groups(static_cast<size_t>(GROUP_COUNT));
+    std::vector<std::pair<uint32_t, uint32_t>> rowTargets(static_cast<size_t>(rows)); // group, index
 
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         auto groupIndex = (value - minValue) >> shift;
+        rowTargets[i].first = static_cast<uint32_t>(groupIndex);
+        rowTargets[i].second = static_cast<uint32_t>(groups[groupIndex].count);
         groups[groupIndex].count++;
     }
 
@@ -121,24 +123,16 @@ bool PrimaryIndex::build(uint32_t threads)
 
     for (int i = 1; i < GROUP_COUNT; i++)
     {
-        groups[i].start = groups[i - 1].index + groups[i - 1].count;
-        groups[i].index = groups[i].start;
-    }
-
-    std::vector<uint32_t> rowTargets(rows);
-    for (int i = 0; i < rows; i++)
-    {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = (value - minValue) >> shift;
-        rowTargets[i] = groups[groupIndex].index++;
+        groups[i].start = groups[i - 1].start + groups[i - 1].count;
     }
 
     auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
 #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < rows; i++)
     {
-        auto* item = this->move(this->data, rowTargets[i]);
-        std::memcpy(item, this->move(src, i), this->rowSizeBytes);
+        auto row = groups[rowTargets[i].first].start + rowTargets[i].second;
+        auto* item = this->move(this->data, static_cast<int>(row));
+        std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
     }
 
     indexCopyToBucketsTime += timer.get() * 1000;
@@ -150,8 +144,8 @@ bool PrimaryIndex::build(uint32_t threads)
         auto start = groups[i].start;
         auto end = start + groups[i].count;
 
-        auto from = this->move(this->data, start);
-        auto to = this->move(this->data, end);
+        auto from = this->move(this->data, static_cast<int>(start));
+        auto to = this->move(this->data, static_cast<int>(end));
 
         if (columns == 1) sort<1>(from, to, column, minValue, maxValue);
         if (columns == 2) sort<2>(from, to, column, minValue, maxValue);
