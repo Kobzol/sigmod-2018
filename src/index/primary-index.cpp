@@ -75,7 +75,9 @@ bool PrimaryIndex::build(uint32_t threads)
     uint64_t minValue = std::numeric_limits<uint64_t>::max();
     uint64_t maxValue = 0;
 
+#ifdef STATISTICS
     Timer timer;
+#endif
 
 #pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(threads)
     for (int i = 0; i < rows; i++)
@@ -85,8 +87,10 @@ bool PrimaryIndex::build(uint32_t threads)
         maxValue = value > maxValue ? value : maxValue;
     }
 
+#ifdef STATISTICS
     indexMinMaxTime += timer.get() * 1000;
     timer.reset();
+#endif
 
     const int TARGET_SIZE = 1024 * 512;
     double size = (rows * this->rowSizeBytes) / static_cast<double>(TARGET_SIZE);
@@ -108,8 +112,10 @@ bool PrimaryIndex::build(uint32_t threads)
         groups[groupIndex].count++;
     }
 
+#ifdef STATISTICS
     indexGroupCountTime += timer.get() * 1000;
     timer.reset();
+#endif
 
     for (int i = 1; i < GROUP_COUNT; i++)
     {
@@ -125,8 +131,10 @@ bool PrimaryIndex::build(uint32_t threads)
         std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
     }
 
+#ifdef STATISTICS
     indexCopyToBucketsTime += timer.get() * 1000;
     timer.reset();
+#endif
 
 #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < GROUP_COUNT; i++)
@@ -148,7 +156,9 @@ bool PrimaryIndex::build(uint32_t threads)
         if (columns == 9) sort<9>(from, to, column, minValue, maxValue);
     }
 
+#ifdef STATISTICS
     indexSortTime += timer.get() * 1000;
+#endif
 
     this->minValue = this->data[0].row[column];
     this->maxValue = this->move(this->data, rows - 1)->row[column];

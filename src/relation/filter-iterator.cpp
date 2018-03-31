@@ -64,17 +64,19 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
 {
     auto rows = static_cast<int32_t>(this->getRowCount());
     size_t localCount = 0;
+    int start = this->rowIndex;
+    this->startFilterIndex = 0;
 
     for (int i = 0; i < static_cast<int32_t>(results.size()); i++)
     {
-        this->save();
+        this->rowIndex = start;
         this->rowIndex++;
 
         while (this->rowIndex < rows)
         {
-            if (this->passesFilters())
+            if (FilterIterator::passesFilters())
             {
-                results[i] += this->getColumn(columnIds[i]);
+                results[i] += FilterIterator::getColumn(columnIds[i]);
                 localCount++;
             }
 
@@ -83,8 +85,6 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
 
         if (localCount == 0) break;
         else if (i < results.size() - 1) localCount = 0;
-
-        this->restore();
     }
 
     count = localCount;
