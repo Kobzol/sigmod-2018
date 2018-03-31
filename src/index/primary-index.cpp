@@ -11,21 +11,11 @@
 #include <cstring>
 #include <omp.h>
 
-struct Group
+struct PrimaryGroup
 {
     size_t count = 0;
     size_t start = 0;
 };
-
-template<int N>
-PrimaryRowEntry* findLowerBound2(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column)
-{
-    auto* ptr = reinterpret_cast<Row<N>*>(mem);
-    auto iter = std::lower_bound(ptr, ptr + rows, value, [column](const Row<N>& entry, uint64_t val) {
-        return entry.row[column] < val;
-    });
-    return reinterpret_cast<PrimaryRowEntry*>(ptr + (iter - ptr));
-}
 
 bool PrimaryIndex::canBuild(ColumnRelation& relation)
 {
@@ -106,7 +96,7 @@ bool PrimaryIndex::build(uint32_t threads)
     auto diff = std::max(((maxValue - minValue) + 1) / GROUP_COUNT + 1, 1UL);
     auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
-    std::vector<Group> groups(static_cast<size_t>(GROUP_COUNT));
+    std::vector<PrimaryGroup> groups(static_cast<size_t>(GROUP_COUNT));
     std::vector<std::pair<uint32_t, uint32_t>> rowTargets(static_cast<size_t>(rows)); // group, index
 
     for (int i = 0; i < rows; i++)

@@ -17,11 +17,10 @@ struct RadixTraitsRowEntry
     }
 };
 
-struct Group
+struct SortGroup
 {
-    size_t count{0};
+    size_t count = 0;
     size_t start = 0;
-    size_t index{0};
 };
 
 SortIndex::SortIndex(ColumnRelation& relation, uint32_t column)
@@ -54,34 +53,29 @@ bool SortIndex::build(uint32_t threads)
     const auto GROUP_COUNT = static_cast<int>(std::ceil(size));
 //    const int GROUP_COUNT = 64;
 
-    std::vector<Group> groups(GROUP_COUNT);
+    std::vector<SortGroup> groups(GROUP_COUNT);
+    std::vector<std::pair<uint32_t, uint32_t>> rowTargets(static_cast<size_t>(rows)); // group, index
 
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
+        rowTargets[i].first = static_cast<uint32_t>(groupIndex);
+        rowTargets[i].second = static_cast<uint32_t>(groups[groupIndex].count);
         groups[groupIndex].count++;
     }
 
     for (int i = 1; i < GROUP_COUNT; i++)
     {
-        groups[i].start = groups[i - 1].index + groups[i - 1].count;
-        groups[i].index = groups[i].start;
-    }
-
-    std::vector<uint32_t> rowTargets(rows);
-    for (int i = 0; i < rows; i++)
-    {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
-        rowTargets[i] = groups[groupIndex].index++;
+        groups[i].start = groups[i - 1].start + groups[i - 1].count;
     }
 
 #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < rows; i++)
     {
+        auto row = groups[rowTargets[i].first].start + rowTargets[i].second;
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto& item = this->data[rowTargets[i]];
+        auto& item = this->data[row];
         item.value = value;
         item.row = static_cast<uint64_t>(i);
     }

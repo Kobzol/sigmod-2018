@@ -2,9 +2,9 @@ cmake_minimum_required(VERSION 3.4)
 project(sigmod2018)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -fno-rtti -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -fsanitize=address")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -ftree-vectorize -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -flto -ftree-vectorize -march=native")
 
 OPTION(REAL_RUN "Real run" OFF)
 if(NOT REAL_RUN)
@@ -47,9 +47,9 @@ set(SOURCE_FILES
         src/rewrite/rewrite.cpp
 )
 
-add_library(joiner STATIC ${SOURCE_FILES})
+#add_library(joiner STATIC ${SOURCE_FILES})
 
-add_executable(sigmod-2018 src/main.cpp)
-target_link_libraries(sigmod-2018 joiner)
-add_executable(tester src/test/main.cpp)
-target_link_libraries(tester joiner)
+add_executable(sigmod-2018 src/main.cpp ${SOURCE_FILES})
+#target_link_libraries(sigmod-2018 joiner)
+#add_executable(tester src/test/main.cpp)
+#target_link_libraries(tester joiner)
