@@ -209,12 +209,6 @@ bool PrimaryIndex::build(uint32_t threads)
     this->groups.resize(group + 1);
 #endif
 
-    for (int i = 0; i < this->groups.size() - 1; i++)
-    {
-        assert(this->groups[i].endValue == this->groups[i + 1].startValue);
-        assert(this->groups[i].startValue < this->groups[i].endValue);
-    }
-
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
 
     if (this->columns == 1) this->lowerBoundFn = &PrimaryIndex::findLowerBound<1>;

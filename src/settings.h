@@ -27,7 +27,7 @@
 #define EXPAND_FILTERS                // expand filters to all members of a join component
 //#define AGGREGATE_PUSH                  // use direct aggregation
 #define REWRITE_FKS                     // rewrite PK-FK joins
-//#define USE_PARALLEL_JOIN               // parallelize indexed joins
+#define USE_PARALLEL_JOIN               // parallelize indexed joins
 //#define USE_MULTILEVEL_INDEX            // use multi-level primary index
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue

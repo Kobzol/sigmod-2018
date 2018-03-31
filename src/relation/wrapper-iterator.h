@@ -244,6 +244,7 @@ public:
 
     uint32_t getColumnForSelection(const Selection& selection) override
     {
+        if (this->iterators.empty()) return 0;
         return this->iterators[0]->getColumnForSelection(selection);
     }
 
@@ -328,7 +329,10 @@ public:
     void dumpPlan(std::ostream& ss) override
     {
         ss << "MWI(";
-        this->iterators[0]->dumpPlan(ss);
+        if (!this->iterators.empty())
+        {
+            this->iterators[0]->dumpPlan(ss);
+        }
         ss << ")";
     }
 
