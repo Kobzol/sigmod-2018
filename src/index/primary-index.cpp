@@ -171,7 +171,7 @@ bool PrimaryIndex::build(uint32_t threads)
     this->end = this->move(data, rows);
 
 #ifdef USE_MULTILEVEL_INDEX
-    this->groupCount = 64;
+    this->groupCount = 128;
     this->groups.resize(static_cast<size_t>(this->groupCount));
 
     int group = 0;
@@ -186,7 +186,7 @@ bool PrimaryIndex::build(uint32_t threads)
         uint64_t value = this->move(this->begin, i)->row[this->column];
 
 #ifdef USE_MULTILEVEL_INDEX
-        if (this->groupValue(value) > group)
+        if (this->groupValue(value) > group && lastValue != value)
         {
             this->groups[group].endValue = value;
             this->groups[group].end = this->move(this->begin, i);
@@ -209,9 +209,14 @@ bool PrimaryIndex::build(uint32_t threads)
 #ifdef USE_MULTILEVEL_INDEX
     this->groups[group].endValue = this->maxValue + 1;
     this->groups[group].end = this->end;
-
-    assert(group == this->groupCount - 1);
+    this->groups.resize(group + 1);
 #endif
+
+    for (int i = 0; i < this->groups.size() - 1; i++)
+    {
+        assert(this->groups[i].endValue == this->groups[i + 1].startValue);
+        assert(this->groups[i].startValue < this->groups[i].endValue);
+    }
 
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
 

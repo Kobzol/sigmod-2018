@@ -242,8 +242,12 @@ void loadDatabase(Database& database)
     }
 
     int threads = primaryIndices.size();
+#ifdef USE_THREADS
 #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
+#else
+    for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
+#endif
     {
         if (database.primaryIndices[primaryIndices[i]]->take())
         {
