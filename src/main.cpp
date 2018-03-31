@@ -128,7 +128,7 @@ int main(int argc, char** argv)
 
             buildIndices(queries);
 #ifdef USE_THREADS
-            #pragma omp parallel for num_threads(numThreads)
+            #pragma omp parallel for num_threads(numThreads) schedule(dynamic)
             for (int i = 0; i < queryCount; i++)
 #else
             for (int i = 0; i < queryCount; i++)
