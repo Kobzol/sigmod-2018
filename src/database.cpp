@@ -88,7 +88,19 @@ std::unique_ptr<Iterator> Database::createFilteredIterator(const Selection& sele
     {
         return this->createIndexedIterator(selection, filters);
     }
-    else return std::make_unique<FilterIterator>(&this->relations[selection.relation], selection.binding, filters);
+    else
+    {
+#ifdef FORCE_INDEXED_FILTER
+        auto& index = this->primaryIndices[this->getGlobalColumnId(selection.relation, selection.column)];
+        if (index->take())
+        {
+            index->build(4);
+        }
+        return this->createIndexedIterator(selection, filters);
+#else
+        return std::make_unique<FilterIterator>(&this->relations[selection.relation], selection.binding, filters);
+#endif
+    }
 }
 
 uint64_t Database::getMinValue(uint32_t relation, uint32_t column)
