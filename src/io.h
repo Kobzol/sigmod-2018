@@ -26,7 +26,6 @@
 #include "settings.h"
 #include "stats.h"
 #include "query.h"
-#include "emit/filter-compiler.h"
 #include "database.h"
 
 void loadDatabase(Database& database);

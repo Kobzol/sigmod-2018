@@ -31,7 +31,7 @@
 //#define USE_MULTILEVEL_INDEX            // use multi-level primary index
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
-#define PREBUILD_PRIMARY_COLUMNS 0       // how many columns for primary index should be prebuilt
+#define PREBUILD_PRIMARY_COLUMNS 3       // how many columns for primary index should be prebuilt
 
 
 //#define USE_HISTOGRAM

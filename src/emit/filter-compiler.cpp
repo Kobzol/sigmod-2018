@@ -21,12 +21,8 @@ static unsigned char getCmpOpcode(char oper)
     return 0x00;
 }
 
-FilterFn FilterCompiler::compile(std::vector<Filter> filters)
+FilterFn FilterCompiler::compile(const Filter& filter)
 {
-    std::sort(filters.begin(), filters.end(), [](const Filter& lhs, const Filter& rhs) {
-        return lhs.oper == '=';
-    });
-
     const size_t allocSize = 4096;
     const size_t predicateSize = 15; // MOVABS + CMP + Jcc
 
@@ -39,6 +35,14 @@ FilterFn FilterCompiler::compile(std::vector<Filter> filters)
 
     // MOV al, 0x1
     *eip++ = 0xB0; *eip++ = 0x01;
+
+    std::vector<Filter> filters;
+    if (filter.oper == 'r')
+    {
+        filters.emplace_back(filter.selection, filter.value, nullptr, '>');
+        filters.emplace_back(filter.selection, filter.valueMax, nullptr, '<');
+    }
+    else filters.push_back(filter);
 
     size_t left = filters.size();
     for (auto& filter : filters)

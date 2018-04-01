@@ -415,9 +415,7 @@ void loadQuery(Query& query, std::string& line)
         else // parse filter
         {
             query.filters.emplace_back(selection, value, nullptr, oper);
-#ifdef COMPILE_FILTERS
-            query.filters.back().evaluator = FilterCompiler().compile(std::vector<Filter>{ query.filters.back() });
-#endif
+
             bool unique = true;
             for (int i = 0; i < static_cast<int32_t>(query.filters.size()) - 1; i++)
             {

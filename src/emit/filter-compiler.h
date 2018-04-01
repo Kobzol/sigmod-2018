@@ -10,5 +10,5 @@ using FilterFn = bool(*)(uint64_t);
 class FilterCompiler
 {
 public:
-    FilterFn compile(std::vector<Filter> filters);
+    FilterFn compile(const Filter& filter);
 };

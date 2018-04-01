@@ -1,6 +1,7 @@
 #include "rewrite.h"
 #include "../database.h"
 #include "../stats.h"
+#include "../emit/filter-compiler.h"
 
 #include <algorithm>
 #include <unordered_set>
@@ -403,4 +404,14 @@ void rewriteQuery(Query& query)
         }
         usedSelections.push_back(query.selections[i]);
     }
+
+#ifdef COMPILE_FILTERS
+    // compile filters
+    FilterCompiler compiler;
+    for (auto& filter: query.filters)
+    {
+        filter.evaluator = compiler.compile(filter);
+    }
+
+#endif
 }
