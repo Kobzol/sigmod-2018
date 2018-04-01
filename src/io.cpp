@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "foreign-key/foreign-key-checker.h"
 #include "rewrite/rewrite.h"
+#include "index/index-builder.h"
 
 void loadDatabase(Database& database)
 {
@@ -202,21 +203,9 @@ void loadDatabase(Database& database)
         }
     }
 
-    auto primaryIndicesSize = static_cast<int>(primaryIndices.size());
-#ifdef USE_THREADS
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < primaryIndicesSize; i++)
+    IndexBuilder builder;
+    builder.buildIndices(primaryIndices);
 #else
-    for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
-#endif
-    {
-        if (database.primaryIndices[primaryIndices[i]]->take())
-        {
-            database.primaryIndices[primaryIndices[i]]->build(PRIMARY_THREADS_PREBUILD);
-        }
-    }
-#endif
-
 #ifdef USE_THREADS
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
@@ -231,12 +220,6 @@ void loadDatabase(Database& database)
         }
 #endif
         bool built = false;
-#ifdef USE_PRIMARY_INDEX
-        if (database.primaryIndices[i]->column < PREBUILD_PRIMARY_COLUMNS && database.primaryIndices[i]->take())
-        {
-            built = database.primaryIndices[i]->build();
-        }
-#endif
 #ifdef USE_SORT_INDEX
         if (!built && database.sortIndices[i]->take())
         {
@@ -251,6 +234,7 @@ void loadDatabase(Database& database)
         }
 #endif
     }
+#endif
 #endif
 
 #ifdef STATISTICS

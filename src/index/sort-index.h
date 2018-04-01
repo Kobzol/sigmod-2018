@@ -35,7 +35,7 @@ public:
 
     bool build() final
     {
-        return this->build(PRIMARY_THREADS_PREBUILD);
+        return this->build(4);
     }
     bool build(uint32_t threads);
 

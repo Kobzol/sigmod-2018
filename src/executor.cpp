@@ -455,6 +455,10 @@ void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bo
 
     std::vector<Iterator*> groups;
 
+#ifdef STATISTICS
+    this->query.predicted = static_cast<uint64_t>(root->predictSize());
+#endif
+
     int split = PARALLEL_JOIN_SPLIT;
     root->split(this->container, groups, split);
     for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)

@@ -82,7 +82,7 @@ public:
     void iterateValue(const Selection& selection, uint64_t value) final
     {
 #ifdef CACHE_ITERATE_VALUE
-        if (this->iterateValueSelection == selection)
+        if (EXPECT(this->iterateValueSelection == selection))
         {
             if (this->iteratedValue == value)
             {

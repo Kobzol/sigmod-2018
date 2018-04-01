@@ -32,16 +32,62 @@ public:
             return lhs.second > rhs.second;
         });*/
 
-        uint32_t threads = (uint32_t) std::max(PRIMARY_THREADS_LAZY,
-                                               THREAD_COUNT / count);
-
 #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < count; i++)
         {
             if (database.primaryIndices[indices[i]]->take())
             {
-                database.primaryIndices[indices[i]]->build(threads);
+                database.primaryIndices[indices[i]]->prepare();
             }
+        }
+
+        std::vector<std::function<void()>> bucketJobs;
+        for (int i = 0; i < count; i++)
+        {
+            bucketJobs.insert(bucketJobs.end(),
+                              database.primaryIndices[indices[i]]->bucketJobs.begin(),
+                              database.primaryIndices[indices[i]]->bucketJobs.end()
+            );
+        }
+
+#ifdef STATISTICS
+        Timer bucketTimer;
+#endif
+
+#pragma omp parallel for schedule(dynamic)
+        for (int i = 0; i < static_cast<int32_t>(bucketJobs.size()); i++)
+        {
+            bucketJobs[i]();
+        }
+
+#ifdef STATISTICS
+        indexCopyToBucketsTime += bucketTimer.get() * 1000;
+        Timer sortTimer;
+#endif
+
+        std::vector<std::function<void()>> sortJobs;
+        for (int i = 0; i < count; i++)
+        {
+            sortJobs.insert(sortJobs.end(),
+                            database.primaryIndices[indices[i]]->sortJobs.begin(),
+                            database.primaryIndices[indices[i]]->sortJobs.end()
+            );
+        }
+
+#pragma omp parallel for schedule(dynamic)
+        for (int i = 0; i < static_cast<int32_t>(sortJobs.size()); i++)
+        {
+            sortJobs[i]();
+        }
+
+#ifdef STATISTICS
+        indexSortTime += sortTimer.get() * 1000;
+#endif
+
+#pragma omp parallel for schedule(dynamic)
+        for (int i = 0; i < count; i++)
+        {
+            database.primaryIndices[indices[i]]->finalize();
         }
     }
 };

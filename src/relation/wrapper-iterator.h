@@ -339,8 +339,7 @@ public:
 
     int64_t predictSize() override
     {
-        assert(false);
-        return 0;
+        return this->iterators[this->index]->predictSize();
     }
 
     void assignJoinSize(Database& database) override

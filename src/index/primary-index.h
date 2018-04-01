@@ -4,6 +4,7 @@
 #include <limits>
 #include <vector>
 #include <array>
+#include <functional>
 
 #include "index.h"
 #include "../settings.h"
@@ -23,6 +24,12 @@ public:
     uint64_t endValue;
     PrimaryRowEntry* start;
     PrimaryRowEntry* end;
+};
+
+struct PrimaryGroup
+{
+    size_t count = 0;
+    size_t start = 0;
 };
 
 template <int N>
@@ -69,9 +76,11 @@ public:
 
     bool build() final
     {
-        return this->build(PRIMARY_THREADS_PREBUILD);
+        return false;
     }
-    bool build(uint32_t threads);
+
+    void prepare();
+    void finalize();
 
     PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset)
     {
@@ -111,10 +120,16 @@ public:
     uint64_t* init;
     uint64_t* mem;
     PrimaryRowEntry* data;
-    std::vector<IndexGroup> groups;
+    std::vector<IndexGroup> indexGroups;
     uint64_t diff;
 
+    std::vector<PrimaryGroup> groups;
+    std::vector<std::pair<uint32_t, uint32_t>> rowTargets;
+
     PrimaryRowEntry* (PrimaryIndex::*lowerBoundFn)(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
+
+    std::vector<std::function<void()>> bucketJobs;
+    std::vector<std::function<void()>> sortJobs;
 
     int groupCount;
     int rowSizeBytes;

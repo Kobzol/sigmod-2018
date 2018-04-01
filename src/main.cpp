@@ -31,13 +31,7 @@ static void removeImpossibleQueries(std::vector<Query>& queries, int& length)
         auto& query = queries[i];
         if (query.impossible)
         {
-            std::stringstream ss;
-            for (auto& sel: query.selections)
-            {
-                ss << "NULL ";
-            }
-            query.result = ss.str();
-            query.result[query.result.size() - 1] = '\n';
+            query.fillImpossible();
 
             std::swap(queries[i], queries[length - 1]);
             length--;
@@ -309,7 +303,7 @@ int main(int argc, char** argv)
     {
         std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ';
         std::cerr << allQueries[i].plan << ' ' << allQueries[i].result;
-       /* for (auto& j: allQueries[i].joins)
+        for (auto& j: allQueries[i].joins)
         {
             for (auto& p: j)
             {
@@ -328,7 +322,7 @@ int main(int argc, char** argv)
         for (auto& f: allQueries[i].filters)
         {
             std::cerr << f.selection.binding << "." << f.selection.column << f.oper << f.value << " (" << f.valueMax << ") ";
-        }*/
+        }
         std::cerr << std::endl;
     }
 

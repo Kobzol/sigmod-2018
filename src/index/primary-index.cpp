@@ -11,12 +11,6 @@
 #include <cstring>
 #include <omp.h>
 
-struct PrimaryGroup
-{
-    size_t count = 0;
-    size_t start = 0;
-};
-
 bool PrimaryIndex::canBuild(ColumnRelation& relation)
 {
     return relation.getColumnCount() <= PRIMARY_INDEX_MAX_COLUMNS;
@@ -53,18 +47,16 @@ PrimaryIndex::PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* 
 
 }
 
-bool PrimaryIndex::build(uint32_t threads)
+void PrimaryIndex::prepare()
 {
     if (!canBuild(this->relation))
     {
-        return false;
+        return;
     }
 
     assert(this->init != nullptr);
 
     auto rows = static_cast<int>(this->relation.getRowCount());
-    int columns = this->relation.getColumnCount();
-    uint32_t column = this->column;
 
     this->rowSizeBytes = PrimaryIndex::rowSize(this->relation);
     this->rowOffset = this->rowSizeBytes / sizeof(PrimaryRowEntry);
@@ -79,13 +71,16 @@ bool PrimaryIndex::build(uint32_t threads)
     Timer timer;
 #endif
 
-#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(threads)
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         minValue = value < minValue ? value : minValue;
         maxValue = value > maxValue ? value : maxValue;
     }
+
+    this->minValue = minValue;
+    this->maxValue = maxValue;
+    this->diff = (this->maxValue - this->minValue) + 1;
 
 #ifdef STATISTICS
     indexMinMaxTime += timer.get() * 1000;
@@ -100,16 +95,16 @@ bool PrimaryIndex::build(uint32_t threads)
     auto diff = std::max(((maxValue - minValue) + 1) / GROUP_COUNT + 1, 1UL);
     auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
-    std::vector<PrimaryGroup> groups(static_cast<size_t>(GROUP_COUNT));
-    std::vector<std::pair<uint32_t, uint32_t>> rowTargets(static_cast<size_t>(rows)); // group, index
+    this->groups.resize(static_cast<size_t>(GROUP_COUNT));
+    this->rowTargets.resize(static_cast<size_t>(rows)); // group, index
 
     for (int i = 0; i < rows; i++)
     {
         auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
         auto groupIndex = (value - minValue) >> shift;
-        rowTargets[i].first = static_cast<uint32_t>(groupIndex);
-        rowTargets[i].second = static_cast<uint32_t>(groups[groupIndex].count);
-        groups[groupIndex].count++;
+        this->rowTargets[i].first = static_cast<uint32_t>(groupIndex);
+        this->rowTargets[i].second = static_cast<uint32_t>(this->groups[groupIndex].count);
+        this->groups[groupIndex].count++;
     }
 
 #ifdef STATISTICS
@@ -119,61 +114,69 @@ bool PrimaryIndex::build(uint32_t threads)
 
     for (int i = 1; i < GROUP_COUNT; i++)
     {
-        groups[i].start = groups[i - 1].start + groups[i - 1].count;
+        this->groups[i].start = this->groups[i - 1].start + this->groups[i - 1].count;
     }
-
-    auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
-#pragma omp parallel for num_threads(threads)
-    for (int i = 0; i < rows; i++)
-    {
-        auto row = groups[rowTargets[i].first].start + rowTargets[i].second;
-        auto* item = this->move(this->data, static_cast<int>(row));
-        std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
-    }
-
-#ifdef STATISTICS
-    indexCopyToBucketsTime += timer.get() * 1000;
-    timer.reset();
-#endif
-
-#pragma omp parallel for num_threads(threads)
-    for (int i = 0; i < GROUP_COUNT; i++)
-    {
-        auto start = groups[i].start;
-        auto end = start + groups[i].count;
-
-        auto from = this->move(this->data, static_cast<int>(start));
-        auto to = this->move(this->data, static_cast<int>(end));
-
-        if (columns == 1) sort<1>(from, to, column, minValue, maxValue);
-        if (columns == 2) sort<2>(from, to, column, minValue, maxValue);
-        if (columns == 3) sort<3>(from, to, column, minValue, maxValue);
-        if (columns == 4) sort<4>(from, to, column, minValue, maxValue);
-        if (columns == 5) sort<5>(from, to, column, minValue, maxValue);
-        if (columns == 6) sort<6>(from, to, column, minValue, maxValue);
-        if (columns == 7) sort<7>(from, to, column, minValue, maxValue);
-        if (columns == 8) sort<8>(from, to, column, minValue, maxValue);
-        if (columns == 9) sort<9>(from, to, column, minValue, maxValue);
-    }
-
-#ifdef STATISTICS
-    indexSortTime += timer.get() * 1000;
-#endif
-
-    this->minValue = this->data[0].row[column];
-    this->maxValue = this->move(this->data, rows - 1)->row[column];
-    this->diff = (this->maxValue - this->minValue) + 1;
 
     this->begin = this->data;
-    this->end = this->move(data, rows);
+    this->end = this->move(this->data, rows);
 
+    auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
+    const int BUCKET_SPLIT_COUNT = 20;
+    auto chunk = static_cast<int>(std::ceil(rows / (double) BUCKET_SPLIT_COUNT));
+
+    for (int b = 0; b < BUCKET_SPLIT_COUNT; b++)
+    {
+        int from = b * chunk;
+        int to = std::min(rows, from + chunk);
+
+        this->bucketJobs.emplace_back([this, src, from, to]() {
+            for (int i = from; i < to; i++)
+            {
+                auto row = this->groups[this->rowTargets[i].first].start + this->rowTargets[i].second;
+                auto* item = this->move(this->data, static_cast<int>(row));
+                std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
+            }
+        });
+    }
+
+    int columns = this->relation.getColumnCount();
+    for (int g = 0; g < GROUP_COUNT; g++)
+    {
+        this->sortJobs.emplace_back([this, g, columns]() {
+            auto start = this->groups[g].start;
+            auto end = start + this->groups[g].count;
+
+            auto from = this->move(this->data, static_cast<int>(start));
+            auto to = this->move(this->data, static_cast<int>(end));
+
+            if (columns == 1) sort<1>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 2) sort<2>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 3) sort<3>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 4) sort<4>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 5) sort<5>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 6) sort<6>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 7) sort<7>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 8) sort<8>(from, to, this->column, this->minValue, this->maxValue);
+            if (columns == 9) sort<9>(from, to, this->column, this->minValue, this->maxValue);
+        });
+    }
+}
+
+void PrimaryIndex::finalize()
+{
+    if (!canBuild(this->relation))
+    {
+        return;
+    }
+
+    auto rows = static_cast<int>(this->relation.getRowCount());
 #ifdef USE_MULTILEVEL_INDEX
     this->groupCount = 128;
-    this->groups.resize(static_cast<size_t>(this->groupCount));
+    this->indexGroups.resize(static_cast<size_t>(this->groupCount));
 
     int group = 0;
-    this->groups[0].startValue = this->minValue;
-    this->groups[0].start = this->begin;
+    this->indexGroups[0].startValue = this->minValue;
+    this->indexGroups[0].start = this->begin;
 #endif
 
     bool unique = true;
@@ -185,10 +188,10 @@ bool PrimaryIndex::build(uint32_t threads)
 #ifdef USE_MULTILEVEL_INDEX
         if (this->groupValue(value) > group && lastValue != value)
         {
-            this->groups[group].endValue = value;
-            this->groups[group].end = this->move(this->begin, i);
-            this->groups[group + 1].startValue = value;
-            this->groups[group + 1].start = this->groups[group].end;
+            this->indexGroups[group].endValue = value;
+            this->indexGroups[group].end = this->move(this->begin, i);
+            this->indexGroups[group + 1].startValue = value;
+            this->indexGroups[group + 1].start = this->groups[group].end;
             group++;
         }
 #endif
@@ -204,9 +207,9 @@ bool PrimaryIndex::build(uint32_t threads)
     }
 
 #ifdef USE_MULTILEVEL_INDEX
-    this->groups[group].endValue = this->maxValue + 1;
-    this->groups[group].end = this->end;
-    this->groups.resize(group + 1);
+    this->indexGroups[group].endValue = this->maxValue + 1;
+    this->indexGroups[group].end = this->end;
+    this->indexGroups.resize(group + 1);
 #endif
 
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
@@ -222,7 +225,6 @@ bool PrimaryIndex::build(uint32_t threads)
     if (this->columns == 9) this->lowerBoundFn = &PrimaryIndex::findLowerBound<9>;
 
     this->buildCompleted = true;
-    return true;
 }
 
 PrimaryRowEntry* PrimaryIndex::lowerBound(uint64_t value)
@@ -258,7 +260,7 @@ PrimaryRowEntry* PrimaryIndex::findLowerBound(uint64_t* mem, int64_t rows, uint6
     if (value > this->maxValue) return this->end;
 
 #ifdef USE_MULTILEVEL_INDEX
-    for (auto& group: this->groups)
+    for (auto& group: this->indexGroups)
     {
         if (group.startValue <= value && value < group.endValue)
         {

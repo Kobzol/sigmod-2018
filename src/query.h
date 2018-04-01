@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <memory>
 #include <limits>
+#include <sstream>
 
 #include "util.h"
 #include "settings.h"
@@ -160,6 +161,16 @@ public:
             this->impossible = impossible;
         }
     }
+    void fillImpossible()
+    {
+        std::stringstream ss;
+        for (int i = 0; i < static_cast<int32_t>(this->selections.size()); i++)
+        {
+            ss << "NULL ";
+        }
+        this->result = ss.str();
+        this->result[this->result.size() - 1] = '\n';
+    }
 
     std::vector<uint32_t> relations; // real ids of relations
     std::vector<Join> joins;
@@ -175,6 +186,7 @@ public:
     std::string plan;
     double time;
     int id;
+    uint64_t predicted;
 #endif
 
 private:
