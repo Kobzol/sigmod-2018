@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#define INPUT_FILE "small.complete"
+#define INPUT_FILE "public.complete"
 
 #ifndef NDEBUG
     #define STATISTICS

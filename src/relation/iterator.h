@@ -224,6 +224,11 @@ public:
         return count;
     }
 
+    virtual bool isImpossible()
+    {
+        return false;
+    }
+
     int rowIndex = -1;
     int savedRowIndex;
 };

@@ -28,6 +28,7 @@ set(SOURCE_FILES
         src/index/aggregate-index.cpp
         src/index/hash-index.cpp
         src/index/index.cpp
+        src/index/index-builder.cpp
         src/index/index-thread-pool.cpp
         src/index/primary-index.cpp
         src/index/sort-index.cpp

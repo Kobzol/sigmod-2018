@@ -18,6 +18,7 @@
 #include "join/merge-sort-joiner.h"
 #include "aggregation/aggregated-iterator.h"
 #include "aggregation/indexed-aggregated-iterator.h"
+#include "stats.h"
 
 void Executor::buildPlan(Database& database)
 {
@@ -459,13 +460,23 @@ void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bo
     this->query.predicted = static_cast<uint64_t>(root->predictSize());
 #endif
 
-    int split = PARALLEL_JOIN_SPLIT;
-    root->split(this->container, groups, split);
-    for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
+    if (root->isImpossible())
     {
-        auto iter = std::make_unique<MultiWrapperIterator>(groups, i);
-        this->roots.push_back(iter.get());
-        this->container.push_back(std::move(iter));
+        this->query.fillImpossible();
+#ifdef STATISTICS
+        plansSkipped++;
+#endif
+    }
+    else
+    {
+        int split = PARALLEL_JOIN_SPLIT;
+        root->split(this->container, groups, split);
+        for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
+        {
+            auto iter = std::make_unique<MultiWrapperIterator>(groups, i);
+            this->roots.push_back(iter.get());
+            this->container.push_back(std::move(iter));
+        }
     }
 
     if (!this->roots.empty())

@@ -61,6 +61,11 @@ public:
 
     bool hasBinding(uint32_t binding) final;
 
+    bool isImpossible() final
+    {
+        return this->left->isImpossible() || this->right->isImpossible();
+    }
+
     void dumpPlan(std::ostream& ss) final
     {
         ss << this->getJoinName() << "(";

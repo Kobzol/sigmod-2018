@@ -159,6 +159,11 @@ public:
         return this->inner->hasBinding(binding);
     }
 
+    bool isImpossible() override
+    {
+        return this->inner->isImpossible();
+    }
+
     Iterator* inner;
 };
 

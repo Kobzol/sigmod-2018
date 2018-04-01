@@ -1,8 +1,8 @@
 #include "filter-iterator.h"
 #include "hash-filter-iterator.h"
 #include "sort-index-iterator.h"
-#include "../database.h"
 #include "primary-index-iterator.h"
+#include "../database.h"
 
 #include <cassert>
 #include <unordered_set>

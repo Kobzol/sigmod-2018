@@ -26,7 +26,6 @@
     size_t batchCount = 0;
     size_t multipleColumnsPerRelJoins = 0;
     size_t columnsPerJoin = 0;
-    size_t sortedOnFirstColumn = 0;
     size_t joinsOnFirstColumn = 0;
     size_t filtersOnFirstColumn = 0;
     size_t selfJoinCount = 0;
@@ -36,10 +35,7 @@
     size_t joinBothUnique = 0;
     size_t skippableFK = 0;
     size_t skippedJoins = 0;
-    std::atomic<size_t> primaryColumnsIndexed{0};
-    std::atomic<size_t> averageRowsInHash{0};
-    std::atomic<size_t> averageRowsInHashCount{0};
-    std::atomic<size_t> emptyHashTableCount{0};
+    std::atomic<size_t> plansSkipped{0};
     std::atomic<size_t> indexMinMaxTime{0};
     std::atomic<size_t> indexGroupCountTime{0};
     std::atomic<size_t> indexCopyToBucketsTime{0};

@@ -4,6 +4,7 @@
 #include "filter-iterator.h"
 #include "../index/index.h"
 #include "../database.h"
+#include "../index/index-builder.h"
 
 #include <cmath>
 #include <omp.h>
@@ -32,13 +33,13 @@ public:
     }
 
     virtual Index* getIndex(uint32_t relation, uint32_t column) = 0;
-    Entry* lowerBound(uint64_t value)
+    Entry* lowerBound(uint64_t value, Index* index)
     {
-        return this->index->lowerBound(value);
+        return index->lowerBound(value);
     }
-    Entry* upperBound(uint64_t value)
+    Entry* upperBound(uint64_t value, Index* index)
     {
-        return this->index->upperBound(value);
+        return index->upperBound(value);
     }
     virtual Entry* findNextValue(Entry* iter, Entry* end, const Selection& selection, uint64_t value) = 0;
     virtual int64_t count(Entry* from, Entry* to) = 0;
@@ -53,22 +54,22 @@ public:
         if (filter.oper == '<')
         {
             *start = index->begin;
-            *end = this->lowerBound(value);
+            *end = this->lowerBound(value, index);
         }
         else if (filter.oper == '>')
         {
-            *start = this->upperBound(value);
+            *start = this->upperBound(value, index);
             *end = last;
         }
         else if (filter.oper == '=')
         {
-            *start = this->lowerBound(value);
-            *end = this->upperBound(value);
+            *start = this->lowerBound(value, index);
+            *end = this->upperBound(value, index);
         }
         else
         {
-            *start = this->upperBound(value);
-            *end = this->lowerBound(filter.valueMax);
+            *start = this->upperBound(value, index);
+            *end = this->lowerBound(filter.valueMax, index);
         }
     }
 
@@ -102,7 +103,7 @@ public:
         this->index = this->getIndex(selection.relation, selection.column);
 #endif
 
-        this->start = this->lowerBound(value);
+        this->start = this->lowerBound(value, this->index);
         this->end = this->findNextValue(this->start, this->index->end, selection, value);
         this->start = this->index->dec(this->start);
         this->originalStart = this->start;
@@ -267,7 +268,7 @@ public:
         Entry* iter = this->index->move(this->originalStart, 1);
         for (int i = 0; i < static_cast<int32_t>(bounds.size()); i++)
         {
-            Entry* end = this->lowerBound(bounds[i]);
+            Entry* end = this->lowerBound(bounds[i], this->index);
             Entry* start = this->index->dec(iter);
             if (end < iter)
             {
@@ -324,6 +325,25 @@ public:
             return count - 1;
         }
         else return Iterator::iterateCount();
+    }
+
+    bool isImpossible() final
+    {
+        for (auto& filter: this->filters)
+        {
+            if (database.hasIndexedIterator(filter.selection))
+            {
+                Entry* from;
+                Entry* to;
+                this->createIterators(filter, &from, &to);
+                if (from >= to)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     Index* index = nullptr;

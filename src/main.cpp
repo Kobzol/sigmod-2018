@@ -285,6 +285,7 @@ int main(int argc, char** argv)
     std::cerr << "Index build time: " << indexBuildTime << std::endl;
     std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 
+    std::cerr << "Skipped plans: " << plansSkipped << std::endl;
     /*std::cerr << "Skipped joins: " << skippedJoins << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
     std::cerr << "Skippable by FK: " << skippableFK << std::endl;
@@ -303,7 +304,7 @@ int main(int argc, char** argv)
     {
         std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ';
         std::cerr << allQueries[i].plan << ' ' << allQueries[i].result;
-        for (auto& j: allQueries[i].joins)
+        /*for (auto& j: allQueries[i].joins)
         {
             for (auto& p: j)
             {
@@ -323,7 +324,7 @@ int main(int argc, char** argv)
         {
             std::cerr << f.selection.binding << "." << f.selection.column << f.oper << f.value << " (" << f.valueMax << ") ";
         }
-        std::cerr << std::endl;
+        std::cerr << std::endl;*/
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;

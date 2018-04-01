@@ -30,7 +30,6 @@
     extern size_t batchCount;
     extern size_t multipleColumnsPerRelJoins;
     extern size_t columnsPerJoin;
-    extern size_t sortedOnFirstColumn;
     extern size_t joinsOnFirstColumn;
     extern size_t filtersOnFirstColumn;
     extern size_t selfJoinCount;
@@ -40,10 +39,7 @@
     extern size_t joinBothUnique;
     extern size_t skippableFK;
     extern size_t skippedJoins;
-    extern std::atomic<size_t> primaryColumnsIndexed;
-    extern std::atomic<size_t> averageRowsInHash;
-    extern std::atomic<size_t> averageRowsInHashCount;
-    extern std::atomic<size_t> emptyHashTableCount;
+    extern std::atomic<size_t> plansSkipped;
     extern std::atomic<size_t> indexMinMaxTime;
     extern std::atomic<size_t> indexGroupCountTime;
     extern std::atomic<size_t> indexCopyToBucketsTime;
