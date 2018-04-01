@@ -23,6 +23,28 @@
 Database database;
 int THREAD_COUNT;
 
+static void removeImpossibleQueries(std::vector<Query>& queries, int& length)
+{
+    length = static_cast<int>(queries.size());
+    for (auto i = length - 1; i >= 0; i--)
+    {
+        auto& query = queries[i];
+        if (query.impossible)
+        {
+            std::stringstream ss;
+            for (auto& sel: query.selections)
+            {
+                ss << "NULL ";
+            }
+            query.result = ss.str();
+            query.result[query.result.size() - 1] = '\n';
+
+            std::swap(queries[i], queries[length - 1]);
+            length--;
+        }
+    }
+}
+
 static void buildIndices(std::vector<Query>& queries)
 {
 #ifdef STATISTICS
@@ -120,7 +142,10 @@ int main(int argc, char** argv)
     {
         if (NOEXPECT(line[0] == 'F'))
         {
-            auto queryCount = static_cast<int32_t>(queries.size());
+            int length;
+            removeImpossibleQueries(queries, length);
+
+            auto queryCount = static_cast<int32_t>(length);
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
 
             buildIndices(queries);
