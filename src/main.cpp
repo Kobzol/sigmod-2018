@@ -51,7 +51,7 @@ static void buildIndices(std::vector<Query>& queries)
     std::vector<uint32_t> indices(needIndices.begin(), needIndices.end());
     auto count = static_cast<int32_t>(indices.size());
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < count; i++)
     {
         if (database.primaryIndices[indices[i]]->take())
@@ -161,6 +161,7 @@ int main(int argc, char** argv)
             queryLoadTime += queryLoadTimer.get();
 
             auto& query = queries.back();
+            query.id = queryCount;
             queryCount++;
             joinCount += query.joins.size();
             filterCount += query.filters.size();
@@ -265,7 +266,12 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 6); i++)
     {
-        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
+        std::cerr << allQueries[i].id << ": " << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
+        /*for (auto& f: allQueries[i].filters)
+        {
+            std::cerr << f.selection.binding << "." << f.selection.column << f.oper << f.value << " (" << f.valueMax << ") ";
+        }
+        std::cerr << std::endl;*/
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;

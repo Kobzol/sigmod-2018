@@ -20,6 +20,15 @@ static bool containsFilter(const std::vector<Filter>& filters, const Filter& fil
         return f == filter;
     }) != filters.end();
 }
+static void removeFilters(std::vector<Filter>& filters, const std::vector<int>& indices)
+{
+    int sub = 0;
+    for (auto index : indices)
+    {
+        filters.erase(filters.begin() + (index - sub));
+        sub++;
+    }
+}
 
 static bool hasOtherColumn(const Query& query, Selection selection,
                            const std::unordered_set<SelectionId>& skippable)
@@ -169,8 +178,71 @@ static void rewriteFks(Query& query)
     // TODO: join joins with same bindings into one
 }
 
+static void rewriteFilters(Query& query)
+{
+    // normalize filters
+    std::unordered_map<SelectionId, std::vector<int>> filtersBySel;
+    for (int i = 0; i < static_cast<int32_t>(query.filters.size()); i++)
+    {
+        filtersBySel[query.filters[i].selection.getId()].push_back(i);
+    }
+
+    for (auto& kv: filtersBySel)
+    {
+        if (kv.second.size() > 1)
+        {
+            uint64_t minValue = 0;
+            uint64_t maxValue = std::numeric_limits<uint64_t>::max();
+            bool lessFound = false, biggerFound = false;
+
+            for (auto ind: kv.second)
+            {
+                auto& filter = query.filters[ind];
+                if (filter.oper == '=')
+                {
+                    minValue = filter.value;
+                    maxValue = filter.value;
+                    break;
+                }
+                else if (filter.oper == '<')
+                {
+                    maxValue = std::min(maxValue, filter.value);
+                    lessFound = true;
+                }
+                else
+                {
+                    minValue = std::max(minValue, filter.value);
+                    biggerFound = true;
+                }
+            }
+
+            auto filter = query.filters[kv.second[0]];
+            removeFilters(query.filters, kv.second);
+            if (minValue == maxValue)
+            {
+                query.filters.emplace_back(filter.selection, minValue, nullptr, '=');
+            }
+            else if (lessFound && !biggerFound)
+            {
+                query.filters.emplace_back(filter.selection, maxValue, nullptr, '<');
+            }
+            else if (biggerFound && !lessFound)
+            {
+                query.filters.emplace_back(filter.selection, minValue, nullptr, '>');
+            }
+            else
+            {
+                query.filters.emplace_back(filter.selection, minValue, nullptr, 'r');
+                query.filters.back().valueMax = maxValue;
+            }
+        }
+    }
+}
+
 void rewriteQuery(Query& query)
 {
+    rewriteFilters(query);
+
 #ifdef REWRITE_FKS
     rewriteFks(query);
 #endif
@@ -290,8 +362,7 @@ void rewriteQuery(Query& query)
         else if (minValue > 0 && maxValue < std::numeric_limits<uint64_t>::max())
         {
             componentFilters = {
-                    Filter(Selection(0, 0, 0), minValue, nullptr, '>'),
-                    Filter(Selection(0, 0, 0), maxValue, nullptr, '<')
+                    Filter(Selection(0, 0, 0), minValue, nullptr, 'r', maxValue)
             };
         }
 

@@ -60,10 +60,15 @@ public:
             *start = this->upperBound(value);
             *end = last;
         }
-        else
+        else if (filter.oper == '=')
         {
             *start = this->lowerBound(value);
             *end = this->upperBound(value);
+        }
+        else
+        {
+            *start = this->upperBound(value);
+            *end = this->lowerBound(filter.valueMax);
         }
     }
 

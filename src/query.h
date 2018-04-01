@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <limits>
 
 #include "util.h"
 #include "settings.h"
@@ -119,8 +120,9 @@ class Filter
 {
 public:
     Filter() = default;
-    Filter(const Selection& selection, uint64_t value, bool(*evaluator)(uint64_t), char oper)
-            : selection(selection), value(value), evaluator(evaluator), oper(oper)
+    Filter(const Selection& selection, uint64_t value, bool(*evaluator)(uint64_t), char oper,
+           uint64_t valueMax = std::numeric_limits<uint64_t>::max())
+            : selection(selection), value(value), valueMax(valueMax), evaluator(evaluator), oper(oper)
     {
 
     }
@@ -139,6 +141,7 @@ public:
 
     Selection selection;
     uint64_t value;
+    uint64_t valueMax;
     bool(*evaluator)(uint64_t);
     char oper;
 };
@@ -163,6 +166,7 @@ public:
     std::string input;
     std::string plan;
     double time;
+    int id;
 #endif
 
 private:

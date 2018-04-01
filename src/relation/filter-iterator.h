@@ -60,6 +60,7 @@ inline bool passesFilter(const Filter& filter, uint64_t value)
         case '=': return value == filter.value;
         case '<': return value < filter.value;
         case '>': return value > filter.value;
+        case 'r': return value > filter.value && value < filter.valueMax;
         default: assert(false);
     }
 

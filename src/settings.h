@@ -31,7 +31,7 @@
 //#define USE_MULTILEVEL_INDEX            // use multi-level primary index
 
 #define CACHE_ITERATE_VALUE             // cache iterators used in iterateValue
-#define PREBUILD_PRIMARY_COLUMNS 3       // how many columns for primary index should be prebuilt
+#define PREBUILD_PRIMARY_COLUMNS 0       // how many columns for primary index should be prebuilt
 
 
 //#define USE_HISTOGRAM
@@ -71,7 +71,7 @@
 #define PARALLEL_JOIN_THREADS 8
 #define PARALLEL_JOIN_SPLIT 8
 #define PRIMARY_THREADS_PREBUILD 4         // number of threads to pre-build primary index
-#define PRIMARY_THREADS_LAZY 8              // number of threads to build primary index when needed
+#define PRIMARY_THREADS_LAZY 10              // number of threads to build primary index when needed
 
 //#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30
