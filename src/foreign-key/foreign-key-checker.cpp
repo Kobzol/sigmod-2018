@@ -71,13 +71,13 @@ bool ForeignKeyChecker::isForeignKey(const Selection& primary, const Selection& 
     std::vector<Iterator*> leftGroups, rightGroups;
     std::vector<uint64_t> bounds;
 
-    left->splitToBounds(container, leftGroups, bounds, FK_CHECK_THREADS);
+    left->splitToBounds(container, leftGroups, bounds, FK_CHECK_SPLIT);
     right->splitUsingBounds(container, rightGroups, bounds);
 
     auto count = static_cast<int32_t>(leftGroups.size());
     std::vector<uint32_t> valid(static_cast<size_t>(count));
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < count; i++)
     {
         auto l = leftGroups[i];

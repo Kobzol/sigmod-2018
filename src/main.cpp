@@ -286,9 +286,9 @@ int main(int argc, char** argv)
     std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 
     std::cerr << "Skipped plans: " << plansSkipped << std::endl;
+    std::cerr << "Skippable by FK: " << skippableFK << std::endl;
     /*std::cerr << "Skipped joins: " << skippedJoins << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
-    std::cerr << "Skippable by FK: " << skippableFK << std::endl;
     std::cerr << "Join columns: " << joinColumns.size() << std::endl;
     std::cerr << "Joins filtered by min max: " << joinsFilteredByMinMax << std::endl;
     std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;

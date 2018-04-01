@@ -65,14 +65,14 @@
 
 #define USE_THREADS
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
-#define FK_CHECK_THREADS 40
+#define FK_CHECK_SPLIT 120
 #define PARALLEL_JOIN_SPLIT 32
 
 //#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30
 #define INDEX_THREAD_BAILOUT 1200       // how many milliseconds should the index be precalculated
 
-#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results
+//#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results
 
 template <typename K, typename V>
 using HashMap = std::unordered_map<K, V>;
