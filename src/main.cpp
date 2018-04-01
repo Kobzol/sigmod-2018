@@ -21,6 +21,7 @@
 #include "index/index-builder.h"
 
 Database database;
+int THREAD_COUNT;
 
 static void buildIndices(std::vector<Query>& queries)
 {
@@ -74,6 +75,7 @@ static void buildIndices(std::vector<Query>& queries)
 int main(int argc, char** argv)
 {
     std::ios::sync_with_stdio(false);
+    THREAD_COUNT = std::thread::hardware_concurrency();
 
 #ifdef LOAD_FROM_FILE
     freopen(LOAD_FROM_FILE, "r", stdin);

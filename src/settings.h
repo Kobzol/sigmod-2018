@@ -81,3 +81,5 @@
 
 template <typename K, typename V>
 using HashMap = std::unordered_map<K, V>;
+
+extern int THREAD_COUNT;

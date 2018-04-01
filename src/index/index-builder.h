@@ -32,8 +32,8 @@ public:
             return lhs.second > rhs.second;
         });*/
 
-        uint32_t threads = std::max(static_cast<uint32_t>(PRIMARY_THREADS_LAZY),
-                               std::thread::hardware_concurrency() / count);
+        uint32_t threads = (uint32_t) std::max(PRIMARY_THREADS_LAZY,
+                                               THREAD_COUNT / count);
 
 #pragma omp parallel for schedule(dynamic)
         for (int i = 0; i < count; i++)
