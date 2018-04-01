@@ -254,8 +254,6 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
         }
     }
 
-    if (componentFilters.empty()) return;
-
     bool impossible = false;
     std::unordered_set<uint64_t> equals;
 
@@ -287,7 +285,7 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
             maxValue = f.value;
             equalFound = true;
             equalFilter = f;
-            if (equals.size() > 1)
+            if (equals.size() > 1 && equalFilter.value != f.value)
             {
                 impossible = true;
                 break;
@@ -298,10 +296,17 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
             lessFound = true;
             maxValue = std::min(maxValue, f.value - 1);
         }
-        else
+        else if (f.oper = '>')
         {
             greaterFound = true;
             minValue = std::max(minValue, f.value + 1);
+        }
+        else
+        {
+            lessFound = true;
+            greaterFound = true;
+            minValue = std::max(minValue, f.value + 1);
+            maxValue = std::min(maxValue, f.valueMax - 1);
         }
     }
 
@@ -315,10 +320,7 @@ static void expandFilters(Query& query, const std::vector<Selection>& selections
     {
         for (auto& sel: selections)
         {
-            if (sel.getId() != equalFilter.selection.getId())
-            {
-                query.filters.emplace_back(sel, equalFilter.value, nullptr, '=');
-            }
+            query.filters.emplace_back(sel, equalFilter.value, nullptr, '=');
         }
     }
     else
