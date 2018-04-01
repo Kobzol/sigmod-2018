@@ -18,6 +18,7 @@
 #include "index/index-thread-pool.h"
 #include "foreign-key/foreign-key-checker.h"
 #include "rewrite/rewrite.h"
+#include "index/index-builder.h"
 
 Database database;
 
@@ -51,14 +52,8 @@ static void buildIndices(std::vector<Query>& queries)
     std::vector<uint32_t> indices(needIndices.begin(), needIndices.end());
     auto count = static_cast<int32_t>(indices.size());
 
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < count; i++)
-    {
-        if (database.primaryIndices[indices[i]]->take())
-        {
-            database.primaryIndices[indices[i]]->build(PRIMARY_THREADS_LAZY);
-        }
-    }
+    IndexBuilder builder;
+    builder.buildIndices(indices);
 #endif
 
 #ifdef STATISTICS
@@ -248,9 +243,9 @@ int main(int argc, char** argv)
     std::cerr << "Index build time: " << indexBuildTime << std::endl;
     std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 
-    std::cerr << "Skipped joins: " << skippedJoins << std::endl;
+    /*std::cerr << "Skipped joins: " << skippedJoins << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
-    /*std::cerr << "Skippable by FK: " << skippableFK << std::endl;
+    std::cerr << "Skippable by FK: " << skippableFK << std::endl;
     std::cerr << "Join columns: " << joinColumns.size() << std::endl;
     std::cerr << "Joins filtered by min max: " << joinsFilteredByMinMax << std::endl;
     std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;

@@ -241,10 +241,10 @@ void loadDatabase(Database& database)
         }
     }
 
-    int threads = primaryIndices.size();
+    auto primaryIndicesSize = static_cast<int>(primaryIndices.size());
 #ifdef USE_THREADS
-#pragma omp parallel for num_threads(threads)
-    for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
+#pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < primaryIndicesSize; i++)
 #else
     for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
 #endif
