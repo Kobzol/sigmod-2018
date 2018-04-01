@@ -39,6 +39,7 @@
     extern size_t joinOneUnique;
     extern size_t joinBothUnique;
     extern size_t skippableFK;
+    extern size_t skippedJoins;
     extern std::atomic<size_t> primaryColumnsIndexed;
     extern std::atomic<size_t> averageRowsInHash;
     extern std::atomic<size_t> averageRowsInHashCount;

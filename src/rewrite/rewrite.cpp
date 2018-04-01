@@ -239,6 +239,89 @@ static void rewriteFilters(Query& query)
         }
     }
 }
+static void expandFilters(Query& query, const std::vector<Selection>& selections)
+{
+    std::vector<Filter> componentFilters;
+    for (auto& sel: selections)
+    {
+        auto filters = getFilters(query.filters, sel);
+        for (auto& f: filters)
+        {
+            if (!containsFilter(componentFilters, f))
+            {
+                componentFilters.push_back(f);
+            }
+        }
+    }
+
+    if (componentFilters.empty()) return;
+
+    bool impossible = false;
+    std::unordered_set<uint64_t> equals;
+
+    uint64_t minValue = 0;
+    uint64_t maxValue = std::numeric_limits<uint64_t>::max();
+
+    for (auto& f: componentFilters)
+    {
+        if (f.oper == '=')
+        {
+            equals.insert(f.value);
+            minValue = f.value;
+            maxValue = f.value;
+            if (equals.size() > 1)
+            {
+                impossible = true;
+                break;
+            }
+        }
+        else if (f.oper == '<')
+        {
+            maxValue = std::min(f.value, maxValue);
+        }
+        else minValue = std::max(f.value, minValue);
+    }
+
+    if (minValue == maxValue)
+    {
+        componentFilters = {
+                Filter(Selection(0, 0, 0), minValue, nullptr, '=')
+        };
+    }
+    else if (minValue > 0 && maxValue < std::numeric_limits<uint64_t>::max())
+    {
+        componentFilters = {
+                Filter(Selection(0, 0, 0), minValue, nullptr, 'r', maxValue)
+        };
+    }
+
+    for (auto& sel: selections)
+    {
+        auto min = database.getMinValue(sel.relation, sel.column);
+        auto max = database.getMaxValue(sel.relation, sel.column);
+
+        if (max <= minValue || min >= maxValue)
+        {
+            impossible = true;
+            break;
+        }
+    }
+
+    query.setImpossible(impossible);
+
+    for (auto& sel: selections)
+    {
+        for (auto& filter: componentFilters)
+        {
+            auto assigned = filter;
+            assigned.selection = sel;
+            if (!containsFilter(query.filters, assigned))
+            {
+                query.filters.push_back(assigned);
+            }
+        }
+    }
+}
 
 void rewriteQuery(Query& query)
 {
@@ -313,74 +396,7 @@ void rewriteQuery(Query& query)
         }
 
 #ifdef EXPAND_FILTERS
-        std::vector<Filter> componentFilters;
-        for (auto& sel: kv.second)
-        {
-            auto filters = getFilters(query.filters, sel);
-            for (auto& f: filters)
-            {
-                if (!containsFilter(componentFilters, f))
-                {
-                    componentFilters.push_back(f);
-                }
-            }
-        }
-
-        if (componentFilters.empty()) continue;
-
-        bool impossible = false;
-        std::unordered_set<uint64_t> equals;
-
-        uint64_t minValue = 0;
-        uint64_t maxValue = std::numeric_limits<uint64_t>::max();
-
-        for (auto& f: componentFilters)
-        {
-            if (f.oper == '=')
-            {
-                equals.insert(f.value);
-                minValue = f.value;
-                maxValue = f.value;
-                if (equals.size() > 1)
-                {
-                    impossible = true;
-                    break;
-                }
-            }
-            else if (f.oper == '<')
-            {
-                maxValue = std::min(f.value, maxValue);
-            }
-            else minValue = std::max(f.value, minValue);
-        }
-
-        if (minValue == maxValue)
-        {
-            componentFilters = {
-                    Filter(Selection(0, 0, 0), minValue, nullptr, '=')
-            };
-        }
-        else if (minValue > 0 && maxValue < std::numeric_limits<uint64_t>::max())
-        {
-            componentFilters = {
-                    Filter(Selection(0, 0, 0), minValue, nullptr, 'r', maxValue)
-            };
-        }
-
-        query.impossible = impossible;
-
-        for (auto& sel: kv.second)
-        {
-            for (auto& filter: componentFilters)
-            {
-                auto assigned = filter;
-                assigned.selection = sel;
-                if (!containsFilter(query.filters, assigned))
-                {
-                    query.filters.push_back(assigned);
-                }
-            }
-        }
+    expandFilters(query, kv.second);
 #endif
     }
 
@@ -405,6 +421,15 @@ void rewriteQuery(Query& query)
         usedSelections.push_back(query.selections[i]);
     }
 
+    for (auto& filter: query.filters)
+    {
+        if (filter.isSkippable())
+        {
+            query.setImpossible(true);
+            break;
+        }
+    }
+
 #ifdef COMPILE_FILTERS
     // compile filters
     FilterCompiler compiler;
@@ -412,6 +437,5 @@ void rewriteQuery(Query& query)
     {
         filter.evaluator = compiler.compile(filter);
     }
-
 #endif
 }

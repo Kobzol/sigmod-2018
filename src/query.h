@@ -153,6 +153,14 @@ public:
     void fillBindings(std::vector<uint32_t>& bindings);
     void dump(std::ostream& os);
 
+    void setImpossible(bool impossible)
+    {
+        if (!this->impossible)
+        {
+            this->impossible = impossible;
+        }
+    }
+
     std::vector<uint32_t> relations; // real ids of relations
     std::vector<Join> joins;
     std::vector<Filter> filters;

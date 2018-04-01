@@ -77,7 +77,7 @@
 #define INDEX_THREADS 30
 #define INDEX_THREAD_BAILOUT 1200       // how many milliseconds should the index be precalculated
 
-//#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results
+#define COLLECT_JOIN_SIZE             // collect sizes of intermediate results
 
 template <typename K, typename V>
 using HashMap = std::unordered_map<K, V>;

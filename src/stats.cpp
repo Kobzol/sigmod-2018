@@ -35,6 +35,7 @@
     size_t joinOneUnique = 0;
     size_t joinBothUnique = 0;
     size_t skippableFK = 0;
+    size_t skippedJoins = 0;
     std::atomic<size_t> primaryColumnsIndexed{0};
     std::atomic<size_t> averageRowsInHash{0};
     std::atomic<size_t> averageRowsInHashCount{0};

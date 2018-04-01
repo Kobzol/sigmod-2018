@@ -39,7 +39,7 @@ static void buildIndices(std::vector<Query>& queries)
                 for (auto& sel: pred.selections)
                 {
                     uint32_t globalId = database.getGlobalColumnId(sel.relation, sel.column);
-                    if (!database.sortIndices[globalId]->buildCompleted)
+                    if (!database.primaryIndices[globalId]->buildCompleted)
                     {
                         needIndices.insert(globalId);
                     }
@@ -197,18 +197,6 @@ int main(int argc, char** argv)
 
                     joinColumns.insert(l.relation * 100 + l.column);
                     joinColumns.insert(r.relation * 100 + r.column);
-#ifdef USE_SORT_INDEX
-                    auto li = database.getSortIndex(l.relation, l.column);
-                    auto ri = database.getSortIndex(r.relation, r.column);
-
-                    if (li != nullptr && ri != nullptr)
-                    {
-                        if (li->maxValue <= ri->minValue || ri->maxValue <= li->minValue)
-                        {
-                            joinsFilteredByMinMax++;
-                        }
-                    }
-#endif
                 }
 
                 if (cacheable)
@@ -229,10 +217,6 @@ int main(int argc, char** argv)
                 {
                     filterEqualsCount++;
                 }
-                if (filter.isSkippable())
-                {
-                    filtersSkippedByHistogram++;
-                }
             }
 
             if (query.isAggregable()) aggregatableQueries++;
@@ -245,17 +229,31 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef STATISTICS
+    for (auto& query: allQueries)
+    {
+        if (query.impossible) skippedJoins++;
+        for (auto& filter: query.filters)
+        {
+            if (filter.isSkippable())
+            {
+                filtersSkippedByHistogram++;
+            }
+        }
+    }
+
     std::cerr << "Index min max time: " << indexMinMaxTime / 1000 << std::endl;
     std::cerr << "Index group count time: " << indexGroupCountTime / 1000 << std::endl;
     std::cerr << "Index copy to buckets time: " << indexCopyToBucketsTime / 1000 << std::endl;
     std::cerr << "Index sort time: " << indexSortTime / 1000 << std::endl;
-    /*std::cerr << "Skippable by FK: " << skippableFK << std::endl;
-    std::cerr << "Join columns: " << joinColumns.size() << std::endl;*/
     std::cerr << "Index build time: " << indexBuildTime << std::endl;
     std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 
-    /*std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
+    std::cerr << "Skipped joins: " << skippedJoins << std::endl;
     std::cerr << "Filters skippable by histogram: " << filtersSkippedByHistogram << std::endl;
+    /*std::cerr << "Skippable by FK: " << skippableFK << std::endl;
+    std::cerr << "Join columns: " << joinColumns.size() << std::endl;
+    std::cerr << "Joins filtered by min max: " << joinsFilteredByMinMax << std::endl;
+    std::cerr << "Aggregatable queries: " << aggregatableQueries << std::endl;
     std::cerr << "Filter equals joined: " << filterEqualsJoined << std::endl;
     std::cerr << "Join one unique: " << joinOneUnique << std::endl;
     std::cerr << "Join both unique: " << joinBothUnique << std::endl;*/
@@ -266,8 +264,14 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 6); i++)
     {
-        std::cerr << allQueries[i].id << ": " << allQueries[i].time << "ms, " << allQueries[i].input << ' ' << allQueries[i].plan << std::endl;
-        /*for (auto& f: allQueries[i].filters)
+        std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ';
+        std::cerr << allQueries[i].plan << ' ' << allQueries[i].result;
+        /*for (auto& rel: allQueries[i].relations)
+        {
+            std::cerr << rel << ": " << database.relations[rel].getRowCount() << std::endl;
+        }
+        std::cerr << std::endl;
+        for (auto& f: allQueries[i].filters)
         {
             std::cerr << f.selection.binding << "." << f.selection.column << f.oper << f.value << " (" << f.valueMax << ") ";
         }

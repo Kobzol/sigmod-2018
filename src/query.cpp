@@ -19,15 +19,17 @@ bool Filter::isSkippable() const
     {
         return true;
     }
+    else if (this->oper == 'r')
+    {
+        return maxValue <= this->value || minValue >= this->valueMax;
+    }
 
     return false;
 }
 
 size_t Filter::getInterval() const
 {
-    if (this->oper == '=') return 0;
-    if (this->oper == 'r') return 1;
-    return 2;
+    if (this->oper == '=') return 1;
 
     uint64_t minValue = database.getMinValue(this->selection.relation, this->selection.column);
     uint64_t maxValue = database.getMaxValue(this->selection.relation, this->selection.column);
@@ -37,11 +39,12 @@ size_t Filter::getInterval() const
         if (minValue >= this->value) return 0;
         return this->value - minValue;
     }
-    else
+    else if (this->oper == '>')
     {
         if (maxValue <= this->value) return 0;
         return maxValue - this->value;
     }
+    else return this->valueMax - this->value;
 }
 
 bool Query::isAggregable() const
