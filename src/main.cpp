@@ -259,20 +259,31 @@ int main(int argc, char** argv)
         return a.time > b.time;
     });
 
-    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 6); i++)
+    for (int i = 0; i < std::min(static_cast<int32_t>(allQueries.size()), 4); i++)
     {
         std::cerr << allQueries[i].time << "ms, " << allQueries[i].input << ' ';
         std::cerr << allQueries[i].plan << ' ' << allQueries[i].result;
-        /*for (auto& rel: allQueries[i].relations)
+       /* for (auto& j: allQueries[i].joins)
         {
-            std::cerr << rel << ": " << database.relations[rel].getRowCount() << std::endl;
+            for (auto& p: j)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    auto& s = p.selections[k];
+                    auto min = database.getMinValue(s.relation, s.column);
+                    auto max = database.getMaxValue(s.relation, s.column);
+                    std::cerr << s.binding << '.' << s.column << "[" << min << ',' << max << "]";
+                    if (k == 0) std::cerr << '=';
+                }
+                std::cerr << "  ";
+            }
         }
         std::cerr << std::endl;
         for (auto& f: allQueries[i].filters)
         {
             std::cerr << f.selection.binding << "." << f.selection.column << f.oper << f.value << " (" << f.valueMax << ") ";
-        }
-        std::cerr << std::endl;*/
+        }*/
+        std::cerr << std::endl;
     }
 
     /*std::vector<std::pair<std::string, uint32_t>> cachedList;

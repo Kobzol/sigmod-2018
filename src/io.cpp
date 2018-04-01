@@ -34,22 +34,7 @@ void loadDatabase(Database& database)
         rel.id = static_cast<uint32_t>(database.relations.size() - 1);
         columnId += rel.columnCount;
 
-#ifdef TRANSPOSE_RELATIONS
-        auto data = new uint64_t[rel.tupleCount * rel.columnCount];
-        std::memcpy(data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
-
-        for (int c = 0; c < static_cast<int32_t>(rel.columnCount); c++)
-        {
-            for (int r = 0; r < static_cast<int32_t>(rel.tupleCount); r++)
-            {
-                rel.data[r * rel.columnCount + c] = data[c * rel.tupleCount + r];
-            }
-        }
-
-        delete[] data;
-#else
         //std::memcpy(rel.data, addr, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
-#endif
 
         //munmap(addr, length);
         close(fd);
@@ -72,11 +57,7 @@ void loadDatabase(Database& database)
 
 			rel.data = new uint64_t[rel.tupleCount * rel.columnCount];
 
-#ifdef TRANSPOSE_RELATIONS
-			// TODO
-#else
 			is.read((char*)rel.data, rel.tupleCount * rel.columnCount * sizeof(uint64_t));
-#endif
 
 			is.close();
 
@@ -102,24 +83,6 @@ void loadDatabase(Database& database)
 		minColumns = min(minColumns, rel.columnCount);
 		maxColumns = max(maxColumns, rel.columnCount);
 #endif
-
-        /*for (int c = 0; c < rel.columnCount; c++)
-        {
-            bool sorted = true;
-            for (size_t i = 1; i < rel.tupleCount; i++)
-            {
-                if (rel.getValue(i, c) <= rel.getValue(i - 1, c))
-                {
-                    sorted = false;
-                    break;
-                }
-            }
-
-            if (sorted)
-            {
-                sortedOnFirstColumn++;
-            }
-        }*/
 #endif
     }
 
@@ -137,6 +100,7 @@ void loadDatabase(Database& database)
     {
         relationData[i] = new uint64_t[PrimaryIndex::rowSize(database.relations[i]) *
                 database.relations[i].getRowCount()];
+        database.relations[i].transposed = relationData[i];
     }
 
 #ifdef USE_THREADS

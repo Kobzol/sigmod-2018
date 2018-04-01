@@ -45,6 +45,7 @@ public:
     }
 
     virtual bool passesFilters();
+    bool passesFiltersTransposed();
 
     std::vector<Filter> filters;
     int startFilterIndex = 0;

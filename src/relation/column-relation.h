@@ -21,23 +21,20 @@ public:
     uint32_t cumulativeColumnId;
     uint64_t tupleCount;
     uint64_t* data;
+    uint64_t* transposed;
     uint32_t id;
 
     uint64_t getValue(size_t row, size_t column)
     {
-#ifdef TRANSPOSE_RELATIONS
-        return this->data[row * this->columnCount + column];
-#else
         return this->data[column * this->tupleCount + row];
-#endif
     }
     uint64_t& getValueMutable(size_t row, size_t column)
     {
-#ifdef TRANSPOSE_RELATIONS
-        return this->data[row * this->columnCount + column];
-#else
         return this->data[column * this->tupleCount + row];
-#endif
+    }
+    uint64_t getValueTransposed(size_t row, size_t column)
+    {
+        return this->transposed[row * this->columnCount + column];
     }
 
     uint32_t getColumnCount()

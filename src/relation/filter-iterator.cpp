@@ -5,6 +5,7 @@
 #include "primary-index-iterator.h"
 
 #include <cassert>
+#include <unordered_set>
 
 FilterIterator::FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters)
         : ColumnRelationIterator(relation, binding), filters(std::move(filters))
@@ -62,30 +63,74 @@ int64_t FilterIterator::predictSize()
 void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                              const std::vector<Selection>& selections, size_t& count)
 {
+    std::unordered_set<uint32_t> bindings;
+    for (auto& sel: selections)
+    {
+        bindings.insert(sel.binding);
+    }
+
     auto rows = static_cast<int32_t>(this->getRowCount());
     size_t localCount = 0;
-    int start = this->rowIndex;
+    auto selectionSize = static_cast<int>(selections.size());
     this->startFilterIndex = 0;
 
-    for (int i = 0; i < static_cast<int32_t>(results.size()); i++)
+    if (bindings.size() == 1 && selectionSize > 1)
     {
-        this->rowIndex = start;
         this->rowIndex++;
-
         while (this->rowIndex < rows)
         {
-            if (FilterIterator::passesFilters())
+            if (FilterIterator::passesFiltersTransposed())
             {
-                results[i] += FilterIterator::getColumn(columnIds[i]);
-                localCount++;
+                for (int i = 0; i < selectionSize; i++)
+                {
+                    results[i] += this->relation->getValueTransposed(this->rowIndex, columnIds[i]);
+                }
             }
 
+            localCount++;
             this->rowIndex++;
         }
+    }
+    else
+    {
+        int start = this->rowIndex;
+        for (int i = 0; i < static_cast<int32_t>(results.size()); i++)
+        {
+            this->rowIndex = start;
+            this->rowIndex++;
 
-        if (localCount == 0) break;
-        else if (i < results.size() - 1) localCount = 0;
+            while (this->rowIndex < rows)
+            {
+                if (FilterIterator::passesFilters())
+                {
+                    results[i] += FilterIterator::getColumn(columnIds[i]);
+                    localCount++;
+                }
+
+                this->rowIndex++;
+            }
+
+            if (localCount == 0) break;
+            else if (i < results.size() - 1) localCount = 0;
+        }
     }
 
     count = localCount;
+}
+
+bool FilterIterator::passesFiltersTransposed()
+{
+    for (int i = this->startFilterIndex; i < this->filterSize; i++)
+    {
+        auto& filter = this->filters[i];
+#ifdef COMPILE_FILTERS
+        if (!filter.evaluator(this->relation->getValuegetValueTransposed(this->rowIndex, filter.selection.column)))
+            return false;
+#else
+        if (!passesFilter(filter, this->relation->getValueTransposed(this->rowIndex, filter.selection.column)))
+            return false;
+#endif
+    }
+
+    return true;
 }
