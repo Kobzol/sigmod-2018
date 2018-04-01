@@ -12,13 +12,18 @@ FilterIterator::FilterIterator(ColumnRelation* relation, uint32_t binding, std::
 {
     this->filterSize = static_cast<int>(this->filters.size());
 }
+FilterIterator::FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters,
+                               int start, int end)
+        : ColumnRelationIterator(relation, binding, start, end), filters(std::move(filters))
+{
+    this->filterSize = static_cast<int>(this->filters.size());
+}
 
 bool FilterIterator::getNext()
 {
     this->rowIndex++;
 
-    auto rowCount = this->relation->getRowCount();
-    while (this->rowIndex < rowCount && !this->passesFilters())
+    while (this->rowIndex < this->end && !this->passesFilters())
     {
         this->rowIndex++;
     }
@@ -27,7 +32,7 @@ bool FilterIterator::getNext()
     this->rowCount++;
 #endif
 
-    return this->rowIndex < rowCount;
+    return this->rowIndex < this->end;
 }
 
 bool FilterIterator::passesFilters()
@@ -56,7 +61,7 @@ int64_t FilterIterator::predictSize()
 #ifdef USE_HISTOGRAM
     return database.histograms[this->filters[0].selection.relation].estimateResult(this->filters[0]);
 #else
-    return this->relation->getRowCount();
+    return (this->end - (this->rowIndex + 1));
 #endif
 }
 
@@ -69,7 +74,6 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
         bindings.insert(sel.binding);
     }
 
-    auto rows = static_cast<int32_t>(this->getRowCount());
     size_t localCount = 0;
     auto selectionSize = static_cast<int>(selections.size());
     this->startFilterIndex = 0;
@@ -77,7 +81,7 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
     if (bindings.size() == 1 && selectionSize > 1)
     {
         this->rowIndex++;
-        while (this->rowIndex < rows)
+        while (this->rowIndex < this->end)
         {
             if (FilterIterator::passesFiltersTransposed())
             {
@@ -99,7 +103,7 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
             this->rowIndex = start;
             this->rowIndex++;
 
-            while (this->rowIndex < rows)
+            while (this->rowIndex < this->end)
             {
                 if (FilterIterator::passesFilters())
                 {

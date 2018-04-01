@@ -454,24 +454,19 @@ void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bo
     else root->requireSelections(this->selectionMap);
 
     std::vector<Iterator*> groups;
-    if (!query.joins.empty())
-    {
-        int split = PARALLEL_JOIN_SPLIT;
 
-        root->split(this->container, groups, split);
-        for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
-        {
-            this->container.push_back(std::make_unique<MultiWrapperIterator>(groups, i));
-            this->roots.push_back(this->container.back().get());
-        }
-        root = this->container.back().get();
-    }
-    else
+    int split = PARALLEL_JOIN_SPLIT;
+    root->split(this->container, groups, split);
+    for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
     {
-        groups.push_back(root);
-        this->container.push_back(std::make_unique<MultiWrapperIterator>(groups, 0));
-        root = this->container.back().get();
-        this->roots.push_back(root);
+        auto iter = std::make_unique<MultiWrapperIterator>(groups, i);
+        this->roots.push_back(iter.get());
+        this->container.push_back(std::move(iter));
+    }
+
+    if (!this->roots.empty())
+    {
+        root = this->roots.back();
     }
 
     root->requireSelections(this->selectionMap);
@@ -485,7 +480,7 @@ void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bo
 
     for (auto& root: this->roots)
     {
-        ((MultiWrapperIterator*)root)->setSelections(this->columnIds, this->selections);
+        root->setSelections(this->columnIds, this->selections);
     }
 }
 
@@ -494,30 +489,33 @@ void Executor::finalizeQuery()
     size_t count = 0;
     std::vector<uint64_t> results(static_cast<size_t>(this->selectionMap.size()));
 
-    for (auto& iter: this->roots)
+    if (!this->roots.empty())
     {
-        size_t localCount = 0;
-        iter->sumRows(results, this->columnIds, this->selections, localCount);
-        count += localCount;
-    }
+        for (auto& iter: this->roots)
+        {
+            size_t localCount = 0;
+            iter->sumRows(results, this->columnIds, this->selections, localCount);
+            count += localCount;
+        }
 
 #ifdef STATISTICS
-    std::stringstream planStream;
-    this->roots[0]->dumpPlan(planStream);
-    this->query.plan = planStream.str();
+        std::stringstream planStream;
+        this->roots[0]->dumpPlan(planStream);
+        this->query.plan = planStream.str();
 
-    double time = 0;
-    for (auto& root: this->roots)
-    {
-        time += ((MultiWrapperIterator*)root)->time;
-    }
+        double time = 0;
+        for (auto& root: this->roots)
+        {
+            time += ((MultiWrapperIterator*)root)->time;
+        }
 
-    this->query.time = time / this->roots.size();
+        this->query.time = time / this->roots.size();
 #endif
 
 #ifdef COLLECT_JOIN_SIZE
-    this->roots[0]->assignJoinSize(database);
+        this->roots[0]->assignJoinSize(database);
 #endif
+    }
 
     std::stringstream ss;
     for (auto& sel: this->query.selections)
@@ -528,7 +526,7 @@ void Executor::finalizeQuery()
         }
         else
         {
-            uint64_t result = results[backMap[sel.getId()]];
+            uint64_t result = results[this->backMap[sel.getId()]];
             ss << std::to_string(result) << ' ';
         }
     }

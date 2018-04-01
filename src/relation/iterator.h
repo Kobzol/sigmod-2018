@@ -224,11 +224,6 @@ public:
         return count;
     }
 
-    virtual void execute()
-    {
-        assert(false);
-    }
-
     int rowIndex = -1;
     int savedRowIndex;
 };

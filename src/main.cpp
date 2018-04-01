@@ -128,7 +128,6 @@ int main(int argc, char** argv)
     Timer queryLoadTimer;
     std::vector<Query> allQueries;
     std::unordered_map<std::string, uint32_t> cachedJoins;
-    size_t joinsFilteredByMinMax = 0;
     size_t aggregatableQueries = 0;
 #endif
 
@@ -144,7 +143,6 @@ int main(int argc, char** argv)
             removeImpossibleQueries(queries, length);
 
             auto queryCount = static_cast<int32_t>(length);
-            auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
             buildIndices(queries);
 
             std::vector<Executor> executors;
@@ -159,7 +157,7 @@ int main(int argc, char** argv)
                 executors[i].buildPlan(database);
             }
 
-            std::vector<Iterator*> iterators;
+            std::vector<MultiWrapperIterator*> iterators;
             for (auto& executor: executors)
             {
                 iterators.insert(iterators.end(), executor.roots.begin(), executor.roots.end());
@@ -170,7 +168,7 @@ int main(int argc, char** argv)
             #pragma omp parallel for schedule(dynamic)
             for (int i = 0; i < iteratorCount; i++)
 #else
-            for (int i = 0; i < queryCount; i++)
+            for (int i = 0; i < iteratorCount; i++)
 #endif
             {
                 iterators[i]->execute();

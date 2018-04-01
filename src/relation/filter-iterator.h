@@ -10,7 +10,8 @@
 class FilterIterator: public ColumnRelationIterator
 {
 public:
-    explicit FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters);
+    FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters);
+    FilterIterator(ColumnRelation* relation, uint32_t binding, std::vector<Filter> filters, int start, int end);
 
     bool getNext() override;
     uint32_t getFilterReduction() final
@@ -33,6 +34,11 @@ public:
                          const std::vector<Selection>& selections, size_t& count) override;
 
     int64_t predictSize() override;
+
+    virtual std::unique_ptr<ColumnRelationIterator> createForRange(int start, int end) final
+    {
+        return std::make_unique<FilterIterator>(this->relation, this->binding, this->filters, start, end);
+    }
 
     void dumpPlan(std::ostream& ss) final
     {

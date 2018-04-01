@@ -284,7 +284,7 @@ public:
         assert(false);
     }
 
-    void execute() final
+    void execute()
     {
 #ifdef STATISTICS
         Timer timer;

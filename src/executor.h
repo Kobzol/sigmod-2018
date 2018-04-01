@@ -6,6 +6,7 @@
 
 #include "database.h"
 #include "query.h"
+#include "relation/wrapper-iterator.h"
 
 class Executor
 {
@@ -18,7 +19,7 @@ public:
     void buildPlan(Database& database);
     void finalizeQuery();
 
-    std::vector<Iterator*> roots;
+    std::vector<MultiWrapperIterator*> roots;
 
 private:
     /**

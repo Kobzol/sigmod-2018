@@ -60,9 +60,14 @@ class ColumnRelationIterator: public Iterator
 {
 public:
     explicit ColumnRelationIterator(ColumnRelation* relation, uint32_t binding)
-            : relation(relation), binding(binding)
+            : relation(relation), binding(binding), end(static_cast<int>(relation->getRowCount()))
     {
 
+    }
+    explicit ColumnRelationIterator(ColumnRelation* relation, uint32_t binding, int start, int end)
+            : relation(relation), binding(binding), end(end)
+    {
+        this->rowIndex = start;
     }
 
     bool getNext() override
@@ -72,7 +77,7 @@ public:
 #ifdef TRANSPOSE_RELATIONS
         _mm_prefetch(this->relation->data + this->rowIndex * this->relation->columnCount, _MM_HINT_T0);
 #endif
-        return this->rowIndex < this->relation->getRowCount();
+        return this->rowIndex < this->end;
     }
 
     uint64_t getValue(const Selection& selection) override
@@ -126,6 +131,14 @@ public:
         return binding == this->binding;
     }
 
+    virtual std::unique_ptr<ColumnRelationIterator> createForRange(int start, int end)
+    {
+        return std::make_unique<ColumnRelationIterator>(this->relation, this->binding, start, end);
+    }
+
+    void split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
+               size_t count) override;
+
     void dumpPlan(std::ostream& ss) override
     {
         ss << "CI(" << this->relation->getRowCount() << ")";
@@ -133,4 +146,5 @@ public:
 
     ColumnRelation* relation;
     uint32_t binding;
+    int end;
 };
