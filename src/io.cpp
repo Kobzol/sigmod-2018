@@ -103,16 +103,13 @@ void loadDatabase(Database& database)
         database.relations[i].transposed = relationData[i];
     }
 
-#ifdef USE_THREADS
-#pragma omp parallel for
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
-#else
-    for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
-#endif
     {
         if (PrimaryIndex::canBuild(database.relations[i]))
         {
             auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
+
+#pragma omp parallel for
             for (int r = 0; r < rows; r++)
             {
                 int columns = database.relations[i].getColumnCount();
