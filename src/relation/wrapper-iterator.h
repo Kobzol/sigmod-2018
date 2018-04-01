@@ -164,7 +164,8 @@ public:
 class MultiWrapperIterator: public Iterator
 {
 public:
-    explicit MultiWrapperIterator(std::vector<Iterator*> iterators): iterators(std::move(iterators))
+    explicit MultiWrapperIterator(std::vector<Iterator*> iterators, int threads)
+            : iterators(std::move(iterators)), threads(threads)
     {
 
     }
@@ -277,7 +278,7 @@ public:
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                  const std::vector<Selection>& selections, size_t& count) override
     {
-        std::vector<std::vector<uint64_t>> subResults(PARALLEL_JOIN_THREADS);
+        std::vector<std::vector<uint64_t>> subResults(this->threads);
         for (auto& subResult: subResults)
         {
             subResult.resize(results.size());
@@ -285,7 +286,7 @@ public:
 
         std::atomic<size_t> localCount{0};
 
-#pragma omp parallel for num_threads(PARALLEL_JOIN_THREADS) schedule(dynamic)
+#pragma omp parallel for num_threads(this->threads) schedule(dynamic)
         for (int i = 0; i < static_cast<int32_t>(this->iterators.size()); i++)
         {
             size_t c = 0;
@@ -362,4 +363,5 @@ public:
     }
 
     std::vector<Iterator*> iterators;
+    int threads;
 };

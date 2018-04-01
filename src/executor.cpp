@@ -482,8 +482,11 @@ void Executor::sum(Database& database, Query& query, Iterator* root, bool aggreg
     std::vector<Iterator*> groups;
     if (!query.joins.empty())
     {
-        root->split(container, groups, PARALLEL_JOIN_SPLIT);
-        container.push_back(std::make_unique<MultiWrapperIterator>(groups));
+        int split = PARALLEL_JOIN_SPLIT;
+        int threads = PARALLEL_JOIN_THREADS;
+
+        root->split(container, groups, split);
+        container.push_back(std::make_unique<MultiWrapperIterator>(groups, threads));
         root = container.back().get();
         root->requireSelections(selectionMap);
     }
