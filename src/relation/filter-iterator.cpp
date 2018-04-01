@@ -89,9 +89,9 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
                 {
                     results[i] += this->relation->getValueTransposed(this->rowIndex, columnIds[i]);
                 }
+                localCount++;
             }
 
-            localCount++;
             this->rowIndex++;
         }
     }
