@@ -303,43 +303,6 @@ public:
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                  const std::vector<Selection>& selections, size_t& count) final
     {
-        std::vector<std::unique_ptr<Iterator>> container;
-        std::vector<Iterator*> groups;
-        this->split(container, groups, PARALLEL_JOIN_SPLIT);
-
-        std::vector<std::vector<uint64_t>> subResults(PARALLEL_JOIN_THREADS);
-        for (auto& subResult: subResults)
-        {
-            subResult.resize(results.size());
-        }
-
-        std::atomic<size_t> localCount{0};
-
-#pragma omp parallel for num_threads(PARALLEL_JOIN_THREADS)
-        for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
-        {
-            size_t subCount = 0;
-            ((IndexIterator<Entry, Index, Child>*) groups[i])->sumRowsWorker(subResults[omp_get_thread_num()],
-                                                                             columnIds,
-                                                                             selections,
-                                                                             subCount);
-            localCount += subCount;
-        }
-
-        for (auto& subResult: subResults)
-        {
-            for (int r = 0; r < static_cast<int32_t>(results.size()); r++)
-            {
-                results[r] += subResult[r];
-            }
-        }
-
-        count = localCount;
-    }
-
-    void sumRowsWorker(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
-                       const std::vector<Selection>& selections, size_t& count)
-    {
         auto resultCount = static_cast<int32_t>(results.size());
         while (this->getNext())
         {

@@ -10,7 +10,15 @@
 class Executor
 {
 public:
-    void executeQuery(Database& database, Query& query);
+    explicit Executor(Query& query): query(query)
+    {
+
+    }
+
+    void buildPlan(Database& database);
+    void finalizeQuery();
+
+    std::vector<Iterator*> roots;
 
 private:
     /**
@@ -34,5 +42,14 @@ private:
                              std::vector<std::unique_ptr<Iterator>>& container,
                              bool aggregable);
 
-    void sum(Database& database, Query& query, Iterator* root, bool aggregable);
+    void prepareRoots(Database& database, Query& query, Iterator* root, bool aggregable);
+
+    Query& query;
+    std::unordered_map<uint32_t, Iterator*> views;
+    std::vector<std::unique_ptr<Iterator>> container;
+
+    std::unordered_map<SelectionId, Selection> selectionMap;
+    std::vector<uint32_t> columnIds;
+    std::vector<Selection> selections;
+    std::unordered_map<uint32_t, uint32_t> backMap;
 };

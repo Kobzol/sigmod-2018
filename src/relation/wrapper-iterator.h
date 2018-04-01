@@ -1,10 +1,11 @@
 #pragma once
 
 #include "iterator.h"
+#include "../timer.h"
 
 #include <algorithm>
 #include <atomic>
-#include <omp.h>
+#include <utility>
 
 class WrapperIterator: public Iterator
 {
@@ -164,10 +165,18 @@ public:
 class MultiWrapperIterator: public Iterator
 {
 public:
-    explicit MultiWrapperIterator(std::vector<Iterator*> iterators, int threads)
-            : iterators(std::move(iterators)), threads(threads)
+    explicit MultiWrapperIterator(std::vector<Iterator*> iterators, int index)
+            : iterators(std::move(iterators)), index(index)
     {
 
+    }
+
+    void setSelections(std::vector<uint32_t> columnIds,
+                       std::vector<Selection> selections)
+    {
+        this->columnIds = std::move(columnIds);
+        this->selections = std::move(selections);
+        this->results.resize(this->selections.size());
     }
 
     bool getNext() override
@@ -275,34 +284,25 @@ public:
         assert(false);
     }
 
+    void execute() final
+    {
+#ifdef STATISTICS
+        Timer timer;
+#endif
+        this->count = 0;
+        this->iterators[this->index]->sumRows(this->results, this->columnIds, this->selections, this->count);
+#ifdef STATISTICS
+        this->time = timer.get();
+#endif
+    }
     void sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                  const std::vector<Selection>& selections, size_t& count) override
     {
-        std::vector<std::vector<uint64_t>> subResults(this->threads);
-        for (auto& subResult: subResults)
+        count = this->count;
+        for (int i = 0; i < static_cast<int32_t>(results.size()); i++)
         {
-            subResult.resize(results.size());
+            results[i] += this->results[i];
         }
-
-        std::atomic<size_t> localCount{0};
-
-#pragma omp parallel for num_threads(this->threads) schedule(dynamic)
-        for (int i = 0; i < static_cast<int32_t>(this->iterators.size()); i++)
-        {
-            size_t c = 0;
-            this->iterators[i]->sumRows(subResults[omp_get_thread_num()], columnIds, selections, c);
-            localCount += c;
-        }
-
-        for (auto& subResult: subResults)
-        {
-            for (int r = 0; r < static_cast<int32_t>(results.size()); r++)
-            {
-                results[r] += subResult[r];
-            }
-        }
-
-        count = localCount;
     }
 
     std::unique_ptr<Iterator> createIndexedIterator(std::vector<std::unique_ptr<Iterator>>& container,
@@ -345,7 +345,7 @@ public:
 
     void assignJoinSize(Database& database) override
     {
-        assert(false);
+        this->iterators[0]->assignJoinSize(database);
     }
 
     void split(std::vector<std::unique_ptr<Iterator>>& container,
@@ -363,5 +363,10 @@ public:
     }
 
     std::vector<Iterator*> iterators;
-    int threads;
+    int index;
+    std::vector<uint32_t> columnIds;
+    std::vector<Selection> selections;
+    std::vector<uint64_t> results;
+    size_t count = 0;
+    double time;
 };

@@ -73,7 +73,6 @@ static void buildIndices(std::vector<Query>& queries)
     }
 
     std::vector<uint32_t> indices(needIndices.begin(), needIndices.end());
-    auto count = static_cast<int32_t>(indices.size());
 
     IndexBuilder builder;
     builder.buildIndices(indices);
@@ -135,7 +134,6 @@ int main(int argc, char** argv)
 
     std::unordered_set<uint32_t> joinColumns;
 
-    Executor executor;
     std::string line;
     std::vector<Query> queries;
     while (std::getline(std::cin, line))
@@ -147,17 +145,42 @@ int main(int argc, char** argv)
 
             auto queryCount = static_cast<int32_t>(length);
             auto numThreads = std::min(QUERY_NUM_THREADS, queryCount);
-
             buildIndices(queries);
+
+            std::vector<Executor> executors;
+            for (int i = 0; i < length; i++)
+            {
+                executors.emplace_back(queries[i]);
+            }
+
+            #pragma omp parallel for
+            for (int i = 0; i < static_cast<int32_t>(executors.size()); i++)
+            {
+                executors[i].buildPlan(database);
+            }
+
+            std::vector<Iterator*> iterators;
+            for (auto& executor: executors)
+            {
+                iterators.insert(iterators.end(), executor.roots.begin(), executor.roots.end());
+            }
+
+            auto iteratorCount = static_cast<int>(iterators.size());
 #ifdef USE_THREADS
-            #pragma omp parallel for num_threads(numThreads) schedule(dynamic)
-            for (int i = 0; i < queryCount; i++)
+            #pragma omp parallel for schedule(dynamic)
+            for (int i = 0; i < iteratorCount; i++)
 #else
             for (int i = 0; i < queryCount; i++)
 #endif
             {
-                executor.executeQuery(database, queries[i]);
+                iterators[i]->execute();
             }
+
+            for (int i = 0; i < static_cast<int32_t>(executors.size()); i++)
+            {
+                executors[i].finalizeQuery();
+            }
+
             for (auto& q: queries)
             {
                 std::cout << q.result;
