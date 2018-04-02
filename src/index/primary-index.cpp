@@ -241,7 +241,7 @@ void PrimaryIndex::sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t col
     kx::radix_sort(ptr, stop, RadixTraitsRow<N>(column, minValue), diff);
 }
 
-bool PrimaryIndex::build()
+bool PrimaryIndex::build(uint32_t threads)
 {
     if (!canBuild(this->relation))
     {
@@ -253,7 +253,7 @@ bool PrimaryIndex::build()
     auto rows = static_cast<int>(this->relation.getRowCount());
     auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
 
-#pragma omp parallel for num_threads(4)
+#pragma omp parallel for num_threads(threads)
     for (int i = 0; i < rows; i++)
     {
         auto row = this->groups[this->rowTargets[i].first].start + this->rowTargets[i].second;
@@ -263,7 +263,7 @@ bool PrimaryIndex::build()
 
     int columns = this->relation.getColumnCount();
 
-#pragma omp parallel for num_threads(4)
+#pragma omp parallel for num_threads(threads)
     for (int g = 0; g < static_cast<int32_t>(this->groups.size()); g++)
     {
         auto start = this->groups[g].start;

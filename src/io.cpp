@@ -1,3 +1,4 @@
+#include <omp.h>
 #include "io.h"
 #include "index/index-thread-pool.h"
 #include "timer.h"
@@ -211,7 +212,7 @@ void loadDatabase(Database& database)
     {
         if (database.primaryIndices[primaryIndices[i]]->take())
         {
-            database.primaryIndices[primaryIndices[i]]->build();
+            database.primaryIndices[primaryIndices[i]]->build(PRIMARY_INDEX_PREBUILD_THREADS);
         }
     }
 #else

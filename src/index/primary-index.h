@@ -28,8 +28,8 @@ public:
 
 struct PrimaryGroup
 {
-    size_t count = 0;
-    size_t start = 0;
+    uint32_t count = 0;
+    uint32_t start = 0;
 };
 
 template <int N>
@@ -74,7 +74,11 @@ public:
 
     PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* init);
 
-    bool build() final;
+    bool build() final
+    {
+        return this->build(4);
+    }
+    bool build(uint32_t threads);
 
     void initGroups();
     void prepare();

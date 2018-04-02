@@ -67,9 +67,13 @@ static void buildIndices(std::vector<Query>& queries)
     }
 
     std::vector<uint32_t> indices(needIndices.begin(), needIndices.end());
+    auto count = static_cast<int32_t>(indices.size());
 
-    IndexBuilder builder;
-    builder.buildIndices(indices);
+    if (count > 0)
+    {
+        IndexBuilder builder;
+        builder.buildIndices(indices);
+    }
 #endif
 
 #ifdef STATISTICS
