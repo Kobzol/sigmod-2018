@@ -66,6 +66,11 @@ public:
         return this->left->isImpossible() || this->right->isImpossible();
     }
 
+    bool hasIndexJoin() override
+    {
+        return this->left->hasIndexJoin() || this->right->hasIndexJoin();
+    }
+
     void dumpPlan(std::ostream& ss) final
     {
         ss << this->getJoinName() << "(";

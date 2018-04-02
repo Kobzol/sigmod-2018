@@ -164,6 +164,11 @@ public:
         return this->inner->isImpossible();
     }
 
+    bool hasIndexJoin() override
+    {
+        return this->inner->hasIndexJoin();
+    }
+
     Iterator* inner;
 };
 

@@ -25,6 +25,11 @@ public:
 
     void split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count) final;
 
+    bool hasIndexJoin() override
+    {
+        return true;
+    }
+
     std::string getJoinName() final
     {
         return "NL";

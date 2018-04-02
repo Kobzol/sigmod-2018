@@ -229,6 +229,11 @@ public:
         return false;
     }
 
+    virtual bool hasIndexJoin()
+    {
+        return false;
+    }
+
     int rowIndex = -1;
     int savedRowIndex;
 };
