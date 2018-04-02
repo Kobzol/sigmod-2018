@@ -24,6 +24,8 @@ public:
     bool isSortedOn(const Selection& selection) final;
 
     void split(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups, size_t count) final;
+    void splitToBounds(std::vector<std::unique_ptr<Iterator>>& container, std::vector<Iterator*>& groups,
+                               std::vector<uint64_t>& bounds, size_t count) final;
 
     bool hasIndexJoin() override
     {

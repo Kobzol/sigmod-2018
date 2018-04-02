@@ -259,7 +259,7 @@ static void createJoin(Iterator* left,
     bool leftSorted = left->isSortedOn((*join)[0].selections[leftIndex]);
     bool leftSortable = leftSorted || (hasLeftIndex && !left->isJoin());
 
-    if (!left->hasIndexJoin() && leftSortable && hasRightIndex && (first || leftSorted))
+    if (leftSortable && hasRightIndex && (first || leftSorted))
     {
         createMergesortJoin(left, right, leftIndex, container, join, leftSorted);
     }

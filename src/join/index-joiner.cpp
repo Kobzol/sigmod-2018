@@ -201,3 +201,21 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::split(std::vector<std::unique_ptr<Iterator
         groups.push_back(container.back().get());
     }
 }
+
+template<bool HAS_MULTIPLE_JOINS>
+void IndexJoiner<HAS_MULTIPLE_JOINS>::splitToBounds(std::vector<std::unique_ptr<Iterator>>& container,
+                                                    std::vector<Iterator*>& groups, std::vector<uint64_t>& bounds,
+                                                    size_t count)
+{
+    std::vector<Iterator*> subGroups;
+    this->left->splitToBounds(container, subGroups, bounds, count);
+    for (auto& it: subGroups)
+    {
+        container.push_back(this->right->createIndexedIterator(container, this->rightSelection));
+        container.push_back(std::make_unique<IndexJoiner<HAS_MULTIPLE_JOINS>>(
+                it, container.back().get(),
+                this->leftIndex, this->join, this->hasLeftIndex)
+        );
+        groups.push_back(container.back().get());
+    }
+}
