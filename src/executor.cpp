@@ -273,6 +273,23 @@ static void createJoin(Iterator* left,
     }
 }
 
+static uint64_t getJoinRange(const JoinPredicate& predicate)
+{
+    auto left = predicate.selections[0];
+    auto right = predicate.selections[1];
+
+    auto leftMin = database.getMinValue(left.relation, left.column);
+    auto leftMax = database.getMaxValue(left.relation, left.column);
+    auto rightMin = database.getMinValue(right.relation, right.column);
+    auto rightMax = database.getMaxValue(right.relation, right.column);
+
+    auto start = std::max(leftMin, rightMin);
+    auto end = std::min(leftMax, rightMax);
+
+    if (start >= end) return 0;
+    return end - start;
+}
+
 Iterator* Executor::createRootView(Database& database, Query& query,
                                    std::unordered_map<uint32_t, Iterator*>& views,
                                    std::vector<std::unique_ptr<Iterator>>& container,
@@ -300,11 +317,13 @@ Iterator* Executor::createRootView(Database& database, Query& query,
 
 #ifdef SORT_JOINS_BY_SIZE
     std::sort(query.joins.begin(), query.joins.end(), [&database, &views](const Join& a, const Join& b) {
-        auto& aLeft = views[a[0].selections[0].binding];
+        return getJoinRange(a[0]) < getJoinRange(b[0]);
+
+        /*auto& aLeft = views[a[0].selections[0].binding];
         auto& aRight = views[a[0].selections[1].binding];
         auto& bLeft = views[b[0].selections[0].binding];
         auto& bRight = views[b[0].selections[1].binding];
-        return (aLeft->predictSize() * aRight->predictSize()) < (bLeft->predictSize() * bRight->predictSize());
+        return (aLeft->predictSize() * aRight->predictSize()) < (bLeft->predictSize() * bRight->predictSize());*/
     });
 #endif
     auto* join = &query.joins[0];
