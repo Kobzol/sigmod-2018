@@ -31,6 +31,10 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
         return lhs.second > rhs.second;
     });*/
 
+#ifdef STATISTICS
+    Timer indexGroupTimer;
+#endif
+
 #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < count; i++)
     {
@@ -39,6 +43,10 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
             database.primaryIndices[indices[i]]->prepare();
         }
     }
+
+#ifdef STATISTICS
+    indexGroupCountTime += indexGroupTimer.get();
+#endif
 
     std::vector<std::function<void()>> bucketJobs;
     for (int i = 0; i < count; i++)
@@ -60,7 +68,7 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
     }
 
 #ifdef STATISTICS
-    indexCopyToBucketsTime += bucketTimer.get() * 1000;
+    indexCopyToBucketsTime += bucketTimer.get();
     Timer sortTimer;
 #endif
 
@@ -80,7 +88,7 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
     }
 
 #ifdef STATISTICS
-    indexSortTime += sortTimer.get() * 1000;
+    indexSortTime += sortTimer.get();
 #endif
 
 #pragma omp parallel for schedule(dynamic)

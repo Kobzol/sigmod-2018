@@ -74,11 +74,9 @@ public:
 
     PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* init);
 
-    bool build() final
-    {
-        return false;
-    }
+    bool build() final;
 
+    void initGroups();
     void prepare();
     void finalize();
 

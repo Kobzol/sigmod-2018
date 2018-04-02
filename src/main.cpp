@@ -278,10 +278,10 @@ int main(int argc, char** argv)
         }
     }
 
-    std::cerr << "Index min max time: " << indexMinMaxTime / 1000 << std::endl;
-    std::cerr << "Index group count time: " << indexGroupCountTime / 1000 << std::endl;
-    std::cerr << "Index copy to buckets time: " << indexCopyToBucketsTime / 1000 << std::endl;
-    std::cerr << "Index sort time: " << indexSortTime / 1000 << std::endl;
+    std::cerr << "Index min max time: " << indexMinMaxTime << std::endl;
+    std::cerr << "Index group count time: " << indexGroupCountTime << std::endl;
+    std::cerr << "Index copy to buckets time: " << indexCopyToBucketsTime << std::endl;
+    std::cerr << "Index sort time: " << indexSortTime << std::endl;
     std::cerr << "Index build time: " << indexBuildTime << std::endl;
     std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 
