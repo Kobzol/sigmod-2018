@@ -114,7 +114,7 @@ void loadDatabase(Database& database)
         {
             auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
 
-#pragma omp parallel for
+#pragma omp parallel for num_threads(20)
             for (int r = 0; r < rows; r++)
             {
                 int columns = database.relations[i].getColumnCount();
