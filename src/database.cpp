@@ -61,8 +61,8 @@ std::string Database::createJoinKey(const Join& join)
 
 bool Database::hasIndexedIterator(const Selection& selection)
 {
-    return  this->getSortIndex(selection.relation, selection.column) != nullptr ||
-            this->getPrimaryIndex(selection.relation, selection.column) != nullptr;
+    return  this->getPrimaryIndex(selection.relation, selection.column) != nullptr ||
+            this->getSortIndex(selection.relation, selection.column) != nullptr;
 }
 std::unique_ptr<Iterator> Database::createIndexedIterator(const Selection& selection,
                                                           const std::vector<Filter>& filters)
@@ -91,11 +91,8 @@ std::unique_ptr<Iterator> Database::createFilteredIterator(const Selection& sele
     else
     {
 #ifdef FORCE_INDEXED_FILTER
-        auto& index = this->primaryIndices[this->getGlobalColumnId(selection.relation, selection.column)];
-        if (index->take())
-        {
-            index->build(4);
-        }
+        IndexBuilder builder;
+        builder.buildIndices({ this->getGlobalColumnId(selection.relation, selection.column) });
         return this->createIndexedIterator(selection, filters);
 #else
         return std::make_unique<FilterIterator>(&this->relations[selection.relation], selection.binding, filters);

@@ -15,7 +15,7 @@
 //#define SORT_JOINS_BY_SIZE
 
 //#define USE_HASH_INDEX
-//#define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
+#define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
 #define USE_PRIMARY_INDEX               // index of sorted <value, row content> pairs
 //#define USE_AGGREGATE_INDEX             // index of sorted <value, count, sums for all columns>
 

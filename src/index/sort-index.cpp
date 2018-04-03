@@ -37,32 +37,30 @@ bool SortIndex::build(uint32_t threads)
     uint64_t minValue = std::numeric_limits<uint64_t>::max();
     uint64_t maxValue = 0;
 
+    auto* ptr = this->relation.data + (rows * this->column);
     for (int i = 0; i < rows; i++)
     {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
+        auto value = *ptr++;
         minValue = value < minValue ? value : minValue;
         maxValue = value > maxValue ? value : maxValue;
-        this->data[i].value = value;
-        this->data[i].row = i;
     }
 
-    auto diff = std::max(1UL, maxValue - minValue) + 1;
-
-    const int TARGET_SIZE = 1024 * 1024;
+    const int TARGET_SIZE = 1024 * 512;
     double size = (rows * sizeof(RowEntry)) / static_cast<double>(TARGET_SIZE);
-    const auto GROUP_COUNT = static_cast<int>(std::ceil(size));
-//    const int GROUP_COUNT = 64;
+    const auto GROUP_COUNT = static_cast<int>(std::min((maxValue - minValue) + 1,
+                                                       static_cast<uint64_t>(std::ceil(size))));
+    auto diff = std::max(((maxValue - minValue) + 1) / GROUP_COUNT + 1, 1UL);
+    auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
-    std::vector<SortGroup> groups(GROUP_COUNT);
+    std::vector<SortGroup> groups(static_cast<size_t>(GROUP_COUNT));
     std::vector<std::pair<uint32_t, uint32_t>> rowTargets(static_cast<size_t>(rows)); // group, index
 
+    ptr = this->relation.data + (rows * this->column);
     for (int i = 0; i < rows; i++)
     {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = ((value - minValue) / (double) diff) * GROUP_COUNT;
+        auto groupIndex = (*ptr++ - minValue) >> shift;
         rowTargets[i].first = static_cast<uint32_t>(groupIndex);
-        rowTargets[i].second = static_cast<uint32_t>(groups[groupIndex].count);
-        groups[groupIndex].count++;
+        rowTargets[i].second = static_cast<uint32_t>(groups[groupIndex].count++);
     }
 
     for (int i = 1; i < GROUP_COUNT; i++)
@@ -80,12 +78,13 @@ bool SortIndex::build(uint32_t threads)
         item.row = static_cast<uint64_t>(i);
     }
 
-#pragma omp parallel for num_threads(threads)
+    uint64_t difference = maxValue - minValue;
+#pragma omp parallel for num_threads(threads) schedule(dynamic)
     for (int i = 0; i < GROUP_COUNT; i++)
     {
         auto start = groups[i].start;
         auto end = start + groups[i].count;
-        kx::radix_sort(this->data.begin() + start, this->data.begin() + end, RadixTraitsRowEntry(), diff);
+        kx::radix_sort(this->data.begin() + start, this->data.begin() + end, RadixTraitsRowEntry(), difference);
     }
 
     this->minValue = this->data[0].value;

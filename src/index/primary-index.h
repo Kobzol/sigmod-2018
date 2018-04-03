@@ -80,7 +80,6 @@ public:
     }
     bool build(uint32_t threads);
 
-    void prepare();
     void initMemory();
     void initGroups(int threads = 1);
     void finalize();
@@ -135,9 +134,6 @@ public:
     std::vector<std::pair<uint32_t, uint32_t>> rowTargets;
 
     PrimaryRowEntry* (PrimaryIndex::*lowerBoundFn)(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
-
-    std::vector<std::function<void()>> bucketJobs;
-    std::vector<std::function<void()>> sortJobs;
 
     int groupCount;
     int rowSizeBytes;

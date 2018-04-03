@@ -100,9 +100,12 @@ void loadDatabase(Database& database)
 #ifdef USE_PRIMARY_INDEX
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
     {
-        relationData[i] = new uint64_t[PrimaryIndex::rowSize(database.relations[i]) *
-                database.relations[i].getRowCount()];
-        database.relations[i].transposed = relationData[i];
+        if (PrimaryIndex::canBuild(database.relations[i]))
+        {
+            relationData[i] = new uint64_t[PrimaryIndex::rowSize(database.relations[i]) *
+                                           database.relations[i].getRowCount()];
+            database.relations[i].transposed = relationData[i];
+        }
     }
 
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
@@ -194,20 +197,18 @@ void loadDatabase(Database& database)
 #endif
     threadIndexPool.start();
 #else
-#ifdef USE_PRIMARY_INDEX
-    std::vector<uint32_t> primaryIndices;
+    std::vector<uint32_t> indices;
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
     {
         if (database.primaryIndices[i]->column < PREBUILD_PRIMARY_COLUMNS)
         {
-            primaryIndices.push_back(i);
+            indices.push_back(i);
         }
     }
 
     IndexBuilder builder;
-    builder.buildIndices(primaryIndices);
-#else
-#ifdef USE_THREADS
+    builder.buildIndices(indices);
+/*#ifdef USE_THREADS
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)
 #else
@@ -222,7 +223,7 @@ void loadDatabase(Database& database)
 #endif
         bool built = false;
 #ifdef USE_SORT_INDEX
-        if (!built && database.sortIndices[i]->take())
+        if (!built && database.sortIndices[i]->column < PREBUILD_PRIMARY_COLUMNS && database.sortIndices[i]->take())
         {
             database.sortIndices[i]->build(4);
 
@@ -235,7 +236,7 @@ void loadDatabase(Database& database)
         }
 #endif
     }
-#endif
+#endif*/
 #endif
 
 #ifdef STATISTICS

@@ -10,39 +10,42 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
 {
     if (indices.empty()) return;
 
-    auto count = static_cast<int>(indices.size());
-    /*using Column = std::pair<uint32_t, uint32_t>;
-    std::vector<Column> columns; // index, row count
+    std::vector<uint32_t> primaryIndices;
+    std::vector<uint32_t> secondaryIndices;
+
     for (auto index: indices)
     {
-        columns.emplace_back(index, database.primaryIndices[index]->relation.getRowCount());
+        if (PrimaryIndex::canBuild(database.primaryIndices[index]->relation))
+        {
+            primaryIndices.push_back(index);
+        }
+        else secondaryIndices.push_back(index);
     }
 
-    uint32_t maxRows = 0;
-    uint32_t minRows = std::numeric_limits<uint32_t>::max();
-
-    for (auto& col: columns)
-    {
-        maxRows = std::max(maxRows, col.second);
-        minRows = std::min(minRows, col.second);
-    }
-
-    std::sort(columns.begin(), columns.end(), [](const Column& lhs, const Column& rhs) {
-        return lhs.second > rhs.second;
-    });*/
+    auto primaryCount = static_cast<int>(primaryIndices.size());
+    auto secondaryCount = static_cast<int>(secondaryIndices.size());
 
 #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < primaryCount; i++)
     {
-        if (database.primaryIndices[indices[i]]->take())
+        if (database.primaryIndices[primaryIndices[i]]->take())
         {
-            database.primaryIndices[indices[i]]->initMemory();
+            database.primaryIndices[primaryIndices[i]]->initMemory();
         }
     }
 
 #pragma omp parallel for schedule(dynamic) num_threads(8)
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < primaryCount; i++)
     {
-        database.primaryIndices[indices[i]]->build(PRIMARY_INDEX_PREBUILD_THREADS);
+        database.primaryIndices[primaryIndices[i]]->build(PRIMARY_INDEX_PREBUILD_THREADS);
+    }
+
+#pragma omp parallel for schedule(dynamic) num_threads(8)
+    for (int i = 0; i < secondaryCount; i++)
+    {
+        if (database.sortIndices[secondaryIndices[i]]->take())
+        {
+            database.sortIndices[secondaryIndices[i]]->build(PRIMARY_INDEX_PREBUILD_THREADS);
+        }
     }
 }

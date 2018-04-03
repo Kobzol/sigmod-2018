@@ -78,7 +78,7 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
     auto selectionSize = static_cast<int>(selections.size());
     this->startFilterIndex = 0;
 
-    if (bindings.size() == 1 && selectionSize > 1)
+    if (bindings.size() == 1 && selectionSize > 1 && this->relation->transposed != nullptr)
     {
         this->rowIndex++;
         while (this->rowIndex < this->end)

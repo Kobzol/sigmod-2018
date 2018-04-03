@@ -47,59 +47,6 @@ PrimaryIndex::PrimaryIndex(ColumnRelation& relation, uint32_t column, uint64_t* 
 
 }
 
-void PrimaryIndex::prepare()
-{
-    if (!canBuild(this->relation))
-    {
-        return;
-    }
-
-    this->initMemory();
-    this->initGroups();
-    auto rows = static_cast<int>(this->relation.getRowCount());
-
-    auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
-    const int BUCKET_SPLIT_COUNT = 20;
-    auto chunk = static_cast<int>(std::ceil(rows / (double) BUCKET_SPLIT_COUNT));
-
-    for (int b = 0; b < BUCKET_SPLIT_COUNT; b++)
-    {
-        int from = b * chunk;
-        int to = std::min(rows, from + chunk);
-
-        this->bucketJobs.emplace_back([this, src, from, to]() {
-            for (int i = from; i < to; i++)
-            {
-                auto row = this->groups[this->rowTargets[i].first].start + this->rowTargets[i].second;
-                auto* item = this->move(this->data, static_cast<int>(row));
-                std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
-            }
-        });
-    }
-
-    int columns = this->relation.getColumnCount();
-    for (int g = 0; g < static_cast<int32_t>(this->groups.size()); g++)
-    {
-        this->sortJobs.emplace_back([this, g, columns]() {
-            auto start = this->groups[g].start;
-            auto end = start + this->groups[g].count;
-
-            auto from = this->move(this->data, static_cast<int>(start));
-            auto to = this->move(this->data, static_cast<int>(end));
-
-            if (columns == 1) sort<1>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 2) sort<2>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 3) sort<3>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 4) sort<4>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 5) sort<5>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 6) sort<6>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 7) sort<7>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 8) sort<8>(from, to, this->column, this->minValue, this->maxValue);
-            if (columns == 9) sort<9>(from, to, this->column, this->minValue, this->maxValue);
-        });
-    }
-}
-
 static std::pair<uint64_t, uint64_t> findMinMax(const uint64_t* __restrict__ column, int rows)
 {
     uint64_t minValue = std::numeric_limits<uint64_t>::max();
@@ -157,7 +104,6 @@ void PrimaryIndex::initGroups(int threads)
     double size = (rows * this->rowSizeBytes) / static_cast<double>(TARGET_SIZE);
     const auto GROUP_COUNT = static_cast<int>(std::min((this->maxValue - this->minValue) + 1,
                                                        static_cast<uint64_t>(std::ceil(size))));
-//    const int GROUP_COUNT = 128;
     auto diff = std::max(((this->maxValue - this->minValue) + 1) / GROUP_COUNT + 1, 1UL);
     auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
