@@ -204,10 +204,7 @@ void loadDatabase(Database& database)
         }
     }
 
-//    IndexBuilder builder;
-//    builder.buildIndices(primaryIndices);
-
-#pragma omp parallel for schedule(dynamic) num_threads(20)
+#pragma omp parallel for schedule(dynamic) num_threads(8)
     for (int i = 0; i < static_cast<int32_t>(primaryIndices.size()); i++)
     {
         if (database.primaryIndices[primaryIndices[i]]->take())

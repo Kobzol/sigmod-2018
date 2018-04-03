@@ -44,4 +44,5 @@
     extern std::atomic<size_t> indexGroupCountTime;
     extern std::atomic<size_t> indexCopyToBucketsTime;
     extern std::atomic<size_t> indexSortTime;
+    extern std::atomic<size_t> indexFinalizeTime;
 #endif

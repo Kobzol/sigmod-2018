@@ -80,9 +80,12 @@ public:
     }
     bool build(uint32_t threads);
 
-    void initGroups();
     void prepare();
-    void finalize();
+    void initMemory();
+    void initGroups(int threads = 1);
+    void finalize(int threads = 1);
+    void sortDirect();
+    void sortGroups(int threads = 1);
 
     PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset)
     {

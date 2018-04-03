@@ -54,6 +54,7 @@ void PrimaryIndex::prepare()
         return;
     }
 
+    this->initMemory();
     this->initGroups();
     auto rows = static_cast<int>(this->relation.getRowCount());
 
@@ -99,12 +100,101 @@ void PrimaryIndex::prepare()
     }
 }
 
-void PrimaryIndex::finalize()
+void PrimaryIndex::initMemory()
+{
+    assert(this->init != nullptr);
+
+    auto rows = static_cast<int>(this->relation.getRowCount());
+
+    this->rowSizeBytes = PrimaryIndex::rowSize(this->relation);
+    this->rowOffset = this->rowSizeBytes / sizeof(PrimaryRowEntry);
+
+    this->mem = new uint64_t[this->rowOffset * rows];
+    this->data = reinterpret_cast<PrimaryRowEntry*>(this->mem);
+    this->begin = this->data;
+    this->end = this->move(this->data, rows);
+
+    uint64_t minValue = std::numeric_limits<uint64_t>::max();
+    uint64_t maxValue = 0;
+
+#ifdef STATISTICS
+    Timer timer;
+#endif
+
+    for (int i = 0; i < rows; i++)
+    {
+        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
+        minValue = value < minValue ? value : minValue;
+        maxValue = value > maxValue ? value : maxValue;
+    }
+
+    this->minValue = minValue;
+    this->maxValue = maxValue;
+    this->diff = (this->maxValue - this->minValue) + 1;
+
+#ifdef STATISTICS
+    indexMinMaxTime += timer.get();
+#endif
+}
+
+void PrimaryIndex::initGroups(int threads)
+{
+#ifdef STATISTICS
+    Timer timer;
+#endif
+
+    auto rows = static_cast<int32_t>(this->relation.getRowCount());
+
+    const int TARGET_SIZE = 1024 * 512;
+    double size = (rows * this->rowSizeBytes) / static_cast<double>(TARGET_SIZE);
+    const auto GROUP_COUNT = static_cast<int>(std::min((maxValue - minValue) + 1,
+                                                       static_cast<uint64_t>(std::ceil(size))));
+//    const int GROUP_COUNT = 128;
+    auto diff = std::max(((this->maxValue - this->minValue) + 1) / GROUP_COUNT + 1, 1UL);
+    auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
+
+    this->groups.resize(static_cast<size_t>(GROUP_COUNT));
+    this->rowTargets.resize(static_cast<size_t>(rows)); // group, index
+
+    for (int i = 0; i < rows; i++)
+    {
+        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
+        auto groupIndex = (value - minValue) >> shift;
+        this->rowTargets[i].first = static_cast<uint32_t>(groupIndex);
+        this->rowTargets[i].second = static_cast<uint32_t>(this->groups[groupIndex].count++);
+    }
+
+//    uint32_t minGroup = this->groups[0].count;
+//    uint32_t maxGroup = this->groups[0].count;
+    for (int i = 1; i < GROUP_COUNT; i++)
+    {
+        this->groups[i].start = this->groups[i - 1].start + this->groups[i - 1].count;
+//        minGroup = std::min(minGroup, this->groups[i].count);
+//        maxGroup = std::max(maxGroup, this->groups[i].count);
+    }
+
+    /*std::vector<PrimaryGroup> sortGroups(groups.begin(), groups.end());
+    std::sort(sortGroups.begin(), sortGroups.end(), [](const PrimaryGroup& a, const PrimaryGroup& b) {
+        return a.count < b.count;
+    });
+
+    std::cerr << "(" << GROUP_COUNT << ", " << rows << ", " << minGroup << ", " << maxGroup << ", " << sortGroups[sortGroups.size() / 2].count << ") ";*/
+
+#ifdef STATISTICS
+    indexGroupCountTime += timer.get();
+#endif
+}
+
+void PrimaryIndex::finalize(int threads)
 {
     if (!canBuild(this->relation))
     {
         return;
     }
+
+#ifdef STATISTICS
+    Timer timer;
+#endif
 
     auto rows = static_cast<int>(this->relation.getRowCount());
 #ifdef USE_MULTILEVEL_INDEX
@@ -114,7 +204,6 @@ void PrimaryIndex::finalize()
     int group = 0;
     this->indexGroups[0].startValue = this->minValue;
     this->indexGroups[0].start = this->begin;
-#endif
 
     bool unique = true;
     uint64_t lastValue = this->begin->row[this->column];
@@ -122,7 +211,6 @@ void PrimaryIndex::finalize()
     {
         uint64_t value = this->move(this->begin, i)->row[this->column];
 
-#ifdef USE_MULTILEVEL_INDEX
         if (this->groupValue(value) > group && lastValue != value)
         {
             this->indexGroups[group].endValue = value;
@@ -131,22 +219,31 @@ void PrimaryIndex::finalize()
             this->indexGroups[group + 1].start = this->groups[group].end;
             group++;
         }
-#endif
 
         if (lastValue == value)
         {
             unique = false;
-#ifndef USE_MULTILEVEL_INDEX
-            break;
-#endif
         }
         lastValue = value;
     }
 
-#ifdef USE_MULTILEVEL_INDEX
     this->indexGroups[group].endValue = this->maxValue + 1;
     this->indexGroups[group].end = this->end;
     this->indexGroups.resize(group + 1);
+#else
+    bool unique = true;
+    uint64_t lastValue = this->begin->row[this->column];
+
+    for (int i = 1; i < rows; i++)
+    {
+        uint64_t value = this->move(this->begin, i)->row[this->column];
+        if (NOEXPECT(lastValue == value))
+        {
+            unique = false;
+            break;
+        }
+        else lastValue = value;
+    }
 #endif
 
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
@@ -162,6 +259,31 @@ void PrimaryIndex::finalize()
     if (this->columns == 9) this->lowerBoundFn = &PrimaryIndex::findLowerBound<9>;
 
     this->buildCompleted = true;
+
+#ifdef STATISTICS
+    indexFinalizeTime += timer.get();
+#endif
+}
+
+bool PrimaryIndex::build(uint32_t threads)
+{
+    if (!canBuild(this->relation))
+    {
+        return false;
+    }
+
+    this->initMemory();
+
+    if (this->relation.getRowCount() > 100000)
+    {
+        this->initGroups(threads);
+        this->sortGroups(threads);
+    }
+    else this->sortDirect();
+
+    this->finalize(threads);
+
+    return true;
 }
 
 PrimaryRowEntry* PrimaryIndex::lowerBound(uint64_t value)
@@ -241,17 +363,34 @@ void PrimaryIndex::sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t col
     kx::radix_sort(ptr, stop, RadixTraitsRow<N>(column, minValue), diff);
 }
 
-bool PrimaryIndex::build(uint32_t threads)
+void PrimaryIndex::sortDirect()
 {
-    if (!canBuild(this->relation))
-    {
-        return false;
-    }
+    auto rows = static_cast<int32_t>(this->relation.getRowCount());
 
-    this->initGroups();
+    std::memcpy(this->data, this->init, this->rowSizeBytes * rows);
 
+    auto from = this->move(this->data, 0);
+    auto to = this->move(this->data, rows);
+
+    if (this->columns == 1) sort<1>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 2) sort<2>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 3) sort<3>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 4) sort<4>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 5) sort<5>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 6) sort<6>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 7) sort<7>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 8) sort<8>(from, to, this->column, this->minValue, this->maxValue);
+    if (this->columns == 9) sort<9>(from, to, this->column, this->minValue, this->maxValue);
+}
+
+void PrimaryIndex::sortGroups(int threads)
+{
     auto rows = static_cast<int>(this->relation.getRowCount());
     auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
+
+#ifdef STATISTICS
+    Timer timer;
+#endif
 
 #pragma omp parallel for num_threads(threads)
     for (int i = 0; i < rows; i++)
@@ -260,6 +399,11 @@ bool PrimaryIndex::build(uint32_t threads)
         auto* item = this->move(this->data, static_cast<int>(row));
         std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
     }
+
+#ifdef STATISTICS
+    indexCopyToBucketsTime += timer.get();
+    timer.reset();
+#endif
 
     int columns = this->relation.getColumnCount();
 
@@ -283,70 +427,7 @@ bool PrimaryIndex::build(uint32_t threads)
         if (columns == 9) sort<9>(from, to, this->column, this->minValue, this->maxValue);
     }
 
-    this->finalize();
-
-    return false;
-}
-
-void PrimaryIndex::initGroups()
-{
-    assert(this->init != nullptr);
-
-    auto rows = static_cast<int>(this->relation.getRowCount());
-
-    this->rowSizeBytes = PrimaryIndex::rowSize(this->relation);
-    this->rowOffset = this->rowSizeBytes / sizeof(PrimaryRowEntry);
-
-    this->mem = new uint64_t[this->rowOffset * rows];
-    this->data = reinterpret_cast<PrimaryRowEntry*>(this->mem);
-
-    uint64_t minValue = std::numeric_limits<uint64_t>::max();
-    uint64_t maxValue = 0;
-
 #ifdef STATISTICS
-    Timer timer;
+    indexSortTime += timer.get();
 #endif
-
-    for (int i = 0; i < rows; i++)
-    {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        minValue = value < minValue ? value : minValue;
-        maxValue = value > maxValue ? value : maxValue;
-    }
-
-    this->minValue = minValue;
-    this->maxValue = maxValue;
-    this->diff = (this->maxValue - this->minValue) + 1;
-
-#ifdef STATISTICS
-    indexMinMaxTime += timer.get();
-#endif
-
-    const int TARGET_SIZE = 1024 * 512;
-    double size = (rows * this->rowSizeBytes) / static_cast<double>(TARGET_SIZE);
-    const auto GROUP_COUNT = static_cast<int>(std::min((maxValue - minValue) + 1,
-                                                       static_cast<uint64_t>(std::ceil(size))));
-//    const int GROUP_COUNT = 128;
-    auto diff = std::max(((maxValue - minValue) + 1) / GROUP_COUNT + 1, 1UL);
-    auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
-
-    this->groups.resize(static_cast<size_t>(GROUP_COUNT));
-    this->rowTargets.resize(static_cast<size_t>(rows)); // group, index
-
-    for (int i = 0; i < rows; i++)
-    {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = (value - minValue) >> shift;
-        this->rowTargets[i].first = static_cast<uint32_t>(groupIndex);
-        this->rowTargets[i].second = static_cast<uint32_t>(this->groups[groupIndex].count);
-        this->groups[groupIndex].count++;
-    }
-
-    for (int i = 1; i < GROUP_COUNT; i++)
-    {
-        this->groups[i].start = this->groups[i - 1].start + this->groups[i - 1].count;
-    }
-
-    this->begin = this->data;
-    this->end = this->move(this->data, rows);
 }

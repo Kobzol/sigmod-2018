@@ -286,6 +286,7 @@ int main(int argc, char** argv)
     std::cerr << "Index group count time: " << indexGroupCountTime << std::endl;
     std::cerr << "Index copy to buckets time: " << indexCopyToBucketsTime << std::endl;
     std::cerr << "Index sort time: " << indexSortTime << std::endl;
+    std::cerr << "Index finalize time: " << indexFinalizeTime << std::endl;
     std::cerr << "Index build time: " << indexBuildTime << std::endl;
     std::cerr << "Query rewrite time: " << queryRewriteTime << std::endl;
 

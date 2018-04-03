@@ -40,4 +40,5 @@
     std::atomic<size_t> indexGroupCountTime{0};
     std::atomic<size_t> indexCopyToBucketsTime{0};
     std::atomic<size_t> indexSortTime{0};
+    std::atomic<size_t> indexFinalizeTime{0};
 #endif
