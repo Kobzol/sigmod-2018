@@ -83,9 +83,12 @@ public:
     void prepare();
     void initMemory();
     void initGroups(int threads = 1);
-    void finalize(int threads = 1);
+    void finalize();
     void sortDirect();
     void sortGroups(int threads = 1);
+
+    template <int N>
+    void sortGroupsParallel(int threads);
 
     PrimaryRowEntry* move(PrimaryRowEntry* ptr, int offset)
     {

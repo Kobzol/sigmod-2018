@@ -100,6 +100,21 @@ void PrimaryIndex::prepare()
     }
 }
 
+static std::pair<uint64_t, uint64_t> findMinMax(const uint64_t* __restrict__ column, int rows)
+{
+    uint64_t minValue = std::numeric_limits<uint64_t>::max();
+    uint64_t maxValue = 0;
+
+//#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(4)
+    for (int i = 0; i < rows; i++)
+    {
+        auto value = column[i];
+        minValue = value < minValue ? value : minValue;
+        maxValue = value > maxValue ? value : maxValue;
+    }
+
+    return std::make_pair(minValue, maxValue);
+}
 void PrimaryIndex::initMemory()
 {
     assert(this->init != nullptr);
@@ -114,22 +129,15 @@ void PrimaryIndex::initMemory()
     this->begin = this->data;
     this->end = this->move(this->data, rows);
 
-    uint64_t minValue = std::numeric_limits<uint64_t>::max();
-    uint64_t maxValue = 0;
-
 #ifdef STATISTICS
     Timer timer;
 #endif
 
-    for (int i = 0; i < rows; i++)
-    {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        minValue = value < minValue ? value : minValue;
-        maxValue = value > maxValue ? value : maxValue;
-    }
+    auto* columnPtr = this->relation.data + (this->column * rows);
+    auto minMax = findMinMax(columnPtr, rows);
 
-    this->minValue = minValue;
-    this->maxValue = maxValue;
+    this->minValue = minMax.first;
+    this->maxValue = minMax.second;
     this->diff = (this->maxValue - this->minValue) + 1;
 
 #ifdef STATISTICS
@@ -147,7 +155,7 @@ void PrimaryIndex::initGroups(int threads)
 
     const int TARGET_SIZE = 1024 * 512;
     double size = (rows * this->rowSizeBytes) / static_cast<double>(TARGET_SIZE);
-    const auto GROUP_COUNT = static_cast<int>(std::min((maxValue - minValue) + 1,
+    const auto GROUP_COUNT = static_cast<int>(std::min((this->maxValue - this->minValue) + 1,
                                                        static_cast<uint64_t>(std::ceil(size))));
 //    const int GROUP_COUNT = 128;
     auto diff = std::max(((this->maxValue - this->minValue) + 1) / GROUP_COUNT + 1, 1UL);
@@ -156,10 +164,10 @@ void PrimaryIndex::initGroups(int threads)
     this->groups.resize(static_cast<size_t>(GROUP_COUNT));
     this->rowTargets.resize(static_cast<size_t>(rows)); // group, index
 
+    auto* ptr = this->relation.data + (rows * this->column);
     for (int i = 0; i < rows; i++)
     {
-        auto value = this->relation.getValue(static_cast<size_t>(i), this->column);
-        auto groupIndex = (value - minValue) >> shift;
+        auto groupIndex = (*ptr++ - this->minValue) >> shift;
         this->rowTargets[i].first = static_cast<uint32_t>(groupIndex);
         this->rowTargets[i].second = static_cast<uint32_t>(this->groups[groupIndex].count++);
     }
@@ -185,7 +193,7 @@ void PrimaryIndex::initGroups(int threads)
 #endif
 }
 
-void PrimaryIndex::finalize(int threads)
+void PrimaryIndex::finalize()
 {
     if (!canBuild(this->relation))
     {
@@ -272,8 +280,6 @@ bool PrimaryIndex::build(uint32_t threads)
         return false;
     }
 
-    this->initMemory();
-
     if (this->relation.getRowCount() > 100000)
     {
         this->initGroups(threads);
@@ -281,7 +287,7 @@ bool PrimaryIndex::build(uint32_t threads)
     }
     else this->sortDirect();
 
-    this->finalize(threads);
+    this->finalize();
 
     return true;
 }
@@ -363,6 +369,23 @@ void PrimaryIndex::sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t col
     kx::radix_sort(ptr, stop, RadixTraitsRow<N>(column, minValue), diff);
 }
 
+template <int N>
+static void copyBuckets(uint64_t* __restrict__ dest, const uint64_t* __restrict__ src,
+                        const std::vector<PrimaryGroup>& groups,
+                        const std::vector<std::pair<uint32_t, uint32_t>>& rowTargets,
+                        int rows, int threads)
+{
+    auto* __restrict__ to = reinterpret_cast<Row<N>*>(dest);
+    const auto* __restrict__ from = reinterpret_cast<const Row<N>*>(src);
+
+#pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < rows; i++)
+    {
+        auto row = groups[rowTargets[i].first].start + rowTargets[i].second;
+        to[row] = from[i];
+    }
+}
+
 void PrimaryIndex::sortDirect()
 {
     auto rows = static_cast<int32_t>(this->relation.getRowCount());
@@ -386,29 +409,48 @@ void PrimaryIndex::sortDirect()
 void PrimaryIndex::sortGroups(int threads)
 {
     auto rows = static_cast<int>(this->relation.getRowCount());
-    auto* src = reinterpret_cast<PrimaryRowEntry*>(this->init);
 
 #ifdef STATISTICS
     Timer timer;
 #endif
 
-#pragma omp parallel for num_threads(threads)
-    for (int i = 0; i < rows; i++)
-    {
-        auto row = this->groups[this->rowTargets[i].first].start + this->rowTargets[i].second;
-        auto* item = this->move(this->data, static_cast<int>(row));
-        std::memcpy(item, this->move(src, i), static_cast<size_t>(this->rowSizeBytes));
-    }
+    auto* target = reinterpret_cast<uint64_t*>(this->data);
+    if (this->columns == 1) copyBuckets<1>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 2) copyBuckets<2>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 3) copyBuckets<3>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 4) copyBuckets<4>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 5) copyBuckets<5>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 6) copyBuckets<6>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 7) copyBuckets<7>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 8) copyBuckets<8>(target, this->init, this->groups, this->rowTargets, rows, threads);
+    if (this->columns == 9) copyBuckets<9>(target, this->init, this->groups, this->rowTargets, rows, threads);
 
 #ifdef STATISTICS
     indexCopyToBucketsTime += timer.get();
     timer.reset();
 #endif
 
-    int columns = this->relation.getColumnCount();
+    if (this->columns == 1) sortGroupsParallel<1>(threads);
+    if (this->columns == 2) sortGroupsParallel<2>(threads);
+    if (this->columns == 3) sortGroupsParallel<3>(threads);
+    if (this->columns == 4) sortGroupsParallel<4>(threads);
+    if (this->columns == 5) sortGroupsParallel<5>(threads);
+    if (this->columns == 6) sortGroupsParallel<6>(threads);
+    if (this->columns == 7) sortGroupsParallel<7>(threads);
+    if (this->columns == 8) sortGroupsParallel<8>(threads);
+    if (this->columns == 9) sortGroupsParallel<9>(threads);
 
-#pragma omp parallel for num_threads(threads)
-    for (int g = 0; g < static_cast<int32_t>(this->groups.size()); g++)
+#ifdef STATISTICS
+    indexSortTime += timer.get();
+#endif
+}
+
+template<int N>
+void PrimaryIndex::sortGroupsParallel(int threads)
+{
+    auto groupCount = static_cast<int32_t>(this->groups.size());
+#pragma omp parallel for num_threads(threads) schedule(dynamic, 4)
+    for (int g = 0; g < groupCount; g++)
     {
         auto start = this->groups[g].start;
         auto end = start + this->groups[g].count;
@@ -416,18 +458,6 @@ void PrimaryIndex::sortGroups(int threads)
         auto from = this->move(this->data, static_cast<int>(start));
         auto to = this->move(this->data, static_cast<int>(end));
 
-        if (columns == 1) sort<1>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 2) sort<2>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 3) sort<3>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 4) sort<4>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 5) sort<5>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 6) sort<6>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 7) sort<7>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 8) sort<8>(from, to, this->column, this->minValue, this->maxValue);
-        if (columns == 9) sort<9>(from, to, this->column, this->minValue, this->maxValue);
+        this->sort<N>(from, to, this->column, this->minValue, this->maxValue);
     }
-
-#ifdef STATISTICS
-    indexSortTime += timer.get();
-#endif
 }
