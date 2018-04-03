@@ -1,10 +1,12 @@
 Team: vsb_ber0134
+
 Institution: VSB-TUO
 
 Jakub Beránek, BER0134, FEI, Master's, jakub.beranek.st@vsb.cz
 
-Advisor: Ing. Radim Bača, Phd., FEI, VSB-TUO
+Advisors:
+- Ing. Radim Bača, Phd., FEI, VSB-TUO, radim.baca@vsb.cz
+- Ing. Petr Lukáš, FEI, VSB-TUO, petr.lukas@vsb.cz
 
 Third-party code: 
-- sparse map (https://github.com/Tessil/sparse-map), MIT
 - radix sort (https://github.com/voutcn/kxsort), MIT
