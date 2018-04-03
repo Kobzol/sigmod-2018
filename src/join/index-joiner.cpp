@@ -74,8 +74,9 @@ template <bool HAS_MULTIPLE_JOINS>
 void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, const std::vector<uint32_t>& columnIds,
                                               const std::vector<Selection>& selections, size_t& count)
 {
-    std::vector<std::pair<uint32_t, uint32_t>> leftColumns; // column, result index
-    std::vector<std::pair<uint32_t, uint32_t>> rightColumns;
+    using Pair = std::pair<uint32_t, uint32_t>;
+    std::vector<Pair> leftColumns; // column, result index
+    std::vector<Pair> rightColumns;
     auto colSize = static_cast<int32_t>(columnIds.size());
 
     for (int i = 0; i < colSize; i++)
@@ -87,6 +88,13 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::sumRows(std::vector<uint64_t>& results, co
         }
         else rightColumns.emplace_back(columnIds[i] - this->leftColSize, i);
     }
+
+    std::sort(leftColumns.begin(), leftColumns.end(), [](const Pair& lhs, const Pair& rhs) {
+        return lhs.first < rhs.first;
+    });
+    std::sort(rightColumns.begin(), rightColumns.end(), [](const Pair& lhs, const Pair& rhs) {
+        return lhs.first < rhs.first;
+    });
 
     if (!HAS_MULTIPLE_JOINS)
     {
