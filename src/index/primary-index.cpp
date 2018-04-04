@@ -110,29 +110,33 @@ void PrimaryIndex::initGroups(int threads)
     this->groups.resize(static_cast<size_t>(GROUP_COUNT));
     this->rowTargets.resize(static_cast<size_t>(rows)); // group, index
 
+    auto minValue = this->minValue;
     auto* ptr = this->relation.data + (rows * this->column);
     for (int i = 0; i < rows; i++)
     {
-        auto groupIndex = (*ptr++ - this->minValue) >> shift;
+        auto groupIndex = (*ptr++ - minValue) >> shift;
         this->rowTargets[i].first = static_cast<uint32_t>(groupIndex);
         this->rowTargets[i].second = static_cast<uint32_t>(this->groups[groupIndex].count++);
     }
 
 //    uint32_t minGroup = this->groups[0].count;
 //    uint32_t maxGroup = this->groups[0].count;
+//    int nonZero = minGroup == 0 ? 0 : 1;
     for (int i = 1; i < GROUP_COUNT; i++)
     {
         this->groups[i].start = this->groups[i - 1].start + this->groups[i - 1].count;
 //        minGroup = std::min(minGroup, this->groups[i].count);
 //        maxGroup = std::max(maxGroup, this->groups[i].count);
+//        if (this->groups[i].count > 0) nonZero++;
     }
 
-    /*std::vector<PrimaryGroup> sortGroups(groups.begin(), groups.end());
+    /*std::vector<PrimaryGroup> sortGroups(this->groups.begin(), this->groups.end());
     std::sort(sortGroups.begin(), sortGroups.end(), [](const PrimaryGroup& a, const PrimaryGroup& b) {
         return a.count < b.count;
     });
 
-    std::cerr << "(" << GROUP_COUNT << ", " << rows << ", " << minGroup << ", " << maxGroup << ", " << sortGroups[sortGroups.size() / 2].count << ") ";*/
+    std::cerr << "(" << GROUP_COUNT << ", " << nonZero << ", " << minGroup << ", " << maxGroup;
+    std::cerr << ", " << sortGroups[sortGroups.size() / 2].count << ") ";*/
 
 #ifdef STATISTICS
     indexGroupCountTime += timer.get();
