@@ -40,12 +40,12 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices, int outerT
         database.primaryIndices[primaryIndices[i]]->build(static_cast<uint32_t>(innerThreads));
     }
 
-#pragma omp parallel for schedule(dynamic) num_threads(8)
+#pragma omp parallel for schedule(dynamic) num_threads(outerThreads)
     for (int i = 0; i < secondaryCount; i++)
     {
         if (database.sortIndices[secondaryIndices[i]]->take())
         {
-            database.sortIndices[secondaryIndices[i]]->build(PRIMARY_INDEX_PREBUILD_THREADS);
+            database.sortIndices[secondaryIndices[i]]->build(static_cast<uint32_t>(innerThreads));
         }
     }
 }

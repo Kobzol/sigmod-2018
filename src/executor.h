@@ -16,7 +16,7 @@ public:
 
     }
 
-    void buildPlan(Database& database);
+    void buildPlan(Database& database, int split);
     void finalizeQuery();
 
     std::vector<MultiWrapperIterator*> roots;
@@ -43,7 +43,7 @@ private:
                              std::vector<std::unique_ptr<Iterator>>& container,
                              bool aggregable);
 
-    void prepareRoots(Database& database, Query& query, Iterator* root, bool aggregable);
+    void prepareRoots(Database& database, Query& query, Iterator* root, bool aggregable, int split);
 
     Query& query;
     std::unordered_map<uint32_t, Iterator*> views;

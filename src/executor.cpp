@@ -20,12 +20,12 @@
 #include "aggregation/indexed-aggregated-iterator.h"
 #include "stats.h"
 
-void Executor::buildPlan(Database& database)
+void Executor::buildPlan(Database& database, int split)
 {
     bool aggregable;
     this->createViews(database, this->query, this->views, this->container, aggregable);
     auto root = this->createRootView(database, this->query, this->views, this->container, aggregable);
-    this->prepareRoots(database, this->query, root, aggregable);
+    this->prepareRoots(database, this->query, root, aggregable, split);
 }
 
 void Executor::createViews(Database& database, const Query& query, std::unordered_map<uint32_t, Iterator*>& views,
@@ -450,7 +450,7 @@ void Executor::createAggregatedViews(const Query& query, std::unordered_map<uint
     }
 }
 
-void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bool aggregable)
+void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bool aggregable, int split)
 {
     for (auto& sel: query.selections)
     {
@@ -488,8 +488,7 @@ void Executor::prepareRoots(Database& database, Query& query, Iterator* root, bo
     }
     else
     {
-        int split = PARALLEL_JOIN_SPLIT;
-        root->split(this->container, groups, split);
+        root->split(this->container, groups, static_cast<size_t>(split));
         for (int i = 0; i < static_cast<int32_t>(groups.size()); i++)
         {
             auto iter = std::make_unique<MultiWrapperIterator>(groups, i);
