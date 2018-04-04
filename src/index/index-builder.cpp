@@ -6,7 +6,7 @@
 #include "../timer.h"
 #include "../stats.h"
 
-void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
+void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices, int outerThreads, int innerThreads)
 {
     if (indices.empty()) return;
 
@@ -34,10 +34,10 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices)
         }
     }
 
-#pragma omp parallel for schedule(dynamic) num_threads(8)
+#pragma omp parallel for schedule(dynamic) num_threads(outerThreads)
     for (int i = 0; i < primaryCount; i++)
     {
-        database.primaryIndices[primaryIndices[i]]->build(PRIMARY_INDEX_PREBUILD_THREADS);
+        database.primaryIndices[primaryIndices[i]]->build(static_cast<uint32_t>(innerThreads));
     }
 
 #pragma omp parallel for schedule(dynamic) num_threads(8)
