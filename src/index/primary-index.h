@@ -130,8 +130,9 @@ public:
     std::vector<IndexGroup> indexGroups;
     uint64_t diff;
 
-    std::vector<PrimaryGroup> groups;
-    std::vector<std::pair<uint32_t, uint32_t>> rowTargets;
+    std::vector<uint32_t> counts;
+    std::vector<uint32_t> starts;
+    std::pair<uint32_t, uint32_t>* rowTargets;
 
     PrimaryRowEntry* (PrimaryIndex::*lowerBoundFn)(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
 
