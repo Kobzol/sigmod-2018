@@ -89,6 +89,9 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
                 {
                     results[i] += this->relation->getValueTransposed(this->rowIndex, columnIds[i]);
                 }
+#ifdef COLLECT_JOIN_SIZE
+                this->rowCount++;
+#endif
                 localCount++;
             }
 
@@ -109,6 +112,9 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
                 {
                     results[i] += FilterIterator::getColumn(columnIds[i]);
                     localCount++;
+#ifdef COLLECT_JOIN_SIZE
+                    this->rowCount++;
+#endif
                 }
 
                 this->rowIndex++;

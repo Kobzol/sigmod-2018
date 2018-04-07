@@ -100,17 +100,22 @@ void loadDatabase(Database& database)
 #ifdef USE_PRIMARY_INDEX
     for (int i = 0; i < static_cast<int32_t>(database.relations.size()); i++)
     {
-        if (PrimaryIndex::canBuild(database.relations[i]))
+        if (database.relations[i].getColumnCount() == 1)
         {
-            relationData[i] = new uint64_t[PrimaryIndex::rowSize(database.relations[i]) *
-                                           database.relations[i].getRowCount()];
+            relationData[i] = database.relations[i].transposed = database.relations[i].data;
+        }
+        else if (PrimaryIndex::canBuild(database.relations[i]))
+        {
+            relationData[i] = static_cast<uint64_t*>(malloc(sizeof(uint64_t) *
+                                                            PrimaryIndex::rowSize(database.relations[i]) *
+                                                            database.relations[i].getRowCount()));
             database.relations[i].transposed = relationData[i];
         }
     }
 
     for (int i = 0; i < static_cast<int32_t>(relationData.size()); i++)
     {
-        if (PrimaryIndex::canBuild(database.relations[i]))
+        if (PrimaryIndex::canBuild(database.relations[i]) && database.relations[i].getColumnCount() > 1)
         {
             auto rows = static_cast<int32_t>(database.relations[i].getRowCount());
 
