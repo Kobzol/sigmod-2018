@@ -25,19 +25,14 @@ void IndexBuilder::buildIndices(const std::vector<uint32_t>& indices, int outerT
     auto primaryCount = static_cast<int>(primaryIndices.size());
     auto secondaryCount = static_cast<int>(secondaryIndices.size());
 
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic) num_threads(outerThreads)
     for (int i = 0; i < primaryCount; i++)
     {
         if (database.primaryIndices[primaryIndices[i]]->take())
         {
             database.primaryIndices[primaryIndices[i]]->initMemory();
+            database.primaryIndices[primaryIndices[i]]->build(static_cast<uint32_t>(innerThreads));
         }
-    }
-
-#pragma omp parallel for schedule(dynamic) num_threads(outerThreads)
-    for (int i = 0; i < primaryCount; i++)
-    {
-        database.primaryIndices[primaryIndices[i]]->build(static_cast<uint32_t>(innerThreads));
     }
 
 #pragma omp parallel for schedule(dynamic) num_threads(outerThreads)

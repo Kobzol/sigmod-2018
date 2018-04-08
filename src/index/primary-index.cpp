@@ -52,7 +52,7 @@ static std::pair<uint64_t, uint64_t> findMinMax(const uint64_t* __restrict__ col
     uint64_t minValue = std::numeric_limits<uint64_t>::max();
     uint64_t maxValue = 0;
 
-//#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(4)
+#pragma omp parallel for reduction(min:minValue) reduction(max:maxValue) num_threads(4)
     for (int i = 0; i < rows; i++)
     {
         auto value = column[i];
@@ -107,10 +107,7 @@ void PrimaryIndex::initGroups(int threads)
     auto diff = std::max(((this->maxValue - this->minValue) + 1) / GROUP_COUNT + 1, 1UL);
     auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
-//    this->groups.resize(static_cast<size_t>(GROUP_COUNT));
-    this->rowTargets = static_cast<PrimaryRowTarget*>(
-            malloc(static_cast<size_t>(rows) * sizeof(std::pair<uint32_t, uint32_t>))
-    ); // group, index
+    this->rowTargets = static_cast<PrimaryRowTarget*>(malloc(static_cast<size_t>(rows) * sizeof(PrimaryRowTarget)));
     this->counts.resize(static_cast<size_t>(GROUP_COUNT));
     this->starts.resize(static_cast<size_t>(GROUP_COUNT));
     this->unique.resize(static_cast<size_t>(GROUP_COUNT));
