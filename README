@@ -2,11 +2,27 @@ Team: vsb_ber0134
 
 Institution: VSB-TUO
 
-Jakub Beránek, BER0134, FEI, Master's, jakub.beranek.st@vsb.cz
+Jakub Beránek, BER0134, VSB-TUO, FEI (department 460), Master's (graduate, last year), jakub.beranek.st@vsb.cz
 
 Advisors:
 - Ing. Radim Bača, Phd., FEI, VSB-TUO, radim.baca@vsb.cz
 - Ing. Petr Lukáš, FEI, VSB-TUO, petr.lukas@vsb.cz
 
-Third-party code: 
+Description:
+
+My solution heavily relies on indices, which are built for all join columns.
+Columns are grouped into small blocks and then sorted with radix sort.
+
+After the indices are built, the joins are made with a combination of merge sort join and nested loop join
+with index accesses. The created plan is a left deep tree with small order optimizations based on sorted
+columns or expected result sizes. All joins are then divided into tens of small tasks which are
+computed in parallel.
+
+Queries are heavily rewritten. Primary/foreign key pairs are checked and joins based on them are removed
+if possible. Filters for individual join columns are expanded for the whole join component. Information taken
+from filters and min/max of columns are used to determine whether the query can return any results. Filters are
+also optionally JIT compiled to x64 assembly.
+
+
+Third-party code:
 - radix sort (https://github.com/voutcn/kxsort), MIT
