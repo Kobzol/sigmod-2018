@@ -125,19 +125,12 @@ void PrimaryIndex::initGroups(int threads)
         counts[i].resize(static_cast<size_t>(GROUP_COUNT));
     }
 
-#pragma omp parallel num_threads(threads)
+#pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < rows; i++)
     {
-        auto threadId = omp_get_thread_num();
-        auto chunkSize = static_cast<int>(std::ceil(rows / threads) + 1);
-        auto start = threadId * chunkSize;
-        auto end = std::min(start + chunkSize, rows);
-
-        for (int i = start; i < end; i++)
-        {
-            auto groupIndex = (ptr[i] - minValue) >> shift;
-            this->rowTargets[i].group = static_cast<uint32_t>(groupIndex);
-            this->rowTargets[i].index = static_cast<uint32_t>(counts[threadId][groupIndex]++);
-        }
+        auto groupIndex = (ptr[i] - minValue) >> shift;
+        this->rowTargets[i].group = static_cast<uint32_t>(groupIndex);
+        this->rowTargets[i].index = static_cast<uint32_t>(counts[omp_get_thread_num()][groupIndex]++);
     }
 
     for (int t = 0; t < threads; t++)
@@ -382,21 +375,13 @@ static void copyBuckets(uint64_t* __restrict__ dest, const uint64_t* __restrict_
     auto* __restrict__ to = reinterpret_cast<Row<N>*>(dest);
     const auto* __restrict__ from = reinterpret_cast<const Row<N>*>(src);
 
-    #pragma omp parallel num_threads(threads)
+#pragma omp parallel for num_threads(threads)
+    for (int i = 0; i < rows; i++)
     {
-        auto threadId = omp_get_thread_num();
-        auto chunkSize = static_cast<int>(std::ceil(rows / threads) + 1);
-        auto start = threadId * chunkSize;
-        auto end = std::min(start + chunkSize, rows);
-
-        auto* __restrict__ offsets = &computeOffsets[threadId * groupCount];
-        for (int i = start; i < end; i++)
-        {
-            int group = rowTargets[i].group;
-            auto row = starts[group] + rowTargets[i].index;
-            row += offsets[group];
-            to[row] = from[i];
-        }
+        int group = rowTargets[i].group;
+        auto row = starts[group] + rowTargets[i].index;
+        row += (&computeOffsets[omp_get_thread_num() * groupCount])[group];
+        to[row] = from[i];
     }
 
 //#pragma omp parallel for num_threads(threads)

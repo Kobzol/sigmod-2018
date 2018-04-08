@@ -54,8 +54,16 @@ static void buildIndices(std::vector<Query>& queries)
 
     if (count > 0)
     {
+        int innerThreads = 10;
+        if (count < 4)
+        {
+            innerThreads = THREAD_COUNT / count;
+        }
+
+        count = std::min(count, 6);
+
         IndexBuilder builder;
-        builder.buildIndices(indices, 6, 8);
+        builder.buildIndices(indices, count, innerThreads);
     }
 #endif
 
