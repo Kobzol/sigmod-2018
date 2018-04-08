@@ -113,6 +113,7 @@ void PrimaryIndex::initGroups(int threads)
     ); // group, index
     this->counts.resize(static_cast<size_t>(GROUP_COUNT));
     this->starts.resize(static_cast<size_t>(GROUP_COUNT));
+    this->unique.resize(static_cast<size_t>(GROUP_COUNT));
 
     auto minValue = this->minValue;
     auto* ptr = this->relation.data + (rows * this->column);
@@ -158,9 +159,23 @@ void PrimaryIndex::finalize()
     Timer timer;
 #endif
 
-    auto rows = static_cast<int>(this->relation.getRowCount());
+    bool unique = true;
+    if (!this->unique.empty())
+    {
+        for (auto& u: this->unique)
+        {
+            if (!u)
+            {
+                unique = false;
+                break;
+            }
+        }
+    }
+    else
+    {
+        auto rows = static_cast<int>(this->relation.getRowCount());
 #ifdef USE_MULTILEVEL_INDEX
-    this->groupCount = 128;
+        this->groupCount = 128;
     this->indexGroups.resize(static_cast<size_t>(this->groupCount));
 
     int group = 0;
@@ -193,20 +208,20 @@ void PrimaryIndex::finalize()
     this->indexGroups[group].end = this->end;
     this->indexGroups.resize(group + 1);
 #else
-    bool unique = true;
-    uint64_t lastValue = this->begin->row[this->column];
+        uint64_t lastValue = this->begin->row[this->column];
 
-    for (int i = 1; i < rows; i++)
-    {
-        uint64_t value = this->move(this->begin, i)->row[this->column];
-        if (NOEXPECT(lastValue == value))
+        for (int i = 1; i < rows; i++)
         {
-            unique = false;
-            break;
+            uint64_t value = this->move(this->begin, i)->row[this->column];
+            if (NOEXPECT(lastValue == value))
+            {
+                unique = false;
+                break;
+            }
+            else lastValue = value;
         }
-        else lastValue = value;
-    }
 #endif
+    }
 
     database.unique[database.getGlobalColumnId(this->relation.id, this->column)] = static_cast<unsigned int>(unique);
 
@@ -409,9 +424,26 @@ void PrimaryIndex::sortGroupsParallel(int threads)
         auto start = this->starts[g];
         auto end = start + this->counts[g];
 
-        auto from = this->move(this->data, static_cast<int>(start));
-        auto to = this->move(this->data, static_cast<int>(end));
+        bool unique = true;
+        if (start < end)
+        {
+            auto from = this->move(this->data, static_cast<int>(start));
+            auto to = this->move(this->data, static_cast<int>(end));
 
-        this->sort<N>(from, to, this->column, this->minValue, this->maxValue);
+            this->sort<N>(from, to, this->column, this->minValue, this->maxValue);
+
+            uint64_t lastValue = this->move(this->data, start)->row[this->column];
+            for (int i = start + 1; i < static_cast<int32_t>(end); i++)
+            {
+                auto value = this->move(this->data, i)->row[this->column];
+                if (value == lastValue)
+                {
+                    unique = false;
+                    break;
+                }
+                else lastValue = value;
+            }
+        }
+        this->unique[g] = static_cast<unsigned int>(unique);
     }
 }

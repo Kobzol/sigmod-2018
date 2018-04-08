@@ -12,7 +12,7 @@
 #define MEASURE_REAL_TIME
 #define STATISTICS
 
-//#define SORT_JOINS_BY_SIZE
+#define SORT_JOINS_BY_SIZE
 
 //#define USE_HASH_INDEX
 #define USE_SORT_INDEX                  // index of sorted <value, rowid> pairs
@@ -66,7 +66,7 @@
 #define USE_THREADS
 #define HASH_AGGREGATE_THREADS 8        // number of threads to aggregate results in top-level hash join
 #define FK_CHECK_SPLIT 120
-#define PARALLEL_JOIN_SPLIT 32
+#define PARALLEL_JOIN_SPLIT 80
 
 //#define USE_INDEX_THREADPOOL
 #define INDEX_THREADS 30
