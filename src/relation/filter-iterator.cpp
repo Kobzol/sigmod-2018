@@ -121,7 +121,7 @@ void FilterIterator::sumRows(std::vector<uint64_t>& results, const std::vector<u
             }
 
             if (localCount == 0) break;
-            else if (i < results.size() - 1) localCount = 0;
+            else if (i < static_cast<int32_t>(results.size()) - 1) localCount = 0;
         }
     }
 
@@ -134,7 +134,7 @@ bool FilterIterator::passesFiltersTransposed()
     {
         auto& filter = this->filters[i];
 #ifdef COMPILE_FILTERS
-        if (!filter.evaluator(this->relation->getValuegetValueTransposed(this->rowIndex, filter.selection.column)))
+        if (!filter.evaluator(this->relation->getValueTransposed(this->rowIndex, filter.selection.column)))
             return false;
 #else
         if (!passesFilter(filter, this->relation->getValueTransposed(this->rowIndex, filter.selection.column)))

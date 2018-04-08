@@ -127,7 +127,9 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
 {
     if (!this->left->getNext()) return;
 
-    std::vector<uint64_t> rightResults(results.size());
+    const auto resultCount = static_cast<int32_t>(results.size());
+    std::vector<uint64_t> rightResults(static_cast<size_t>(resultCount));
+
     while (true)
     {
         uint64_t leftValue = this->left->getColumn(this->leftColumns[0]);
@@ -174,7 +176,7 @@ void IndexJoiner<HAS_MULTIPLE_JOINS>::aggregateDirect(std::vector<uint64_t>& res
         }
         else if (!this->left->getNext()) return;
 
-        for (int i = 0; i < static_cast<int32_t>(rightResults.size()); i++)
+        for (int i = 0; i < resultCount; i++)
         {
             results[i] += rightResults[i] * leftCount;
         }
