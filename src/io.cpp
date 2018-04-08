@@ -212,7 +212,7 @@ void loadDatabase(Database& database)
     }
 
     IndexBuilder builder;
-    builder.buildIndices(indices, 8, 6);
+    builder.buildIndices(indices, 10, 4);
 /*#ifdef USE_THREADS
     #pragma omp parallel for schedule(dynamic)
     for (int i = 0; i < static_cast<int32_t>(columnId); i++)

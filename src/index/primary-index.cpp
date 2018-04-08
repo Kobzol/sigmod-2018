@@ -383,16 +383,6 @@ static void copyBuckets(uint64_t* __restrict__ dest, const uint64_t* __restrict_
         row += (&computeOffsets[omp_get_thread_num() * groupCount])[group];
         to[row] = from[i];
     }
-
-//#pragma omp parallel for num_threads(threads)
-//    for (int i = 0; i < rows; i++)
-//    {
-//        auto row = groups[rowTargets[i].first].start + rowTargets[i].second;
-//        int group = rowTargets[i].group;
-//        auto row = groups[group].start + rowTargets[i].index;
-//        row += computeOffsets[rowTargets[i].thread * groupCount + group];
-//        to[row] = from[i];
-//    }
 }
 
 void PrimaryIndex::sortDirect()
