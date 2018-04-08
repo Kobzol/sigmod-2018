@@ -108,32 +108,66 @@ void PrimaryIndex::initGroups(int threads)
     auto shift = static_cast<uint64_t>(std::ceil(std::log2(diff)));
 
 //    this->groups.resize(static_cast<size_t>(GROUP_COUNT));
-    this->rowTargets = static_cast<std::pair<uint32_t, uint32_t>*>(
+    this->rowTargets = static_cast<PrimaryRowTarget*>(
             malloc(static_cast<size_t>(rows) * sizeof(std::pair<uint32_t, uint32_t>))
     ); // group, index
     this->counts.resize(static_cast<size_t>(GROUP_COUNT));
     this->starts.resize(static_cast<size_t>(GROUP_COUNT));
     this->unique.resize(static_cast<size_t>(GROUP_COUNT));
+    this->computeOffsets.resize(static_cast<size_t>(GROUP_COUNT * threads));
 
     auto minValue = this->minValue;
     auto* ptr = this->relation.data + (rows * this->column);
-    for (int i = 0; i < rows; i++)
+
+    std::vector<std::vector<uint32_t>> counts(static_cast<size_t>(threads));
+    for (int i = 0; i < threads; i++)
     {
-        auto groupIndex = (ptr[i] - minValue) >> shift;
-        this->rowTargets[i].first = static_cast<uint32_t>(groupIndex);
-        this->rowTargets[i].second = static_cast<uint32_t>(this->counts[groupIndex]++);
+        counts[i].resize(static_cast<size_t>(GROUP_COUNT));
+    }
+
+#pragma omp parallel num_threads(threads)
+    {
+        auto threadId = omp_get_thread_num();
+        auto chunkSize = static_cast<int>(std::ceil(rows / threads) + 1);
+        auto start = threadId * chunkSize;
+        auto end = std::min(start + chunkSize, rows);
+
+        for (int i = start; i < end; i++)
+        {
+            auto groupIndex = (ptr[i] - minValue) >> shift;
+            this->rowTargets[i].group = static_cast<uint32_t>(groupIndex);
+            this->rowTargets[i].index = static_cast<uint32_t>(counts[threadId][groupIndex]++);
+        }
+    }
+
+    for (int t = 0; t < threads; t++)
+    {
+        this->computeOffsets[t * GROUP_COUNT] = this->counts[0];
+        this->counts[0] += counts[t][0];
+    }
+
+    for (int g = 1; g < GROUP_COUNT; g++)
+    {
+        uint32_t count = 0;
+        for (int t = 0; t < threads; t++)
+        {
+            this->computeOffsets[t * GROUP_COUNT + g] = count;
+            count += counts[t][g];
+        }
+        this->counts[g] = count;
+        this->starts[g] = this->starts[g - 1] + this->counts[g - 1];
     }
 
 //    uint32_t minGroup = this->groups[0].count;
 //    uint32_t maxGroup = this->groups[0].count;
 //    int nonZero = minGroup == 0 ? 0 : 1;
-    for (int i = 1; i < GROUP_COUNT; i++)
-    {
-        this->starts[i] = this->starts[i - 1] + this->counts[i - 1];
+//    for (int i = 1; i < GROUP_COUNT; i++)
+//    {
+//        this->groups[i].start = this->groups[i - 1].start + this->groups[i - 1].count;
 //        minGroup = std::min(minGroup, this->groups[i].count);
 //        maxGroup = std::max(maxGroup, this->groups[i].count);
 //        if (this->groups[i].count > 0) nonZero++;
-    }
+//    }
 
     /*std::vector<PrimaryGroup> sortGroups(this->groups.begin(), this->groups.end());
     std::sort(sortGroups.begin(), sortGroups.end(), [](const PrimaryGroup& a, const PrimaryGroup& b) {
@@ -341,24 +375,44 @@ void PrimaryIndex::sort(PrimaryRowEntry* mem, PrimaryRowEntry* end, uint32_t col
 template <int N>
 static void copyBuckets(uint64_t* __restrict__ dest, const uint64_t* __restrict__ src,
                         const uint32_t* __restrict__ starts,
-                        const std::pair<uint32_t, uint32_t>* __restrict__ rowTargets,
-                        int rows, int threads)
+                        const PrimaryRowTarget* __restrict__ rowTargets,
+                        const uint32_t* __restrict__ computeOffsets,
+                        int rows, int groupCount, int threads)
 {
     auto* __restrict__ to = reinterpret_cast<Row<N>*>(dest);
     const auto* __restrict__ from = reinterpret_cast<const Row<N>*>(src);
 
-#pragma omp parallel for num_threads(threads)
-    for (int i = 0; i < rows; i++)
+    #pragma omp parallel num_threads(threads)
     {
-        auto row = starts[rowTargets[i].first] + rowTargets[i].second;
-        to[row] = from[i];
+        auto threadId = omp_get_thread_num();
+        auto chunkSize = static_cast<int>(std::ceil(rows / threads) + 1);
+        auto start = threadId * chunkSize;
+        auto end = std::min(start + chunkSize, rows);
+
+        auto* __restrict__ offsets = &computeOffsets[threadId * groupCount];
+        for (int i = start; i < end; i++)
+        {
+            int group = rowTargets[i].group;
+            auto row = starts[group] + rowTargets[i].index;
+            row += offsets[group];
+            to[row] = from[i];
+        }
     }
+
+//#pragma omp parallel for num_threads(threads)
+//    for (int i = 0; i < rows; i++)
+//    {
+//        auto row = groups[rowTargets[i].first].start + rowTargets[i].second;
+//        int group = rowTargets[i].group;
+//        auto row = groups[group].start + rowTargets[i].index;
+//        row += computeOffsets[rowTargets[i].thread * groupCount + group];
+//        to[row] = from[i];
+//    }
 }
 
 void PrimaryIndex::sortDirect()
 {
     auto rows = static_cast<int32_t>(this->relation.getRowCount());
-
     std::memcpy(this->data, this->init, this->rowSizeBytes * rows);
 
     auto from = this->move(this->data, 0);
@@ -384,15 +438,33 @@ void PrimaryIndex::sortGroups(int threads)
 #endif
 
     auto* target = reinterpret_cast<uint64_t*>(this->data);
-    if (this->columns == 1) copyBuckets<1>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 2) copyBuckets<2>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 3) copyBuckets<3>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 4) copyBuckets<4>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 5) copyBuckets<5>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 6) copyBuckets<6>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 7) copyBuckets<7>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 8) copyBuckets<8>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
-    if (this->columns == 9) copyBuckets<9>(target, this->init, this->starts.data(), this->rowTargets, rows, threads);
+    if (this->columns == 1) copyBuckets<1>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 2) copyBuckets<2>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 3) copyBuckets<3>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 4) copyBuckets<4>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 5) copyBuckets<5>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 6) copyBuckets<6>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 7) copyBuckets<7>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 8) copyBuckets<8>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
+    if (this->columns == 9) copyBuckets<9>(target, this->init, this->starts.data(), this->rowTargets,
+                                           this->computeOffsets.data(), rows,
+                                           static_cast<int>(this->starts.size()), threads);
 
 #ifdef STATISTICS
     indexCopyToBucketsTime += timer.get();
@@ -417,7 +489,7 @@ void PrimaryIndex::sortGroups(int threads)
 template<int N>
 void PrimaryIndex::sortGroupsParallel(int threads)
 {
-    auto groupCount = static_cast<int32_t>(this->counts.size());
+    auto groupCount = static_cast<int32_t>(this->starts.size());
 #pragma omp parallel for num_threads(threads) schedule(dynamic, 4)
     for (int g = 0; g < groupCount; g++)
     {

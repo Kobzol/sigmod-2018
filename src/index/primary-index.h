@@ -26,10 +26,10 @@ public:
     PrimaryRowEntry* end;
 };
 
-struct PrimaryGroup
+struct PrimaryRowTarget
 {
-    uint32_t count = 0;
-    uint32_t start = 0;
+    uint32_t group;
+    uint32_t index;
 };
 
 template <int N>
@@ -130,9 +130,10 @@ public:
     std::vector<IndexGroup> indexGroups;
     uint64_t diff;
 
+    PrimaryRowTarget* rowTargets;
+    std::vector<uint32_t> computeOffsets;
     std::vector<uint32_t> counts;
     std::vector<uint32_t> starts;
-    std::pair<uint32_t, uint32_t>* rowTargets;
     std::vector<uint32_t> unique;
 
     PrimaryRowEntry* (PrimaryIndex::*lowerBoundFn)(uint64_t* mem, int64_t rows, uint64_t value, uint32_t column);
